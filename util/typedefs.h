@@ -9,7 +9,7 @@
 #define OTEXT_USE_ECC
 #define VERIFY_OT
 //#define OTEXT_USE_OPENSSL
-#define NUMOTBLOCKS 128
+#define NUMOTBLOCKS 32
 
 
 static int CEIL_LOG2(int bits)

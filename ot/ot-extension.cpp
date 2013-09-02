@@ -125,7 +125,7 @@ BOOL OTExtensionReceiver::OTReceiverRoutine(int id, int myNumOTs)
 
  		if(m_bProtocol != R_OT)
  		{
-			while(nProgress + NUMOTBLOCKS*OTEXT_BLOCK_SIZE_BITS*2 < i)
+			while(nProgress + NUMOTBLOCKS*OTEXT_BLOCK_SIZE_BITS < i)
 			{
 				ReceiveAndProcess(vRcv, id, nProgress, min(lim-nProgress, NUMOTBLOCKS*OTEXT_BLOCK_SIZE_BITS));
 				nProgress += min(lim-nProgress, NUMOTBLOCKS*OTEXT_BLOCK_SIZE_BITS);

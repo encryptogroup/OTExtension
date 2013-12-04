@@ -306,14 +306,14 @@ int main(int argc, char** argv)
 	int bitlength = 80;
 	//The masking function with which the values that are sent in the last communication step are processed
 	//Choose OT extension version: G_OT, C_OT or R_OT
-	BYTE version = G_OT;
+	BYTE version = C_OT;
 	//Use elliptic curve cryptography in the base-OTs
 	m_bUseECC = true;
 	//The security parameter (163,233,283 for ECC or 1024, 2048, 3072 for FFC)
 	m_nSecParam = 163;
 
 
-	if(m_nPID == 0) //Play as OT sender
+	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
 		InitOTSender(addr, port);
 

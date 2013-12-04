@@ -4,11 +4,13 @@ OT extension implementation of the paper [1]. Implements the general OT (G_OT), 
 --- COMPILE ---
 Linux: 
 Required compiler: g++
+Required libraries: OpenSSL
 1) Compile Miracl in util/Miracl either using "bash linux" or "bash linux64" (see util/Miracl/first.txt for more information)
 2) Compile OT extension by executing make
 
 Windows:
 Required compiler: mingw32
+Required libraries: OpenSSL (the OpenSSL library is part of the msysDTK in mingw32 and its use can be enabled.) 
 1) Compile Miracl in util/Miracl using windows32.bat
 2) Compile OT extension by invoking Makefile.bat
 
@@ -18,7 +20,7 @@ To start OT extension, open two terminals on the same PC and call "ot.exe 0" in 
 
 
 --- NOTES ---
-The use of the gnu-multiprecision library is currently disabled and only elliptic curve cryptography is used. To enable GMP under 64-bit Linux, uncomment "#define OTEXT_USE_GMP" in util/typedefs.h and uncomment "-lgmpxx -lgmp" in the Makefile. Additionally, under Linux the AES and SHA implementation of OpenSSL can be used if "#define OTEXT_USE_OPENSSL" uncommented in util/typedefs.h and "-L /usr/lib  -lssl -lcrypto" is uncommented in the Makefile. 
+The use of the gnu-multiprecision library is currently disabled and only elliptic curve cryptography is used. To enable GMP under 64-bit Linux, uncomment "#define Z_USE_GMP" in util/typedefs.h and uncomment "-lgmpxx -lgmp" in the Makefile. 
 
 An example implementation of OT extension can be found in mains/otmain.cpp.
 

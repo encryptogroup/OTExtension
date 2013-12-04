@@ -14,6 +14,13 @@ void CBitVector::FillRand(int bits, BYTE* seed, int& cnt)
 	FillRand(bits, cnt);
 }
 
+void CBitVector::InitRand(BYTE* seed) 
+{	
+	OTEXT_AES_KEY_INIT(&m_nKey, seed);
+	m_bKeyInit = true;
+}
+
+
 /* Fill random values using the pre-defined AES key */
 void CBitVector::FillRand(int bits, int& cnt)
 {
@@ -27,7 +34,7 @@ void CBitVector::FillRand(int bits, int& cnt)
 		buf[i] = (cnt>>(8*i)) & 0xFF;
 	}
 
-	if(m_nKey.rounds == 0)
+	if(!m_bKeyInit)
 	{
 		cerr << "FillRand called without initializing AES key" << endl;
 		return;
@@ -38,7 +45,7 @@ void CBitVector::FillRand(int bits, int& cnt)
 
 	for(int i = 0; i < size; i++, counter[0]++, cnt++)
 	{
-		AES_encrypt(buf, m_pBits + i*AES_BYTES, &m_nKey);
+		OTEXT_AES_ENCRYPT(&m_nKey, m_pBits + i*AES_BYTES, buf);
 	}
 	//cnt = (int) counter[0];
 }
@@ -63,6 +70,12 @@ void CBitVector::Create(int bits)
 	int size = CEIL_DIVIDE(bits, AES_BITS);
 	m_nSize = size*AES_BYTES;
 	m_pBits = (BYTE*) malloc(sizeof(BYTE) * m_nSize);
+	if(m_pBits==NULL)
+	{
+		cerr << "Memory allocation failed in CBitVector, requested size: " << 
+			m_nSize << " bytes" << endl;
+		exit(0);
+	}
 	m_nElementLength = 1;
 	m_nNumElements = m_nSize;
 	m_nNumElementsDimB = 1;
@@ -99,26 +112,28 @@ void CBitVector::ResizeinBytes(int newSizeBytes)
 	int tSize = m_nSize;
 
 	m_nSize = newSizeBytes;
-	m_pBits = new BYTE[m_nSize];
+	m_pBits = (BYTE*) malloc(sizeof(BYTE) * m_nSize);
+	if(m_pBits==NULL)
+	{
+		cerr << "Memory allocation failed in CBitVector, requested size: " << 
+			m_nSize << " bytes" << endl;
+		exit(0);
+	}
 
 	memcpy(m_pBits, tBits, tSize);
 
-	delete(tBits);
+	free(tBits);
 }
 
 void CBitVector::Copy(BYTE* p, int pos, int len)
 {
-//#ifdef ASSERT
 	if( pos+len > m_nSize)
 	{
 		if(m_pBits)
 			ResizeinBytes(pos+len);
 		else
-		{
 			CreateBytes(pos+len);
-		}
 	}
-//#endif
 	memcpy (m_pBits+pos, p, len);
 }
 
@@ -136,7 +151,7 @@ void CBitVector::SetBits(BYTE* p, int pos, int len)
 	}
 	if(!((pos & 0x07) || (len & 0x07)))
 	{
-
+	
 		SetBytes(p, pos>>3, len>>3);
 		return;
 	}

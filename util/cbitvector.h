@@ -8,12 +8,12 @@
 #ifndef CBITVECTOR_H_
 #define CBITVECTOR_H_
 
-#ifdef OTEXT_USE_OPENSSL
-#include <openssl/sha.h>
-#else
-#include "../util/sha1.h"
-#endif
-#include "../util/aes.h"
+//#ifdef OTEXT_USE_OPENSSL
+
+//#else
+//#include "../util/sha1.h"
+//#endif
+//#include "../util/aes.h"
 #include "../util/typedefs.h"
 #include <math.h>
 #include <iostream>
@@ -112,16 +112,16 @@ static const size_t SHIFTVAL = 3;//sizeof(REGSIZE);
 class CBitVector
 {
 public:
-	CBitVector(){ m_pBits =  NULL; m_nSize = 0; m_nKey.rounds = 0;}
-	CBitVector(int bits){ m_pBits =  NULL; m_nSize = 0; m_nKey.rounds = 0; Create(bits);}
+	CBitVector(){ m_pBits =  NULL; m_nSize = 0; m_bKeyInit = false;}
+	CBitVector(int bits){ m_pBits =  NULL; m_nSize = 0; m_bKeyInit = false; Create(bits);}
 	CBitVector(int bits, BYTE* seed, int& cnt){ m_pBits =  NULL;
-	m_nSize = 0; m_nKey.rounds = 0; Create(bits, seed, cnt);}
+	m_nSize = 0; m_bKeyInit = false; Create(bits, seed, cnt);}
 
 	//~CBitVector(){ if(m_pBits) free(m_pBits); }
 	void delCBitVector(){ if(m_pBits) free(m_pBits); }
 
 	/* Use this function to initialize the AES round key which can then be used to generate further random bits */
-	void InitRand(BYTE* seed) {	private_AES_set_encrypt_key(seed, AES_KEY_BITS, &m_nKey); }
+	void InitRand(BYTE* seed);
 
 	/* Fill the bitvector with random values and pre-initialize the key to the seed-key*/
 	void FillRand(int bits, BYTE* seed, int& cnt);
@@ -289,7 +289,8 @@ public:
 private:
 	BYTE*		m_pBits;
 	int			m_nSize;
-	AES_KEY 	m_nKey;
+	AES_KEY_CTX 	m_nKey;
+	BOOL 		m_bKeyInit;
 	int 		m_nBits; //The exact number of bits
 	int			m_nElementLength;
 	int 		m_nNumElements;

@@ -125,7 +125,7 @@ BOOL OTExtensionReceiver::OTReceiverRoutine(int id, int myNumOTs)
 
  		if(m_bProtocol != R_OT)
  		{
-			while(nProgress + NUMOTBLOCKS*OTEXT_BLOCK_SIZE_BITS < i)
+			while(nProgress + NUMOTBLOCKS*OTEXT_BLOCK_SIZE_BITS*2 < i)
 			{
 				ReceiveAndProcess(vRcv, id, nProgress, min(lim-nProgress, NUMOTBLOCKS*OTEXT_BLOCK_SIZE_BITS));
 				nProgress += min(lim-nProgress, NUMOTBLOCKS*OTEXT_BLOCK_SIZE_BITS);
@@ -205,6 +205,7 @@ void OTExtensionReceiver::HashValues(CBitVector& T, int ctr, int processedOTs)
 	BYTE hash_buf[numhashiters * SHA1_BYTES];
 	SHA_BUFFER sha_buf;
 	SHA_CTX sha;
+
 	for(int hash_ctr, i = ctr; i < ctr+processedOTs; i++, Tptr+=OTEXT_BLOCK_SIZE_BYTES)
 	{
 		sha_buf.data = hash_buf;
@@ -479,6 +480,7 @@ void OTExtensionSender::MaskInputs(CBitVector& Q, CBitVector* SndBuf, int ctr, i
 	SHA_BUFFER sha_buf;
 	BYTE hash_buf[numhashiters * SHA1_BYTES];
 	BYTE* Qptr = Q.GetArr();
+
 	for(int i = ctr, j = 0; j<processedOTs; i++, j++)
 	{
 		OTEXT_HASH_INIT(&sha);

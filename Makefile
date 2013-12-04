@@ -1,6 +1,6 @@
 CC=g++
 OT=ot
-LIBRARIES=-lpthread util/Miracl/miracl.a #-lgmp -lgmpxx 
+LIBRARIES=-lpthread util/Miracl/miracl.a -lssl -lcrypto #-lgmp -lgmpxx 
 MIRACL_PATH= -I./util/Miracl
 SOURCES_UTIL=util/*.cpp
 OBJECTS_UTIL=util/*.o

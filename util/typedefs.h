@@ -8,8 +8,7 @@
 //#define OTEXT_USE_GMP
 #define OTEXT_USE_ECC
 #define VERIFY_OT
-//#define OTEXT_USE_OPENSSL
-#define NUMOTBLOCKS 32
+#define NUMOTBLOCKS 128
 
 
 static int CEIL_LOG2(int bits)
@@ -83,9 +82,11 @@ typedef REGISTER_SIZE REGSIZE;
 
 #define VECTOR_INTERNAL_SIZE 8
 
-#ifdef OTEXT_USE_OPENSSL
 
 #include <openssl/evp.h>
+#include <openssl/sha.h>
+#include <openssl/aes.h>
+
 #define AES_KEY_CTX EVP_CIPHER_CTX
 #define OTEXT_HASH_INIT(sha) SHA_Init(sha)
 #define OTEXT_HASH_UPDATE(sha, buf, bufsize) SHA_Update(sha, buf, bufsize)
@@ -99,18 +100,6 @@ static int otextaesencdummy;
 	EVP_EncryptInit_ex(ctx, EVP_aes_128_ecb(), NULL, buf, ZERO_IV); \
 	}
 #define OTEXT_AES_ENCRYPT(keyctx, outbuf, inbuf) EVP_EncryptUpdate(keyctx, outbuf, &otextaesencdummy, inbuf, AES_BYTES)
-
-#else
-
-#define AES_KEY_CTX AES_KEY
-#define OTEXT_HASH_INIT(sha) sha1_starts(sha)
-#define OTEXT_HASH_UPDATE(sha, buf, bufsize) sha1_update(sha, buf, bufsize)
-#define OTEXT_HASH_FINAL(sha, sha_buf) sha1_finish(sha, sha_buf)
-
-#define OTEXT_AES_KEY_INIT(ctx, buf) private_AES_set_encrypt_key(buf, AES_KEY_BITS, ctx)
-#define OTEXT_AES_ENCRYPT(keyctx, outbuf, inbuf) AES_encrypt(inbuf, outbuf, keyctx)
-
-#endif
 
 
 

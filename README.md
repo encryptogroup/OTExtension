@@ -4,13 +4,13 @@ OT extension implementation of the paper [1]. Implements the general OT (G_OT), 
 --- COMPILE ---
 Linux: 
 Required compiler: g++
-Required libraries: OpenSSL
+Required libraries: OpenSSL (e.g., on Ubuntu run "sudo apt-get install libssl-dev")
 1) Compile Miracl in util/Miracl either using "bash linux" or "bash linux64" (see util/Miracl/first.txt for more information)
 2) Compile OT extension by executing make
 
 Windows:
 Required compiler: mingw32
-Required libraries: OpenSSL (the OpenSSL library is part of the msysDTK in mingw32 and its use can be enabled.) 
+Required libraries: OpenSSL (the OpenSSL library is part of msys in mingw, can be installed using mingw-get, and the windows $PATH variable has to be set to [PATH_TO_MINGW]\msys\1.0\bin\.) 
 1) Compile Miracl in util/Miracl using windows32.bat
 2) Compile OT extension by invoking Makefile.bat
 

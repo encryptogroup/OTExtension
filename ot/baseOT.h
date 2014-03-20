@@ -20,6 +20,7 @@
 #include <fstream>
 #include <time.h>
 #ifdef OTEXT_USE_GMP
+#include <gmp.h>
 #include "brick.h"
 #include "double-exp.h"
 #endif

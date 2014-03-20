@@ -14,7 +14,7 @@ BOOL Init()
 	m_nCounter = 0;
 
 	//Number of threads that will be used in OT extension
-	m_nNumOTThreads = 1;
+	m_nNumOTThreads = 2;
 
 	m_vSockets.resize(m_nNumOTThreads);
 
@@ -286,6 +286,7 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 	return success;
 }
 
+
 int main(int argc, char** argv)
 {
 	const char* addr = "127.0.0.1";
@@ -301,28 +302,28 @@ int main(int argc, char** argv)
 	m_nPID = atoi(argv[1]);
 	cout << "Playing as role: " << m_nPID << endl;
 	//the number of OTs that are performed. Has to be initialized to a certain minimum size due to
-	int numOTs = 10000000;
+	int numOTs = 1000000;
 	//bitlength of the values that are transferred - NOTE that when bitlength is not 1 or a multiple of 8, the endianness has to be observed
 	int bitlength = 80;
-	//The masking function with which the values that are sent in the last communication step are processed
-	//Choose OT extension version: G_OT, C_OT or R_OT
-	BYTE version = C_OT;
+
 	//Use elliptic curve cryptography in the base-OTs
 	m_bUseECC = true;
 	//The security parameter (163,233,283 for ECC or 1024, 2048, 3072 for FFC)
 	m_nSecParam = 163;
 
+	//Specifies whether G_OT, C_OT, or R_OT should be used
+	BYTE version;
 
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
 		InitOTSender(addr, port);
 
 		CBitVector delta, X1, X2;
-		//creates delta as an array with "numOTs" entries of "bitlength" bit-values and fills delta with random values
-		//for(bitlength = 1; bitlength < 66; bitlength++)
-		//{
+
+		//The masking function with which the values that are sent in the last communication step are processed
 		m_fMaskFct = new XORMasking(bitlength);
 
+		//creates delta as an array with "numOTs" entries of "bitlength" bit-values and fills delta with random values
 		delta.Create(numOTs, bitlength, m_aSeed, m_nCounter);
 		//Create X1 and X2 as two arrays with "numOTs" entries of "bitlength" bit-values and resets them to 0
 		X1.Create(numOTs, bitlength);
@@ -337,9 +338,43 @@ int main(int argc, char** argv)
 			X2.Set(i, 0xAA);
 		}
 
-		cout << "Sender performing " << numOTs << " OT extensions on " << bitlength << " bit elements" << endl;
+		/* 
+		 * G_OT (general OT) obliviously transfers (X1,X2) and omits delta. 
+		 * Inputs: 
+		 * X1,X2: strings that are obliviously transferred in the OT
+		 * delta: is unused in G_OT and does not need to be initialized
+		 * Outputs: NONE
+		*/
+		version = G_OT;
+		cout << "Sender performing " << numOTs << " G_OT extensions on " << bitlength << " bit elements" << endl;
 		ObliviouslySend(X1, X2, numOTs, bitlength, version, delta);
-		//}
+
+		/* 
+		 * C_OT (correlated OT) generates X1 at random, obliviously transfers (X1,X1 XOR delta), and outputs X1, X2.  
+		 * Inputs: 
+		 * delta: string that stores the correlation of the values in C_OT
+		 * Outputs: 
+		 * X1: is filled with random values. Needs to be a CBitVector of size bitlength*numOTs
+		 * X2: is filled with X1 XOR delta. Needs to be a CBitVector of size bitlength*numOTs
+		 * 
+		 * Note that the correlation (XOR in the example) can be changed in fMaskFct by implementing a different routine.  
+		*/
+		version = C_OT;
+		cout << "Sender performing " << numOTs << " C_OT extensions on " << bitlength << " bit elements" << endl;
+		ObliviouslySend(X1, X2, numOTs, bitlength, version, delta);
+
+
+		/* 
+		 * R_OT (random OT) generates X1 and X2 at random, obliviously transfers (X1,X2), and outputs X1, X2.  
+		 * Inputs: 
+		 * delta:  is unused in R_OT and does not need to be initialized
+		 * Outputs: 
+		 * X1: is filled with random values. Needs to be a CBitVector of size bitlength*numOTs
+		 * X2: is filled with random values. Needs to be a CBitVector of size bitlength*numOTs
+		*/
+		version = R_OT;
+		cout << "Sender performing " << numOTs << " R_OT extensions on " << bitlength << " bit elements" << endl;
+		ObliviouslySend(X1, X2, numOTs, bitlength, version, delta);
 
 		/*cout << "X1: "<< endl;
 		X1.PrintHex();
@@ -356,18 +391,33 @@ int main(int argc, char** argv)
 		InitOTReceiver(addr, port);
 
 		CBitVector choices, response;
-		//Create the bitvector choices as a bitvector with numOTs entries
-		//for(bitlength = 1; bitlength < 66; bitlength++)
-		//{
+
+		//The masking function with which the values that are sent in the last communication step are processed
 		m_fMaskFct = new XORMasking(bitlength);
+
+		//Create the bitvector choices as a bitvector with numOTs entries
 		choices.Create(numOTs, m_aSeed, m_nCounter);
 
 		//Pre-generate the respose vector for the results
 		response.Create(numOTs, bitlength);
 
-		cout << "Receiver performing " << numOTs << " OT extensions on " << bitlength << " bit elements" << endl;
+		/* 
+		 * The inputs of the receiver in G_OT, C_OT and R_OT are the same. The only difference is the version
+		 * variable that has to match the version of the sender. 
+		*/
+		
+		version = G_OT;
+		cout << "Receiver performing " << numOTs << " G_OT extensions on " << bitlength << " bit elements" << endl;
 		ObliviouslyReceive(choices, response, numOTs, bitlength, version);
-		//}
+
+		version = C_OT;
+		cout << "Receiver performing " << numOTs << " C_OT extensions on " << bitlength << " bit elements" << endl;
+		ObliviouslyReceive(choices, response, numOTs, bitlength, version);
+
+		version = R_OT;
+		cout << "Receiver performing " << numOTs << " R_OT extensions on " << bitlength << " bit elements" << endl;
+		ObliviouslyReceive(choices, response, numOTs, bitlength, version);
+
 
 		/*cout << "Choices: " << endl;
 		choices.Print(0, numOTs);

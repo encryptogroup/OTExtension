@@ -4,7 +4,7 @@
 #include "../util/typedefs.h"
 
 	#ifdef OTEXT_USE_GMP
-#include "../util/config.h"
+#include "baseOT.h"
 
 class FixedPointExp {
 public:

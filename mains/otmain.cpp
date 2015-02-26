@@ -2,24 +2,16 @@
 
 #define OTTiming
 
-BOOL Init()
+BOOL Init(crypto* crypt)
 {
-	// Random numbers
-	SHA_CTX sha;
-	OTEXT_HASH_INIT(&sha);
-	OTEXT_HASH_UPDATE(&sha, (BYTE*) &m_nPID, sizeof(m_nPID));
-	OTEXT_HASH_UPDATE(&sha, (BYTE*) m_nSeed, sizeof(m_nSeed));
-	OTEXT_HASH_FINAL(&sha, m_aSeed);
 
-	m_nCounter = 0;
 
-	//Number of threads that will be used in OT extension
-	m_nNumOTThreads = 2;
+	m_vSockets = (CSocket*) malloc(sizeof(CSocket) * m_nNumOTThreads);
 
-	m_vSockets.resize(m_nNumOTThreads);
-
-	bot = new NaorPinkas(m_nSecParam, m_aSeed, m_bUseECC);
-
+	if(m_bUseECC)
+		bot = new NaorPinkas(crypt, ECC_FIELD);
+	else
+		bot = new NaorPinkas(crypt, P_FIELD);
 	return TRUE;
 }
 
@@ -29,6 +21,7 @@ BOOL Cleanup()
 	{
 		m_vSockets[i].Close();
 	}
+	free(m_vSockets);
 	return true;
 }
 
@@ -139,7 +132,7 @@ listen_failure:
 
 
 
-void InitOTSender(const char* address, int port)
+void InitOTSender(const char* address, int port, crypto* crypt)
 {
 	int nSndVals = 2;
 #ifdef OTTiming
@@ -147,10 +140,10 @@ void InitOTSender(const char* address, int port)
 #endif
 	m_nPort = (USHORT) port;
 	m_nAddr = address;
-	vKeySeeds = (BYTE*) malloc(AES_KEY_BYTES*NUM_EXECS_NAOR_PINKAS);
+	vKeySeeds = (BYTE*) malloc(crypt->get_aes_key_bytes()*crypt->get_seclvl().symbits);
 	
 	//Initialize values
-	Init();
+	Init(crypt);
 	
 	//Server listen
 	Listen();
@@ -159,26 +152,26 @@ void InitOTSender(const char* address, int port)
 	gettimeofday(&np_begin, NULL);
 #endif	
 
-	PrecomputeNaorPinkasSender();
+	PrecomputeNaorPinkasSender(crypt);
 
 #ifdef OTTiming
 	gettimeofday(&np_end, NULL);
 	printf("Time for performing the NP base-OTs: %f seconds\n", getMillies(np_begin, np_end));
 #endif	
 
-	sender = new OTExtensionSender (nSndVals, m_vSockets.data(), U, vKeySeeds);
+	sender = new OTExtensionSender (nSndVals, crypt, m_vSockets, U, vKeySeeds);
 }
 
-void InitOTReceiver(const char* address, int port)
+void InitOTReceiver(const char* address, int port, crypto* crypt)
 {
 	int nSndVals = 2;
 	timeval np_begin, np_end;
 	m_nPort = (USHORT) port;
 	m_nAddr = address;
 	//vKeySeedMtx = (AES_KEY*) malloc(sizeof(AES_KEY)*NUM_EXECS_NAOR_PINKAS * nSndVals);
-	vKeySeedMtx = (BYTE*) malloc(AES_KEY_BYTES*NUM_EXECS_NAOR_PINKAS * nSndVals);
+	vKeySeedMtx = (BYTE*) malloc(crypt->get_aes_key_bytes()*crypt->get_seclvl().symbits * nSndVals);
 	//Initialize values
-	Init();
+	Init(crypt);
 	
 	//Client connect
 	Connect();
@@ -187,65 +180,64 @@ void InitOTReceiver(const char* address, int port)
 	gettimeofday(&np_begin, NULL);
 #endif
 
-	PrecomputeNaorPinkasReceiver();
+	PrecomputeNaorPinkasReceiver(crypt);
 	
 #ifdef OTTiming
 	gettimeofday(&np_end, NULL);
 	printf("Time for performing the NP base-OTs: %f seconds\n", getMillies(np_begin, np_end));
 #endif	
 
-	receiver = new OTExtensionReceiver(nSndVals, m_vSockets.data(), vKeySeedMtx, m_aSeed);
+	receiver = new OTExtensionReceiver(nSndVals, crypt, m_vSockets, vKeySeedMtx);
 }
 
-BOOL PrecomputeNaorPinkasSender()
+BOOL PrecomputeNaorPinkasSender(crypto* crypt)
 {
 
 	int nSndVals = 2;
-	BYTE* pBuf = new BYTE[NUM_EXECS_NAOR_PINKAS * SHA1_BYTES]; 
-	int log_nVals = (int) ceil(log(nSndVals)/log(2)), cnt = 0;
+	BYTE* pBuf = (BYTE*) malloc(sizeof(BYTE) * crypt->get_seclvl().symbits * crypt->get_hash_bytes());
 	
-	U.Create(NUM_EXECS_NAOR_PINKAS*log_nVals, m_aSeed, cnt);
+	U.Create(crypt->get_seclvl().symbits, crypt);
 	
-	bot->Receiver(nSndVals, NUM_EXECS_NAOR_PINKAS, U, m_vSockets[0], pBuf);
+	bot->Receiver(nSndVals, crypt->get_seclvl().symbits, U, m_vSockets, pBuf);
 	
 	//Key expansion
 	BYTE* pBufIdx = pBuf;
-	for(int i=0; i<NUM_EXECS_NAOR_PINKAS; i++ ) //80 HF calls for the Naor Pinkas protocol
+	for(int i=0; i<crypt->get_seclvl().symbits; i++ ) //80 HF calls for the Naor Pinkas protocol
 	{
-		memcpy(vKeySeeds + i * AES_KEY_BYTES, pBufIdx, AES_KEY_BYTES);
-		pBufIdx+=SHA1_BYTES;
+		memcpy(vKeySeeds + i * crypt->get_aes_key_bytes(), pBufIdx, crypt->get_aes_key_bytes());
+		pBufIdx+=crypt->get_hash_bytes();
 	} 
- 	delete [] pBuf;	
+ 	free(pBuf);
 
  	return true;
 }
 
-BOOL PrecomputeNaorPinkasReceiver()
+BOOL PrecomputeNaorPinkasReceiver(crypto* crypt)
 {
 	int nSndVals = 2;
 	
 	// Execute NP receiver routine and obtain the key 
-	BYTE* pBuf = new BYTE[SHA1_BYTES * NUM_EXECS_NAOR_PINKAS * nSndVals];
+	BYTE* pBuf = (BYTE*) malloc(crypt->get_hash_bytes() * crypt->get_seclvl().symbits * nSndVals);
 
 	//=================================================	
 	// N-P sender: send: C0 (=g^r), C1, C2, C3 
-	bot->Sender(nSndVals, NUM_EXECS_NAOR_PINKAS, m_vSockets[0], pBuf);
+	bot->Sender(nSndVals, crypt->get_seclvl().symbits, m_vSockets, pBuf);
 	
 	//Key expansion
 	BYTE* pBufIdx = pBuf;
-	for(int i=0; i<NUM_EXECS_NAOR_PINKAS * nSndVals; i++ )
+	for(int i=0; i<crypt->get_seclvl().symbits * nSndVals; i++ )
 	{
-		memcpy(vKeySeedMtx + i * AES_KEY_BYTES, pBufIdx, AES_KEY_BYTES);
-		pBufIdx += SHA1_BYTES;
+		memcpy(vKeySeedMtx + i * crypt->get_aes_key_bytes(), pBufIdx, crypt->get_aes_key_bytes());
+		pBufIdx += crypt->get_hash_bytes();
 	}
 	
-	delete [] pBuf;	
+	//free(pBuf);
 
 	return true;
 }
 
 
-BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, BYTE version, CBitVector& delta)
+BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, BYTE version, crypto* crypt)
 {
 	bool success = FALSE;
 	int nSndVals = 2; //Perform 1-out-of-2 OT
@@ -258,7 +250,7 @@ BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, 
 	gettimeofday(&ot_begin, NULL);
 #endif
 	// Execute OT sender routine 	
-	success = sender->send(numOTs, bitlength, X1, X2, delta, version, m_nNumOTThreads, m_fMaskFct);
+	success = sender->send((uint32_t) numOTs, (uint32_t) bitlength, X1, X2, version, m_nNumOTThreads, m_fMaskFct);
 	
 #ifdef OTTiming
 	gettimeofday(&ot_end, NULL);
@@ -267,7 +259,7 @@ BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, 
 	return success;
 }
 
-BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, BYTE version)
+BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, BYTE version, crypto* crypt)
 {
 	bool success = FALSE;
 
@@ -308,23 +300,28 @@ int main(int argc, char** argv)
 
 	//Use elliptic curve cryptography in the base-OTs
 	m_bUseECC = true;
-	//The security parameter (163,233,283 for ECC or 1024, 2048, 3072 for FFC)
-	m_nSecParam = 163;
+	//The symmetric security parameter (80, 112, 128)
+	m_nSecParam = 128;
+
+	//Number of threads that will be used in OT extension
+	m_nNumOTThreads = 1;
 
 	//Specifies whether G_OT, C_OT, or R_OT should be used
 	BYTE version;
 
+	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_vSeed);
+
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
-		InitOTSender(addr, port);
+		InitOTSender(addr, port, crypt);
 
 		CBitVector delta, X1, X2;
 
 		//The masking function with which the values that are sent in the last communication step are processed
-		m_fMaskFct = new XORMasking(bitlength);
+		m_fMaskFct = new XORMasking(bitlength, delta);
 
 		//creates delta as an array with "numOTs" entries of "bitlength" bit-values and fills delta with random values
-		delta.Create(numOTs, bitlength, m_aSeed, m_nCounter);
+		delta.Create(numOTs, bitlength, crypt);
 		//Create X1 and X2 as two arrays with "numOTs" entries of "bitlength" bit-values and resets them to 0
 		X1.Create(numOTs, bitlength);
 		X1.Reset();
@@ -347,7 +344,7 @@ int main(int argc, char** argv)
 		*/
 		version = G_OT;
 		cout << "Sender performing " << numOTs << " G_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslySend(X1, X2, numOTs, bitlength, version, delta);
+		ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
 
 		/* 
 		 * C_OT (correlated OT) generates X1 at random, obliviously transfers (X1,X1 XOR delta), and outputs X1, X2.  
@@ -361,7 +358,7 @@ int main(int argc, char** argv)
 		*/
 		version = C_OT;
 		cout << "Sender performing " << numOTs << " C_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslySend(X1, X2, numOTs, bitlength, version, delta);
+		ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
 
 
 		/* 
@@ -374,7 +371,7 @@ int main(int argc, char** argv)
 		*/
 		version = R_OT;
 		cout << "Sender performing " << numOTs << " R_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslySend(X1, X2, numOTs, bitlength, version, delta);
+		ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
 
 		/*cout << "X1: "<< endl;
 		X1.PrintHex();
@@ -388,7 +385,7 @@ int main(int argc, char** argv)
 	}
 	else //Play as OT receiver
 	{
-		InitOTReceiver(addr, port);
+		InitOTReceiver(addr, port, crypt);
 
 		CBitVector choices, response;
 
@@ -396,7 +393,7 @@ int main(int argc, char** argv)
 		m_fMaskFct = new XORMasking(bitlength);
 
 		//Create the bitvector choices as a bitvector with numOTs entries
-		choices.Create(numOTs, m_aSeed, m_nCounter);
+		choices.Create(numOTs, crypt);
 
 		//Pre-generate the respose vector for the results
 		response.Create(numOTs, bitlength);
@@ -408,15 +405,15 @@ int main(int argc, char** argv)
 		
 		version = G_OT;
 		cout << "Receiver performing " << numOTs << " G_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslyReceive(choices, response, numOTs, bitlength, version);
+		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
 
 		version = C_OT;
 		cout << "Receiver performing " << numOTs << " C_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslyReceive(choices, response, numOTs, bitlength, version);
+		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
 
 		version = R_OT;
 		cout << "Receiver performing " << numOTs << " R_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslyReceive(choices, response, numOTs, bitlength, version);
+		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
 
 
 		/*cout << "Choices: " << endl;
@@ -424,6 +421,7 @@ int main(int argc, char** argv)
 		cout << "Response: " << endl;
 		response.PrintHex();*/
 	}
+	delete crypt;
 	Cleanup();
 
 	return 1;

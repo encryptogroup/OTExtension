@@ -1,6 +1,6 @@
 #include "naor-pinkas_noro.h"
 
-#ifdef OTEXT_USE_GMP
+/*#ifdef OTEXT_USE_GMP
 
 BOOL NaorPinkasNoRO::ReceiverIFC(int nSndVals, int nOTs, CBitVector& choices, CSocket& socket, BYTE* ret)
 {
@@ -222,12 +222,12 @@ BOOL NaorPinkasNoRO::SenderIFC(int nSndVals, int nOTs, CSocket& socket, BYTE* re
 
 	return true;
 }
-#endif
+#endif*/
 
 
-BOOL NaorPinkasNoRO::ReceiverECC(int nSndVals, int nOTs, CBitVector& choices, CSocket& socket, BYTE* ret)
+void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, CSocket* sock, BYTE* ret)
 {
-	//EC2 G;
+/*	//EC2 G;
     	//G=EC2(*m_X,*m_Y);
     	irand((long) 1);//TODO use seed from state!
     	//cout << " g = " << G << endl;
@@ -341,15 +341,15 @@ BOOL NaorPinkasNoRO::ReceiverECC(int nSndVals, int nOTs, CBitVector& choices, CS
 	}
 	Miracl_brickend(&bx);//ebrick2_end(&bx);
 	Miracl_brickend(&bg);//ebrick2_end(&bg);
-	return true;
+	return true;*/
 }
 
 
 
 
-BOOL NaorPinkasNoRO::SenderECC(int nSndVals, int nOTs, CSocket& socket, BYTE* ret) 
+void NaorPinkasNoRO::Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* sock, BYTE* ret)
 {
-	Big s0[nOTs], s1[nOTs], r0[nOTs], r1[nOTs], w, xtmp, ytmp;
+	/*Big s0[nOTs], s1[nOTs], r0[nOTs], r1[nOTs], w, xtmp, ytmp;
 #ifdef USE_PRIME_FIELD	
 	ECn g, w0, w1, R0, R1, x, y, Y, Z0, Z1, z0, z1, ztmp;
 	ebrick bg, bx;
@@ -462,6 +462,6 @@ BOOL NaorPinkasNoRO::SenderECC(int nSndVals, int nOTs, CSocket& socket, BYTE* re
 	Miracl_brickend(&bx);//ebrick2_end(&bx);
 	Miracl_brickend(&bg);//ebrick2_end(&bg);
 
-	return true;
+	return true;*/
 }
 

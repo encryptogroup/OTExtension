@@ -6,27 +6,20 @@
 #define __Naor_Pinkas_NORO_H_
 
 #include "baseOT.h"
-#include "double-exp.h"
 
 class NaorPinkasNoRO : public BaseOT
 {
 
 	public:
 
-	NaorPinkasNoRO(){};
 	~NaorPinkasNoRO(){};
 	
-	NaorPinkasNoRO(int secparam, BYTE* seed, bool useecc){Init(secparam, seed, useecc);};
+	NaorPinkasNoRO(crypto* crypt, field_type ftype) :
+		BaseOT(crypt, ftype) {
+}
+	void Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, CSocket* sock, BYTE* ret);
+	void Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* sock, BYTE* ret);
 
-#ifdef OTEXT_USE_GMP
-	// Sender and receiver method using GMP
-	BOOL ReceiverIFC(int nSndVals, int nOTs, CBitVector& choices, CSocket& sock, BYTE* ret);
-	BOOL SenderIFC(int nSndVals, int nOTs, CSocket& sock,  BYTE* ret);
-#endif
-	
-	// Sender and receiver method using Miracl
-	BOOL ReceiverECC(int nSndVals, int nOTs, CBitVector& choices, CSocket& sock, BYTE* ret);
-	BOOL SenderECC(int nSndVals, int nOTs, CSocket& sock, BYTE* ret);
 
 	
 };

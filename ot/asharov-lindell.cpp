@@ -1,6 +1,7 @@
 #include "asharov-lindell.h"
 
-#ifdef OTEXT_USE_GMP
+
+/*#ifdef OTEXT_USE_GMP
 
 BOOL AsharovLindell::ReceiverIFC(int nSndVals, int nOTs, CBitVector& choices, CSocket& socket, BYTE* ret)
 {
@@ -146,12 +147,11 @@ BOOL AsharovLindell::SenderIFC(int nSndVals, int nOTs, CSocket& socket, BYTE* re
 
 	return true;
 }
-#endif
+#endif*/
 
-
-BOOL AsharovLindell::ReceiverECC(int nSndVals, int nOTs, CBitVector& choices, CSocket& socket, BYTE* ret)
+void AsharovLindell::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, CSocket* sock, BYTE* ret)
 {
-	int coordSize = (m_SecParam+7)/8;//(state.field_size/8) + 4;
+	/*int coordSize = (m_SecParam+7)/8;//(state.field_size/8) + 4;
 	int nBufSize = nSndVals * (coordSize+1) * nOTs;
 
 #ifdef USE_PRIME_FIELD
@@ -243,14 +243,13 @@ BOOL AsharovLindell::ReceiverECC(int nSndVals, int nOTs, CBitVector& choices, CS
 	
 	Miracl_brickend(&bu);
 	Miracl_brickend(&bg);
-	
-	return true;
+	*/
 }
 
 
-BOOL AsharovLindell::SenderECC(int nSndVals, int nOTs, CSocket& socket, BYTE* ret)
+void AsharovLindell::Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* sock, BYTE* ret)
 {
-	//buffer for sending u
+/*	//buffer for sending u
 	int coordSize = (m_SecParam+7)/8;//(state.field_size/8) + 4;
 	int nBufSize = (coordSize+1);
 #ifdef USE_PRIME_FIELD
@@ -306,6 +305,6 @@ BOOL AsharovLindell::SenderECC(int nSndVals, int nOTs, CSocket& socket, BYTE* re
 		pBufIdx += coordSize+1;
 		retPtr += SHA1_BYTES;
 	}
-
-	return true;
+*/
 }
+

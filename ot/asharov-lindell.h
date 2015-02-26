@@ -13,20 +13,14 @@
 class AsharovLindell : public BaseOT
 {
 	public:
-	AsharovLindell(){};
 	~AsharovLindell(){};
 
-	AsharovLindell(int secparam, BYTE* seed, bool useecc){Init(secparam, seed, useecc);};
-
-#ifdef OTEXT_USE_GMP
-	// Sender and receiver method using GMP
-	BOOL ReceiverIFC(int nSndVals, int nOTs, CBitVector& choices, CSocket& sock, BYTE* ret);
-	BOOL SenderIFC(int nSndVals, int nOTs, CSocket& sock, BYTE* ret);
-#endif
-	
-	// Sender and receiver method using Miracl
-	BOOL ReceiverECC(int nSndVals, int nOTs, CBitVector& choices, CSocket& sock, BYTE* ret);
-	BOOL SenderECC(int nSndVals, int nOTs, CSocket& sock, BYTE* ret);
+	AsharovLindell(crypto* crypt, field_type ftype) :
+		BaseOT(crypt, ftype) {
+}
+;
+	void Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, CSocket* sock, BYTE* ret);
+	void Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* sock, BYTE* ret);
 
 
 };

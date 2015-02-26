@@ -1,5 +1,8 @@
-/*
- * Compute the Naor-Pinkas Base OTs
+/**
+ \file 		naor-pinkas.h
+ \author 	michael.zohner@ec-spride.de
+ \copyright __________________
+ \brief		Compute the Naor-Pinkas Base OTs
  */
 
 #ifndef __Naor_Pinkas_H_
@@ -7,29 +10,22 @@
 
 #include "baseOT.h"
 
-class NaorPinkas : public BaseOT
-{
+class NaorPinkas : public BaseOT {
 
-	public:
+public:
 
-	NaorPinkas(){};
-	~NaorPinkas(){};
-	
-	NaorPinkas(int secparam, BYTE* seed, bool useecc){Init(secparam, seed, useecc);};
+	NaorPinkas(crypto* crypt, field_type ftype) :
+			BaseOT(crypt, ftype) {
+	}
+	;
+	//TODO call super class to delete the pkcrypto object
+	~NaorPinkas() {
+	}
+	;
 
-	// Sender and receiver method using GMP
-#ifdef OTEXT_USE_GMP
-	BOOL ReceiverIFC(int nSndVals, int nOTs, CBitVector& choices, CSocket& sock, BYTE* ret);
-	BOOL SenderIFC(int nSndVals, int nOTs, CSocket& sock,  BYTE* ret);
-#endif
-	
-	// Sender and receiver method using Miracl
-	BOOL ReceiverECC(int nSndVals, int nOTs, CBitVector& choices, CSocket& sock, BYTE* ret);
-	BOOL SenderECC(int nSndVals, int nOTs, CSocket& sock, BYTE* ret);
+	void Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, CSocket* sock, BYTE* ret);
+	void Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* sock, BYTE* ret);
 
-	
 };
-		
-
 
 #endif

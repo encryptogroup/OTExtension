@@ -10,6 +10,17 @@
 
 #include "typedefs.h"
 
+//Defines for parameterizing the OT extension
+//#define DEBUG
+//#define FIXED_KEY_AES_HASHING
+//#define AES_OWF
+#define VERIFY_OT
+//#define OT_HASH_DEBUG
+#define OTTiming
+//#define HIGH_SPEED_ROT_LT
+
+
+
 #define AES_KEY_BITS			128
 #define AES_KEY_BYTES			16
 #define AES_BITS				128

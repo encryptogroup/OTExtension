@@ -2,9 +2,10 @@
 #define _MPC_H_
 
 #include "../util/typedefs.h"
+#include "../util/crypto/crypto.h"
 #include "../util/socket.h"
 #include "../ot/naor-pinkas.h"
-#include "../ot/asharov-lindell.h"
+//#include "../ot/asharov-lindell.h"
 #include "../ot/ot-extension.h"
 #include "../util/cbitvector.h"
 #include "../ot/xormasking.h"
@@ -24,21 +25,21 @@ static const char* m_nSeed = "437398417012387813714564100";
 USHORT		m_nPort = 7766;
 const char* m_nAddr ;// = "localhost";
 
-BOOL Init();
+BOOL Init(crypto* crypt);
 BOOL Cleanup();
 BOOL Connect();
 BOOL Listen();
 
-void InitOTSender(const char* address, int port);
-void InitOTReceiver(const char* address, int port);
+void InitOTSender(const char* address, int port, crypto* crypt);
+void InitOTReceiver(const char* address, int port, crypto* crypt);
 
-BOOL PrecomputeNaorPinkasSender();
-BOOL PrecomputeNaorPinkasReceiver();
-BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, BYTE version);
-BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, BYTE version, CBitVector& delta);
+BOOL PrecomputeNaorPinkasSender(crypto* crypt);
+BOOL PrecomputeNaorPinkasReceiver(crypto* crypt);
+BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, BYTE version, crypto* crypt);
+BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, BYTE version, crypto* crypt);
 
 // Network Communication
-vector<CSocket> m_vSockets;
+CSocket* m_vSockets;
 int m_nPID; // thread id
 int m_nSecParam; 
 bool m_bUseECC;
@@ -56,10 +57,6 @@ BYTE *vKeySeedMtx;
 
 int m_nNumOTThreads;
 
-// SHA PRG
-BYTE				m_aSeed[SHA1_BYTES];
-int			m_nCounter;
-double			rndgentime;
-
+double rndgentime;
 
 #endif //_MPC_H_

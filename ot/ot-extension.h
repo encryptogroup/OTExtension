@@ -1,5 +1,8 @@
-/*
- * Methods for the OT Extension routine
+/**
+ \file 		ot-extension.h
+ \author 	michael.zohner@ec-spride.de
+ \copyright __________________
+ \brief		Methods for the OT Extension routine
  */
 
 #ifndef __OT_EXTENSION_H_
@@ -9,175 +12,295 @@
 #include "../util/socket.h"
 #include "../util/thread.h"
 #include "../util/cbitvector.h"
+#include "../util/crypto/crypto.h"
 #include "maskingfunction.h"
+#include "../util/constants.h"
 
 
-//#define DEBUG
 
-const BYTE	G_OT = 0x01;
-const BYTE 	C_OT = 0x02;
-const BYTE	R_OT = 0x03;
+typedef struct OTBlock_t {
+	int blockid;
+	int processedOTs;
+	BYTE* snd_buf;
+	OTBlock_t* next;
+} OTBlock;
 
+#ifdef FIXED_KEY_AES_HASHING
+static const uint8_t fixed_key_aes_seed[32] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
+		0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF };
+#endif
 
-static void InitAESKey(AES_KEY_CTX* ctx, BYTE* keybytes, int numkeys)
-{
+static void InitAESKey(AES_KEY_CTX* ctx, BYTE* keybytes, uint32_t numkeys, crypto* crypt) {
 	BYTE* pBufIdx = keybytes;
-	for(int i=0; i<numkeys; i++ )
-	{
-		OTEXT_AES_KEY_INIT(ctx+i, pBufIdx);
-		pBufIdx += AES_KEY_BYTES;
+	uint32_t aes_key_bytes = crypt->get_aes_key_bytes();
+	for (uint32_t i = 0; i < numkeys; i++) {
+		crypt->init_aes_key(ctx + i, pBufIdx);
+		pBufIdx += aes_key_bytes;
 	}
 }
 
+#define OWF_BYTES AES_BYTES
+
 class OTExtensionSender {
-/*
- * OT sender part
- * Input: 
- * ret: returns the resulting bit representations. Has to initialized to a byte size of: nOTs * nSndVals * state.field_size
- * 
- * CBitVector* values: holds the values to be transferred. If C_OT is enabled, the first dimension holds the value while the delta is written into the second dimension
- * Output: was the execution successful?
- */
-  public:
-	OTExtensionSender(int nSndVals, int nOTs, int bitlength, CSocket* sock, CBitVector& U, BYTE* keybytes, CBitVector& x0, CBitVector& x1,
-			CBitVector& delta, BYTE type) {
-		m_nSndVals = nSndVals;
-		m_nOTs = nOTs; 
-		m_nSockets = sock;
-		m_nU = U;
+	/*
+	 * OT sender part
+	 * Input: 
+	 * ret: returns the resulting bit representations. Has to initialized to a byte size of: nOTs * nSndVals * state.field_size
+	 * 
+	 * CBitVector* values: holds the values to be transferred. If C_OT is enabled, the first dimension holds the value while the delta is written into the second dimension
+	 * Output: was the execution successful?
+	 */
+public:
+	OTExtensionSender(uint32_t nSndVals, uint32_t nOTs, uint32_t bitlength, crypto* crypt, CSocket* sock, CBitVector& U, BYTE* keybytes, CBitVector& x0, CBitVector& x1, BYTE type,
+			int nbaseOTs = -1, int nchecks = -1, int nbaseseeds = -1) {
+		Init(nSndVals, crypt, sock, U, keybytes, nbaseOTs, nchecks, nbaseseeds);
+		m_nOTs = nOTs;
 		m_vValues[0] = x0;
 		m_vValues[1] = x1;
-		m_vDelta = delta;
 		m_nBitLength = bitlength;
 		m_bProtocol = type;
-		m_nCounter = 0;
-		m_vKeySeeds = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * NUM_EXECS_NAOR_PINKAS);
-		InitAESKey(m_vKeySeeds, keybytes, NUM_EXECS_NAOR_PINKAS);
+	}
+	;
 
-	};
-	OTExtensionSender(int nSndVals, CSocket* sock, CBitVector& U, BYTE* keybytes) {
+	OTExtensionSender(uint32_t nSndVals, crypto* crypt, CSocket* sock, CBitVector& U, BYTE* keybytes, int nbaseOTs = -1, int nchecks = -1, int nbaseseeds = -1) {
+		Init(nSndVals, crypt, sock, U, keybytes, nbaseOTs, nchecks, nbaseseeds);
+	}
+	;
+
+	void Init(uint32_t nSndVals, crypto* crypt, CSocket* sock, CBitVector& U, BYTE* keybytes, int nbaseOTs, int nchecks, int nbaseseeds) {
 		m_nSndVals = nSndVals;
-		m_nSockets = sock;
-		m_nU = U;
+		m_vSockets = sock;
 		m_nCounter = 0;
-		m_vKeySeeds = (AES_KEY_CTX*) malloc(sizeof(AES_KEY) * NUM_EXECS_NAOR_PINKAS);
-		InitAESKey(m_vKeySeeds, keybytes, NUM_EXECS_NAOR_PINKAS);
-	};
-	
-	~OTExtensionSender(){free(m_vKeySeeds);};
-	BOOL send(int numOTs, int bitlength, CBitVector& s0, CBitVector& s1, CBitVector& delta, BYTE type, int numThreads, MaskingFunction* maskfct);
+		m_cCrypt = crypt;
+		m_nSymSecParam = m_cCrypt->get_seclvl().symbits;
+		m_nBaseOTs = m_nSymSecParam;
 
-	BOOL send(int numThreads);
+		if (nbaseOTs != -1)
+			m_nBaseOTs = nbaseOTs;
 
-	BOOL OTSenderRoutine(int id, int myNumOTs);
-	void BuildQMatrix(CBitVector& T, CBitVector& RcvBuf, int blocksize, BYTE* ctr);
-	void ProcessAndSend(CBitVector* snd_buf, int id, int progress, int processedOTs);
-	void MaskInputs(CBitVector& Q, CBitVector* SndBuf, int ctr, int processedOTs);
-	BOOL verifyOT(int myNumOTs);
+		int keyseeds = m_nBaseOTs;
+		if (nbaseseeds != -1)
+			keyseeds = nbaseseeds;
 
+		m_vU.Create(keyseeds);
+		m_vU.Copy(U.GetArr(), 0, ceil_divide(keyseeds, 8));
+		for (int i = keyseeds; i < PadToMultiple(keyseeds, 8); i++)
+			m_vU.SetBit(i, 0);
 
-  private: 
+		m_vValues = (CBitVector*) malloc(sizeof(CBitVector) * nSndVals);
+		m_vKeySeeds = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * keyseeds);
+		m_lSendLock = new CLock;
+
+		InitAESKey(m_vKeySeeds, keybytes, keyseeds, m_cCrypt);
+
+#ifdef FIXED_KEY_AES_HASHING
+		m_kCRFKey = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX));
+		m_cCrypt->init_aes_key(m_kCRFKey, (uint8_t*) fixed_key_aes_seed);
+#endif
+	}
+	;
+
+	~OTExtensionSender() {
+		free(m_vKeySeeds);
+	}
+	;
+	BOOL send(uint32_t numOTs, uint32_t bitlength, CBitVector& s0, CBitVector& s1, BYTE type, uint32_t numThreads, MaskingFunction* maskfct);
+	BOOL send(uint32_t numThreads);
+
+	BOOL OTSenderRoutine(uint32_t id, uint32_t myNumOTs);
+
+	void BuildQMatrix(CBitVector& T, CBitVector& RcvBuf, uint32_t blocksize, BYTE* ctr);
+	void ProcessAndEnqueue(CBitVector* snd_buf, uint32_t id, uint32_t progress, uint32_t processedOTs);
+	void SendBlocks(uint32_t numThreads);
+	void MaskInputs(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint32_t ctr, uint32_t processedOTs);
+	BOOL verifyOT(uint32_t myNumOTs);
+
+protected:
 	BYTE m_bProtocol;
-  	int m_nSndVals;
-  	int m_nOTs;
-  	int m_nBitLength;
-  	int m_nCounter;
-  	CSocket* m_nSockets;
-  	CBitVector m_nU;
-  	AES_KEY* m_nKeySeeds;
-  	CBitVector m_vValues[2];
-  	CBitVector m_vDelta;
-  	MaskingFunction* m_fMaskFct;
-  	AES_KEY_CTX* m_vKeySeeds;
+	uint32_t m_nSndVals;
+	uint32_t m_nOTs;
+	uint32_t m_nBitLength;
+	uint32_t m_nCounter;
+	uint32_t m_nBlocks;
+	uint32_t m_nSymSecParam;
+	uint32_t m_nBaseOTs;
 
-	class OTSenderThread : public CThread {
-	 	public:
-	 		OTSenderThread(int id, int nOTs, OTExtensionSender* ext) {senderID = id; numOTs = nOTs; callback = ext; success = false;};
-			void ThreadMain() {success = callback->OTSenderRoutine(senderID, numOTs);};
-		private: 
-			int senderID; 
-			int numOTs;
-			OTExtensionSender* callback;
-			BOOL success;
+	crypto* m_cCrypt;
+
+	CSocket* m_vSockets;
+	CBitVector m_vU;
+	CBitVector* m_vValues;
+	MaskingFunction* m_fMaskFct;
+	AES_KEY_CTX* m_vKeySeeds;
+	OTBlock* m_sBlockHead;
+	OTBlock* m_sBlockTail;
+	CLock* m_lSendLock;
+	BYTE* m_vSeed;
+
+#ifdef FIXED_KEY_AES_HASHING
+	AES_KEY_CTX* m_kCRFKey;
+#endif
+
+	class OTSenderThread: public CThread {
+	public:
+		OTSenderThread(uint32_t id, uint32_t nOTs, OTExtensionSender* ext) {
+			senderID = id;
+			numOTs = nOTs;
+			callback = ext;
+			success = false;
+		}
+		;
+		~OTSenderThread() {
+		}
+		;
+		void ThreadMain() {
+			success = callback->OTSenderRoutine(senderID, numOTs);
+		}
+		;
+	private:
+		uint32_t senderID;
+		uint32_t numOTs;
+		OTExtensionSender* callback;
+		BOOL success;
 	};
 
 };
-
-
 
 class OTExtensionReceiver {
-/*
- * OT receiver part
- * Input: 
- * nSndVals: perform a 1-out-of-nSndVals OT
- * nOTs: the number of OTs that shall be performed
- * choices: a vector containing nBaseOTs choices in the domain 0-(SndVals-1) 
- * ret: returns the resulting bit representations, Has to initialized to a byte size of: nOTs * state.field_size
- * 
- * Output: was the execution successful?
- */
-  public:
-	OTExtensionReceiver(int nSndVals, int nOTs, int bitlength,CSocket* sock, BYTE* keybytes, CBitVector& choices, CBitVector& ret,
-			BYTE protocol, BYTE* seed) {
-		m_nSndVals = nSndVals;
-		m_nOTs = nOTs; 
-		m_nSockets = sock;
+	/*
+	 * OT receiver part
+	 * Input: 
+	 * nSndVals: perform a 1-out-of-nSndVals OT
+	 * nOTs: the number of OTs that shall be performed
+	 * choices: a vector containing nBaseOTs choices in the domain 0-(SndVals-1) 
+	 * ret: returns the resulting bit representations, Has to initialized to a byte size of: nOTs * state.field_size
+	 * 
+	 * Output: was the execution successful?
+	 */
+public:
+	OTExtensionReceiver(uint32_t nSndVals, uint32_t nOTs, uint32_t bitlength, crypto* crypt, CSocket* sock, BYTE* keybytes, CBitVector& choices, CBitVector& ret, BYTE protocol,
+			int nbaseOTs = -1, int nbaseseeds = -1) {
+		Init(nSndVals, crypt, sock, keybytes, nbaseOTs, nbaseseeds);
+		m_nOTs = nOTs;
 		m_nChoices = choices;
 		m_nRet = ret;
-		m_nSeed = seed;
 		m_nBitLength = bitlength;
 		m_bProtocol = protocol;
-		m_nCounter = 0;
-		m_vKeySeedMtx = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * NUM_EXECS_NAOR_PINKAS * nSndVals);
-		InitAESKey(m_vKeySeedMtx, keybytes, NUM_EXECS_NAOR_PINKAS * nSndVals);
-	};
-	OTExtensionReceiver(int nSndVals, CSocket* sock, BYTE* keybytes, BYTE* seed) {
+	}
+	;
+	OTExtensionReceiver(uint32_t nSndVals, crypto* crypt, CSocket* sock, BYTE* keybytes, int nbaseOTs = -1, int nbaseseeds = -1) {
+		Init(nSndVals, crypt, sock, keybytes, nbaseOTs, nbaseseeds);
+	}
+	;
+
+	void Init(uint32_t nSndVals, crypto* crypt, CSocket* sock, BYTE* keybytes, int nbaseOTs, int nbaseseeds) {
 		m_nSndVals = nSndVals;
-		m_nSockets = sock;
-		//m_nKeySeedMtx = vKeySeedMtx;
-		m_nSeed = seed;
+		m_vSockets = sock;
+		m_cCrypt = crypt;
+		m_nSymSecParam = m_cCrypt->get_seclvl().symbits;
+		m_nBaseOTs = m_nSymSecParam;
+		if (nbaseOTs != -1)
+			m_nBaseOTs = nbaseOTs;
+		int keyseeds = m_nBaseOTs;
+		if (nbaseseeds != -1)
+			keyseeds = nbaseseeds;
+
 		m_nCounter = 0;
-		m_vKeySeedMtx = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * NUM_EXECS_NAOR_PINKAS * nSndVals);
-		InitAESKey(m_vKeySeedMtx, keybytes, NUM_EXECS_NAOR_PINKAS * nSndVals);
-	};
-	~OTExtensionReceiver(){free(m_vKeySeedMtx); };
+		m_vKeySeedMtx = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * keyseeds * nSndVals);
+		InitAESKey(m_vKeySeedMtx, keybytes, keyseeds * nSndVals, m_cCrypt);
 
+#ifdef FIXED_KEY_AES_HASHING
+		m_kCRFKey = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX));
+		m_cCrypt->init_aes_key(m_kCRFKey, (uint8_t*) fixed_key_aes_seed);
+#endif
+	}
 
-	BOOL receive(int numOTs, int bitlength, CBitVector& choices, CBitVector& ret, BYTE type, int numThreads, MaskingFunction* maskfct);
+	~OTExtensionReceiver() {
+		free(m_vKeySeedMtx);
+	}
+	;
 
-	BOOL receive(int numThreads);
-	BOOL OTReceiverRoutine(int id, int myNumOTs);
-	void ReceiveAndProcess(CBitVector& vRcv, int id, int ctr, int lim);
-	void BuildMatrices(CBitVector& T, CBitVector& SndBuf, int numblocks, int ctr, BYTE* ctr_buf);
-	void HashValues(CBitVector& T, int ctr, int lim);
-	BOOL verifyOT(int myNumOTs);
+	BOOL receive(uint32_t numOTs, uint32_t bitlength, CBitVector& choices, CBitVector& ret, BYTE type, uint32_t numThreads, MaskingFunction* maskfct);
 
-  private: 
+	BOOL receive(uint32_t numThreads);
+	BOOL OTReceiverRoutine(uint32_t id, uint32_t myNumOTs);
+	void ReceiveAndProcess(uint32_t numThreads);
+	void BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint32_t numblocks, uint32_t ctr, BYTE* ctr_buf);
+	void HashValues(CBitVector& T, CBitVector& seedbuf, uint32_t ctr, uint32_t lim);
+	BOOL verifyOT(uint32_t myNumOTs);
+
+protected:
 	BYTE m_bProtocol;
-  	int m_nSndVals;
-  	int m_nOTs;
-  	int m_nBitLength;
-  	int m_nCounter;
-  	CSocket* m_nSockets;
-  	CBitVector m_nChoices;
-  	CBitVector m_nRet;
-  	AES_KEY* m_nKeySeedMtx;
-  	BYTE* m_nSeed;
-  	MaskingFunction* m_fUnMaskFct;
-  	AES_KEY_CTX* m_vKeySeedMtx;
+	uint32_t m_nSndVals;
+	uint32_t m_nOTs;
+	uint32_t m_nBitLength;
+	uint32_t m_nCounter;
+	uint32_t m_nSymSecParam;
+	uint32_t m_nBaseOTs;
 
-	class OTReceiverThread : public CThread {
-	 	public:
-	 		OTReceiverThread(int id, int nOTs, OTExtensionReceiver* ext) {receiverID = id; numOTs = nOTs; callback = ext; success = false;};
-	 		~OTReceiverThread(){};
-			void ThreadMain() {success = callback->OTReceiverRoutine(receiverID, numOTs);};
-		private: 
-			int receiverID; 
-			int numOTs;
-			OTExtensionReceiver* callback;
-			BOOL success;
+	crypto* m_cCrypt;
+
+	CSocket* m_vSockets;
+	CBitVector m_nChoices;
+	CBitVector m_nRet;
+	CBitVector m_vTempOTMasks;
+	MaskingFunction* m_fMaskFct;
+	AES_KEY_CTX* m_vKeySeedMtx;
+
+#ifdef FIXED_KEY_AES_HASHING
+	AES_KEY_CTX* m_kCRFKey;
+#endif
+
+	class OTReceiverThread: public CThread {
+	public:
+		OTReceiverThread(uint32_t id, uint32_t nOTs, OTExtensionReceiver* ext) {
+			receiverID = id;
+			numOTs = nOTs;
+			callback = ext;
+			success = false;
+		}
+		;
+		~OTReceiverThread() {
+		}
+		;
+		void ThreadMain() {
+			success = callback->OTReceiverRoutine(receiverID, numOTs);
+		}
+		;
+	private:
+		uint32_t receiverID;
+		uint32_t numOTs;
+		OTExtensionReceiver* callback;
+		BOOL success;
 	};
 
 };
 
+#ifdef FIXED_KEY_AES_HASHING
+inline void FixedKeyHashing(AES_KEY_CTX* aeskey, BYTE* outbuf, BYTE* inbuf, BYTE* tmpbuf, uint64_t id, uint32_t bytessecparam, crypto* crypt) {
+#ifdef HIGH_SPEED_ROT_LT
+	((uint64_t*) tmpbuf)[0] = id ^ ((uint64_t*) inbuf)[0];
+	((uint64_t*) tmpbuf)[1] = ((uint64_t*) inbuf)[1];
+#else
+	memset(tmpbuf, 0, AES_BYTES);
+	memcpy(tmpbuf, (BYTE*) (&id), sizeof(int));
+
+	for (int i = 0; i < bytessecparam; i++) {
+		tmpbuf[i] = tmpbuf[i] ^ inbuf[i];
+	}
 #endif
+
+	crypt->encrypt(aeskey, outbuf, tmpbuf, AES_BYTES);
+
+#ifdef HIGH_SPEED_ROT_LT
+	((uint64_t*) outbuf)[0] ^= ((uint64_t*) inbuf)[0];
+	((uint64_t*) outbuf)[1] ^= ((uint64_t*) inbuf)[1];
+#else
+	for (int i = 0; i < bytessecparam; i++) {
+		outbuf[i] = outbuf[i] ^ inbuf[i];
+	}
+#endif
+}
+#endif
+
+#endif /* __OT_EXTENSION_H_ */

@@ -167,9 +167,10 @@ void ecc_fe::set_mul(fe* a, fe* b) {
 	(*val) += (*fe2ec2(b));
 }
 
-void ecc_fe::set_pow(fe* b, num* e) {
-	set(b);
+void ecc_fe::set_pow(fe* a, num* e) {
+	set(a);
 	(*val) *= (*num2Big(e));
+	//ecurve2_mult(num2Big(e)->getbig(), fe2ec2(a)->get_point(), fe2ec2(val)->get_point());
 }
 
 void ecc_fe::set_div(fe* a, fe* b) {

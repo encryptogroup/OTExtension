@@ -11,12 +11,14 @@
 #include "typedefs.h"
 
 //Defines for parameterizing the OT extension
-//#define DEBUG
+#define DEBUG
 //#define FIXED_KEY_AES_HASHING
 //#define AES_OWF
 #define VERIFY_OT
-//#define OT_HASH_DEBUG
-#define OTTiming
+#define DEBUG_OT_HASH
+#define DEBUG_OT_SEED_EXPANSION
+//#define DEBUG_BASE_OT_HASH_RET
+//#define OTTiming
 //#define HIGH_SPEED_ROT_LT
 
 
@@ -27,11 +29,12 @@
 #define AES_BYTES				16
 #define LOG2_AES_BITS			ceil_log2(AES_BITS)
 
-const BYTE G_OT = 0x01;
-const BYTE C_OT = 0x02;
-const BYTE R_OT = 0x03;
+#define NUMOTBLOCKS 1
+#define MAX_NUM_COMM_CHANNELS 256
+#define ADMIN_CHANNEL MAX_NUM_COMM_CHANNELS-1
+#define OT_ADMIN_CHANNEL ADMIN_CHANNEL-1
 
-#define NUMOTBLOCKS 128
+
 
 enum field_type {
 	P_FIELD, ECC_FIELD
@@ -42,6 +45,8 @@ static const seclvl MT = { 40, 112, 2048, 192, 233 };
 static const seclvl LT = { 40, 128, 3072, 256, 283 };
 static const seclvl XLT = { 40, 192, 7680, 384, 409 };
 static const seclvl XXLT = { 40, 256, 15360, 512, 571 };
+
+enum eot_flavor { OT, C_OT, GC_OT, R_OT, SR_OT, RR_OT };
 
 const uint8_t m_vFixedKeyAESSeed[AES_KEY_BYTES] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF };
 /** \var m_vSeed

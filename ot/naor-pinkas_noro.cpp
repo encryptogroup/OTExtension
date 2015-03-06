@@ -227,121 +227,124 @@ BOOL NaorPinkasNoRO::SenderIFC(int nSndVals, int nOTs, CSocket& socket, BYTE* re
 
 void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, CSocket* sock, BYTE* ret)
 {
-/*	//EC2 G;
-    	//G=EC2(*m_X,*m_Y);
-    	irand((long) 1);//TODO use seed from state!
-    	//cout << " g = " << G << endl;
-	Big a, b[nOTs], btmp, xtmp, ytmp; 
-#ifdef USE_PRIME_FIELD	
-	ECn g, x, y, w, z0, z1;
-	ebrick bg, bx;
-#else
-	EC2 g, x, y, w, z0, z1;
-	ebrick2 bg, bx;
-#endif
-	int coordSize = (m_SecParam+7)/8;
+	num *a, **b, *btmp; //Big a, b[nOTs], btmp, xtmp, ytmp;
+	fe *g, *x, *y, *w, *z0, *z1, *tmp; //EC2 g, x, y, w, z0, z1;
+	brickexp *bg, *bx;//ebrick2 bg, bx;
 	
-    	Miracl_InitPoint(&g, *m_X, *m_Y);//g = EC2(*m_X ,*m_Y); 
-    	//cout << "G_upd = " << g << endl;
-	//g = ECn(*m_X, *m_Y);
+	uint32_t hashbytes = m_cCrypto->get_hash_bytes();
+	uint32_t febytelen = m_cPKCrypto->fe_byte_size();
 
-	Miracl_InitBrick(&bg, &g);
+	g = m_cPKCrypto->get_generator();//    Miracl_InitPoint(&g, *m_X, *m_Y);//g = EC2(*m_X ,*m_Y);
+	b = (num**) malloc(sizeof(num*) * nOTs);
+	bg = m_cPKCrypto->get_brick(g); //Miracl_InitBrick(&bg, &g);
 
+	x = m_cPKCrypto->get_fe();
+	y = m_cPKCrypto->get_fe();
+	w = m_cPKCrypto->get_fe();
+	z0 = m_cPKCrypto->get_fe();
+	z1 = m_cPKCrypto->get_fe();
+	tmp = m_cPKCrypto->get_fe();
 
 	//needs to store x
-	int nBufSize = (coordSize + 1);
-	BYTE* pBuf = new BYTE[nBufSize];
+	uint32_t nBufSize = febytelen; //(coordSize + 1);
+	uint8_t* pBuf = (uint8_t*) malloc(nBufSize);
 	
-
 	//Fix a and precompute g^a
-	a = rand(m_SecParam, 2);
-
-	Miracl_mulbrick(&bg, a.getbig(), xtmp.getbig(), ytmp.getbig());
-	Miracl_InitPoint(&x, xtmp, ytmp);//x = EC2(xtmp, ytmp);
+	a = m_cPKCrypto->get_rnd_num();//rand(m_SecParam, 2);
+	bg->pow(x, a);//Miracl_mulbrick(&bg, a.getbig(), xtmp.getbig(), ytmp.getbig());
+	//Miracl_InitPoint(&x, xtmp, ytmp);//x = EC2(xtmp, ytmp);
 	//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, x.get_point());//x.get(xtmp, ytmp);
 	//x = g; 
 	//x *= a;
 	
 	//export and send x
-	PointToByteArray(pBuf, coordSize, x);
-	socket.Send(pBuf, nBufSize);
+	x->export_to_bytes(pBuf);//PointToByteArray(pBuf, coordSize, x);
+	sock->Send(pBuf, nBufSize);
 	
-	delete pBuf;
-	nBufSize = 3*nOTs*(coordSize + 1);
-	pBuf = new BYTE[nBufSize];
+	free(pBuf);//delete pBuf;
+	nBufSize = 3*nOTs*febytelen;//*(coordSize + 1);
+	pBuf = (uint8_t*) malloc(nBufSize);//new BYTE[nBufSize];
 	
-	Miracl_InitBrick(&bx, &x);
+	bx = m_cPKCrypto->get_brick(x);//Miracl_InitBrick(&bx, &x);
 
-	BYTE* pBufIdx = pBuf;
+	uint8_t* pBufIdx = pBuf;
 
-	for(int k = 0; k < nOTs; k++)
+	for(uint32_t k = 0; k < nOTs; k++)
 	{
 		//randomly sample b and compute y 
-		b[k] = rand(m_SecParam, 2);
-		Miracl_mulbrick(&bg, b[k].getbig(), xtmp.getbig(), ytmp.getbig());
-		Miracl_InitPoint(&y, xtmp, ytmp);//y = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, y.get_point());//y = ECn(xtmp, ytmp);
+		b[k] = m_cPKCrypto->get_rnd_num();//rand(m_SecParam, 2);
+		bg->pow(y, b[k]);//Miracl_mulbrick(&bg, b[k].getbig(), xtmp.getbig(), ytmp.getbig());
+		//Miracl_InitPoint(&y, xtmp, ytmp);//y = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, y.get_point());//y = ECn(xtmp, ytmp);
 
 		//compute z0 and z1, depending on the choice bits
-		btmp = rand(m_SecParam, 2);
+		btmp = m_cPKCrypto->get_rnd_num();//rand(m_SecParam, 2);
 
 		if(!choices.GetBit(k))
 		{
-			Miracl_mulbrick(&bx, b[k].getbig(), xtmp.getbig(), ytmp.getbig());
-			Miracl_InitPoint(&z0, xtmp, ytmp);//z0 = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, z0.get_point());//z0 = ECn(xtmp, ytmp);
-			Miracl_mulbrick(&bg, btmp.getbig(), xtmp.getbig(), ytmp.getbig());
-			Miracl_InitPoint(&z1, xtmp, ytmp);//z1 = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, z1.get_point());//z1 = ECn(xtmp, ytmp);	
+			bx->pow(z0, b[k]);//Miracl_mulbrick(&bx, b[k].getbig(), xtmp.getbig(), ytmp.getbig());
+			//Miracl_InitPoint(&z0, xtmp, ytmp);//z0 = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, z0.get_point());//z0 = ECn(xtmp, ytmp);
+			bg->pow(z1, btmp);//Miracl_mulbrick(&bg, btmp.getbig(), xtmp.getbig(), ytmp.getbig());
+			//Miracl_InitPoint(&z1, xtmp, ytmp);//z1 = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, z1.get_point());//z1 = ECn(xtmp, ytmp);
 		} 
 		else
 		{
-			Miracl_mulbrick(&bg, btmp.getbig(), xtmp.getbig(), ytmp.getbig());
-			Miracl_InitPoint(&z1, xtmp, ytmp);//z0 = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, z0.get_point());//z0 = ECn(xtmp, ytmp);//z0.get(xtmp, ytmp);
-			Miracl_mulbrick(&bx, b[k].getbig(), xtmp.getbig(), ytmp.getbig());
-			Miracl_InitPoint(&z1, xtmp, ytmp);//z1 = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, z1.get_point());//z1 = ECn(xtmp, ytmp);
+			bg->pow(z0, btmp);//Miracl_mulbrick(&bg, btmp.getbig(), xtmp.getbig(), ytmp.getbig());
+			//Miracl_InitPoint(&z0, xtmp, ytmp);//z0 = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, z0.get_point());//z0 = ECn(xtmp, ytmp);//z0.get(xtmp, ytmp);
+			bx->pow(z1, b[k]);//Miracl_mulbrick(&bx, b[k].getbig(), xtmp.getbig(), ytmp.getbig());
+			//Miracl_InitPoint(&z1, xtmp, ytmp);//z1 = EC2(xtmp, ytmp);//epoint2_set(xtmp.getbig(), ytmp.getbig(), 0, z1.get_point());//z1 = ECn(xtmp, ytmp);
 		}
 		
 		//export - first y, then z0, and lastly z1
-		PointToByteArray(pBufIdx, coordSize, y);
-		pBufIdx += (coordSize + 1);
-		PointToByteArray(pBufIdx, coordSize, z0);
-		pBufIdx += (coordSize + 1); 
-		PointToByteArray(pBufIdx, coordSize, z1);
-		pBufIdx += (coordSize + 1);  
+		y->export_to_bytes(pBufIdx);//PointToByteArray(pBufIdx, coordSize, y);
+		pBufIdx += febytelen;//(coordSize + 1);
+		z0->export_to_bytes(pBufIdx);//PointToByteArray(pBufIdx, coordSize, z0);
+		pBufIdx += febytelen;//(coordSize + 1);
+		z1->export_to_bytes(pBufIdx);//PointToByteArray(pBufIdx, coordSize, z1);
+		pBufIdx += febytelen;//(coordSize + 1);
 		//printepoint(g);
 		//printepoint(x);
 		//cout << "g: " << g << ", x: " << x << ", y: " << y << ", z0: " << z0 << ", z1: " << z1  << endl;
 	}
 
-	int nRecvBufSize = 2 * nOTs * (coordSize + 1);
-	BYTE* pRecvBuf = new BYTE[nRecvBufSize];
-	socket.Receive(pRecvBuf, nRecvBufSize);
-		
+	uint32_t nRecvBufSize = 2 * nOTs * febytelen;//(coordSize + 1);
+	uint8_t* pRecvBuf = (uint8_t*) malloc(nRecvBufSize);
+	sock->Receive(pRecvBuf, nRecvBufSize);
 
-	socket.Send(pBuf, nBufSize);
+	sock->Send(pBuf, nBufSize);
 	
-	BYTE* retPtr = ret;
+	uint8_t* retPtr = ret;
 	pBufIdx = pRecvBuf;
-	for(int k = 0; k < nOTs; k++)
+
+	uint8_t* cpybuf = (uint8_t*) malloc(febytelen);
+	for(uint32_t k = 0; k < nOTs; k++)
 	{
 		//if the choice bit is zero take the first value, else the second
-		ByteArrayToPoint(&w, coordSize, pBufIdx+(choices.GetBit(k) * (coordSize+1)));
-		
+		tmp->import_from_bytes(pBufIdx+(choices.GetBit(k) * febytelen));//ByteArrayToPoint(&w, coordSize, pBufIdx+(choices.GetBit(k) * (coordSize+1)));
+		//w->print();
+		//b[k]->print();
+
 		//compute w_sigma^b
 		//ecurve2_mult(b[k].getbig(), w.get_point(), w.get_point());
-		w *= b[k];
-		
+		//*(fe2ec2(w)) *= *(num2Big(b[k]));
+		w->set_pow(tmp, b[k]);//w *= b[k];
+		//w->print();
 		//export result and hash
-		PointToByteArray(pBufIdx, coordSize, w);
-		hashReturn(retPtr, pBufIdx, coordSize+1, k);
+		w->export_to_bytes(cpybuf);//PointToByteArray(pBufIdx, coordSize, w);
+		hashReturn(retPtr, hashbytes, cpybuf, febytelen, k);
 		
-		retPtr += SHA1_BYTES;
+		retPtr += hashbytes;
 
 		//Skip the next two values
-		pBufIdx += 2*(coordSize+1);
+		pBufIdx += 2*febytelen;
 
 	}
-	Miracl_brickend(&bx);//ebrick2_end(&bx);
-	Miracl_brickend(&bg);//ebrick2_end(&bg);
-	return true;*/
+	delete bx;//Miracl_brickend(&bx);//ebrick2_end(&bx);
+	delete bg;//Miracl_brickend(&bg);//ebrick2_end(&bg);
+
+	free(cpybuf);
+	free(pRecvBuf);
+	free(pBuf);
+	free(b);
 }
 
 
@@ -349,119 +352,128 @@ void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choi
 
 void NaorPinkasNoRO::Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* sock, BYTE* ret)
 {
-	/*Big s0[nOTs], s1[nOTs], r0[nOTs], r1[nOTs], w, xtmp, ytmp;
-#ifdef USE_PRIME_FIELD	
-	ECn g, w0, w1, R0, R1, x, y, Y, Z0, Z1, z0, z1, ztmp;
-	ebrick bg, bx;
-#else
-	EC2 g, w0, w1, R0, R1, x, y, Y, Z0, Z1, z0, z1, ztmp;
-	ebrick2 bg, bx;
-#endif
+	num **s0, **s1, **r0, **r1, *w;//Big s0[nOTs], s1[nOTs], r0[nOTs], r1[nOTs], w, xtmp, ytmp;
+	fe *g, *w0, *w1, *R0, *R1, *x, *y, *Y, *Z0, *Z1, *z0, *z1, *ztmp;//EC2 g, w0, w1, R0, R1, x, y, Y, Z0, Z1, z0, z1, ztmp;
+	brickexp *bg, *bx;//ebrick2 bg, bx;
 
-
-	irand((long) 2);//TODO use seed from state!
-
-	int coordSize = (m_SecParam+7)/8;
+	uint32_t hashbytelen = m_cCrypto->get_hash_bytes();
+	uint32_t febytelen = m_cPKCrypto->fe_byte_size();
+	//int coordSize = (m_SecParam+7)/8;
 //cout << "coordsize = " << coordSize << endl;
 
+	s0 = (num**) malloc(sizeof(num*) * nOTs);
+	s1 = (num**) malloc(sizeof(num*) * nOTs);
+	r0 = (num**) malloc(sizeof(num*) * nOTs);
+	r1 = (num**) malloc(sizeof(num*) * nOTs);
 
-	Miracl_InitPoint(&g, *m_X, *m_Y);//g = EC2(*m_X, *m_Y);
-	Miracl_InitBrick(&bg, &g);
+
+	w0 = m_cPKCrypto->get_fe();
+	w1 = m_cPKCrypto->get_fe();
+	R0 = m_cPKCrypto->get_fe();
+	R1 = m_cPKCrypto->get_fe();
+	z0 = m_cPKCrypto->get_fe();
+	z1 = m_cPKCrypto->get_fe();
+	Z0 = m_cPKCrypto->get_fe();
+	Z1 = m_cPKCrypto->get_fe();
+	x = m_cPKCrypto->get_fe();
+	y = m_cPKCrypto->get_fe();
+	Y = m_cPKCrypto->get_fe();
+	ztmp = m_cPKCrypto->get_fe();
+
+	g = m_cPKCrypto->get_generator();// Miracl_InitPoint(&g, *m_X, *m_Y);//g = EC2(*m_X, *m_Y);
+	bg = m_cPKCrypto->get_brick(g); //Miracl_InitBrick(&bg, &g);
 
 	//needs to store x, nOTs*y, nOTs*z0, and nOTs*z1
-	int nBufSize = coordSize + 1;
-	BYTE* pBuf = new BYTE[nBufSize];
+	uint32_t nBufSize = febytelen;//coordSize + 1;
+	uint8_t* pBuf = (uint8_t*) malloc(nBufSize);
 		
-	socket.Receive(pBuf, nBufSize);
+	sock->Receive(pBuf, nBufSize);
 	//import x and compute fixed Point Exponentiation of x
-	ByteArrayToPoint(&x, coordSize, pBuf);
+	x->import_from_bytes(pBuf);//ByteArrayToPoint(&x, coordSize, pBuf);
 	
-	Miracl_InitBrick(&bx, &x);
+	bx = m_cPKCrypto->get_brick(x);//Miracl_InitBrick(&bx, &x);
 	
-	delete pBuf;
-	nBufSize = 2*nOTs * (coordSize+1);
-	pBuf = new BYTE[nBufSize];
+	free(pBuf);
+	nBufSize = 2*nOTs * febytelen;//(coordSize+1);
+	pBuf = (uint8_t*) malloc(nBufSize);
 	
-	BYTE* pBufIdx = pBuf;	
-	for(int k = 0; k < nOTs; k++)
+	uint8_t* pBufIdx = pBuf;
+
+	for(uint32_t k = 0; k < nOTs; k++)
 	{
-		s0[k] = rand(m_SecParam, 2);
-		s1[k] = rand(m_SecParam, 2);
-		r0[k] = rand(m_SecParam, 2);
-		r1[k] = rand(m_SecParam, 2);
+		s0[k] = m_cPKCrypto->get_rnd_num();//rand(m_SecParam, 2);
+		s1[k] = m_cPKCrypto->get_rnd_num();//rand(m_SecParam, 2);
+		r0[k] = m_cPKCrypto->get_rnd_num();//rand(m_SecParam, 2);
+		r1[k] = m_cPKCrypto->get_rnd_num();//rand(m_SecParam, 2);
 		
 		//compute w0 and export it		
-		Miracl_mulbrick(&bx, s0[k].getbig(), xtmp.getbig(), ytmp.getbig());
-		Miracl_InitPoint(&ztmp, xtmp, ytmp);//ztmp = EC2(xtmp, ytmp);
-		Miracl_mulbrick(&bg, r0[k].getbig(), xtmp.getbig(), ytmp.getbig());
-		Miracl_InitPoint(&R0, xtmp, ytmp);//R0 = EC2(xtmp, ytmp);
-		w0 = ztmp; 
-		w0 += R0;
-		PointToByteArray(pBufIdx, coordSize, w0);
-		pBufIdx += coordSize + 1;
+		bx->pow(ztmp, s0[k]);//Miracl_mulbrick(&bx, s0[k].getbig(), xtmp.getbig(), ytmp.getbig());
+		//Miracl_InitPoint(&ztmp, xtmp, ytmp);//ztmp = EC2(xtmp, ytmp);
+		bg->pow(R0, r0[k]);//Miracl_mulbrick(&bg, r0[k].getbig(), xtmp.getbig(), ytmp.getbig());
+		//Miracl_InitPoint(&R0, xtmp, ytmp);//R0 = EC2(xtmp, ytmp);
+		w0->set(ztmp);//w0 = ztmp;
+		w0->set_mul(w0, R0);//w0 += R0;
+		w0->export_to_bytes(pBufIdx);//PointToByteArray(pBufIdx, coordSize, w0);
+		pBufIdx += febytelen;//coordSize + 1;
 				
 		//compute w1 and export it		
-		Miracl_mulbrick(&bx, s1[k].getbig(), xtmp.getbig(), ytmp.getbig());
-		Miracl_InitPoint(&ztmp, xtmp, ytmp);//ztmp = EC2(xtmp, ytmp);
-		Miracl_mulbrick(&bg, r1[k].getbig(), xtmp.getbig(), ytmp.getbig());
-		Miracl_InitPoint(&R1, xtmp, ytmp);//R1 = EC2(xtmp, ytmp);
-		w1 = ztmp; 
-		w1 += R1;
+		bx->pow(ztmp, s1[k]);//Miracl_mulbrick(&bx, s1[k].getbig(), xtmp.getbig(), ytmp.getbig());
+		//Miracl_InitPoint(&ztmp, xtmp, ytmp);//ztmp = EC2(xtmp, ytmp);
+		bg->pow(R1, r1[k]);//Miracl_mulbrick(&bg, r1[k].getbig(), xtmp.getbig(), ytmp.getbig());
+		//Miracl_InitPoint(&R1, xtmp, ytmp);//R1 = EC2(xtmp, ytmp);
+		w1->set(ztmp);//w1 = ztmp;
+		w1->set_mul(w1, R1);//w1 += R1;
 		
-		PointToByteArray(pBufIdx, coordSize, w1);
-		pBufIdx += coordSize + 1;
+		w1->export_to_bytes(pBufIdx);//PointToByteArray(pBufIdx, coordSize, w1);
+		pBufIdx += febytelen;//coordSize + 1;
 	}
 	
 	//Send data off
-	socket.Send(pBuf, nBufSize);
+	sock->Send(pBuf, nBufSize);
 	
-	delete pBuf;
-	nBufSize = 3*nOTs * (coordSize +1);
-	pBuf = new BYTE[nBufSize];
+	free(pBuf);
+	nBufSize = 3*nOTs * febytelen;//(coordSize +1);
+	pBuf = (uint8_t*) malloc(nBufSize);
 	
 	//Receive new data
-	socket.Receive(pBuf, nBufSize);
+	sock->Receive(pBuf, nBufSize);
 	
-	BYTE* retPtr = ret;
+	uint8_t* retPtr = ret;
 	pBufIdx = pBuf;
-	for(int k = 0; k < nOTs; k++)
+	for(uint32_t k = 0; k < nOTs; k++)
 	{
 		//get y, z0, and z1
-		ByteArrayToPoint(&y, coordSize, pBufIdx);
-		pBufIdx += coordSize+1;
-		ByteArrayToPoint(&z0, coordSize, pBufIdx);
-		pBufIdx += coordSize+1;
-		ByteArrayToPoint(&z1, coordSize, pBufIdx);
-		pBufIdx += coordSize+1;
+		y->import_from_bytes(pBufIdx);//ByteArrayToPoint(&y, coordSize, pBufIdx);
+		pBufIdx += febytelen;//coordSize+1;
+		z0->import_from_bytes(pBufIdx);//ByteArrayToPoint(&z0, coordSize, pBufIdx);
+		pBufIdx += febytelen;//coordSize+1;
+		z1->import_from_bytes(pBufIdx);//ByteArrayToPoint(&z1, coordSize, pBufIdx);
+		pBufIdx += febytelen;//coordSize+1;
 		
 		//compute first possible hash 
 		//cout << "r0: " << r0[k] << ", y: " << y << ", s0: " << s0[k] << ", z0: " << z0 << ", ztmp: " << ztmp << endl;
-#ifdef USE_PRIME_FIELD	
-		ecurve_mult2(r0[k].getbig(), y.get_point(), s0[k].getbig(), z0.get_point(), ztmp.get_point()); 
-#else
-		ecurve2_mult2(r0[k].getbig(), y.get_point(), s0[k].getbig(), z0.get_point(), ztmp.get_point()); 
-#endif
+		ztmp->set_double_pow_mul(y, r0[k], z0, s0[k]);	//ecurve2_mult2(r0[k].getbig(), y.get_point(), s0[k].getbig(), z0.get_point(), ztmp.get_point());
+//#endif
 		//cout << "r0: " << r0[k] << ", y: " << y << ", s0: " << s0[k] << ", z0: " << z0 << ", ztmp: " << ztmp << endl;
 		//export result and hash
-		PointToByteArray(pBuf, coordSize, ztmp);
-		hashReturn(retPtr, pBuf, (coordSize+1), k);
-		retPtr += SHA1_BYTES;
+		ztmp->export_to_bytes(pBuf);//PointToByteArray(pBuf, coordSize, ztmp);
+		hashReturn(retPtr, hashbytelen, pBuf, febytelen, k);
+		retPtr += hashbytelen;
 
 		//compute second possible hash 
-#ifdef USE_PRIME_FIELD	
-		ecurve_mult2(r1[k].getbig(), y.get_point(), s1[k].getbig(), z1.get_point(), ztmp.get_point()); 
-#else
-		ecurve2_mult2(r1[k].getbig(), y.get_point(), s1[k].getbig(), z1.get_point(), ztmp.get_point()); 
-#endif	
+		ztmp->set_double_pow_mul(y, r1[k], z1, s1[k]);//ecurve2_mult2(r1[k].getbig(), y.get_point(), s1[k].getbig(), z1.get_point(), ztmp.get_point());
 		//export result and hash
-		PointToByteArray(pBuf, coordSize, ztmp);
-		hashReturn(retPtr, pBuf, coordSize+1, k);
-		retPtr += SHA1_BYTES;
+		ztmp->export_to_bytes(pBuf);//PointToByteArray(pBuf, coordSize, ztmp);
+		hashReturn(retPtr, hashbytelen, pBuf, febytelen, k);
+		retPtr += hashbytelen;
 	}
 
-	Miracl_brickend(&bx);//ebrick2_end(&bx);
-	Miracl_brickend(&bg);//ebrick2_end(&bg);
-
-	return true;*/
+	delete(bx);////Miracl_brickend(&bx);//ebrick2_end(&bx);
+	delete(bg);//Miracl_brickend(&bg);//ebrick2_end(&bg);
+	free(pBuf);
+	free(s0);
+	free(s1);
+	free(r0);
+	free(r1);
 }
 

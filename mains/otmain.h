@@ -5,8 +5,12 @@
 #include "../util/crypto/crypto.h"
 #include "../util/socket.h"
 #include "../ot/naor-pinkas.h"
+#include "../ot/naor-pinkas_noro.h"
 //#include "../ot/asharov-lindell.h"
-#include "../ot/ot-extension.h"
+//#include "../ot/ot-ext.h"
+//#include "../ot/ot-ext-rec.h"
+#include "../ot/iknp-ot-ext-snd.h"
+#include "../ot/iknp-ot-ext-rec.h"
 #include "../util/cbitvector.h"
 #include "../ot/xormasking.h"
 
@@ -35,13 +39,12 @@ void InitOTReceiver(const char* address, int port, crypto* crypt);
 
 BOOL PrecomputeNaorPinkasSender(crypto* crypt);
 BOOL PrecomputeNaorPinkasReceiver(crypto* crypt);
-BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, BYTE version, crypto* crypt);
-BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, BYTE version, crypto* crypt);
+BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, eot_flavor version, crypto* crypt);
+BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, eot_flavor version, crypto* crypt);
 
 // Network Communication
 CSocket* m_vSockets;
 int m_nPID; // thread id
-int m_nSecParam; 
 bool m_bUseECC;
 int m_nBitLength;
 int m_nMod;
@@ -49,8 +52,8 @@ MaskingFunction* m_fMaskFct;
 
 // Naor-Pinkas OT
 BaseOT* bot;
-OTExtensionSender *sender;
-OTExtensionReceiver *receiver;
+IKNPOTExtSnd *sender;
+IKNPOTExtRec *receiver;
 CBitVector U; 
 BYTE *vKeySeeds;
 BYTE *vKeySeedMtx;

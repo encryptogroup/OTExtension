@@ -25,8 +25,9 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 	brickexp *bg, *bc;
 	bg = m_cPKCrypto->get_brick(g);
 
-	uint8_t* pBuf = (uint8_t*) malloc(sizeof(uint8_t) * nOTs * fe_bytes);
+	uint8_t* pBuf = (uint8_t*) malloc(nOTs * fe_bytes);
 	uint32_t nBufSize = nSndVals * fe_bytes;
+
 
 	//calculate the generator of the group
 	for (k = 0; k < nOTs; k++) {
@@ -61,10 +62,10 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 		pBufIdx += fe_bytes;
 	}
 
-	socket->Send(pBuf, nOTs * m_cPKCrypto->fe_byte_size());
+	socket->Send(pBuf, nOTs * fe_bytes);
 
 	free(pBuf);
-	pBuf = (uint8_t*) malloc(sizeof(uint8_t) * fe_bytes);
+	pBuf = (uint8_t*) malloc(fe_bytes);
 	retPtr = ret;
 
 	for (k = 0; k < nOTs; k++) {
@@ -74,12 +75,13 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 
 		hashReturn(retPtr, hash_bytes, pBuf, fe_bytes, k);
 		retPtr += hash_bytes;
+
 	}
 
 	delete bc;
 	delete bg;
 
-	delete[] pBuf;
+	free(pBuf);
 	//TODO delete all field elements and numbers
 	free(PK_sigma);
 	free(pDec);

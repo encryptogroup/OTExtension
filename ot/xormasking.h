@@ -29,10 +29,10 @@ public:
 		m_nBitLength = bitlength;
 	}
 
-	void Mask(uint32_t progress, uint32_t processedOTs, CBitVector* values, CBitVector* snd_buf, BYTE protocol) {
+	void Mask(uint32_t progress, uint32_t processedOTs, CBitVector* values, CBitVector* snd_buf, eot_flavor protocol) {
 		uint32_t nsndvals = 2;
 
-		if (protocol == G_OT) {
+		if (protocol == OT) {
 			snd_buf[0].XORBytes(values[0].GetArr() + ceil_divide(progress * m_nBitLength, 8), 0, ceil_divide(processedOTs * m_nBitLength, 8));
 			snd_buf[1].XORBytes(values[1].GetArr() + ceil_divide(progress * m_nBitLength, 8), 0, ceil_divide(processedOTs * m_nBitLength, 8));
 		} else if (protocol == C_OT) {
@@ -53,12 +53,12 @@ public:
 	;
 
 	//output already has to contain the masks
-	void UnMask(uint32_t progress, uint32_t processedOTs, CBitVector& choices, CBitVector& output, CBitVector& rcv_buf, CBitVector& tmpmask, BYTE protocol) {
+	void UnMask(uint32_t progress, uint32_t processedOTs, CBitVector& choices, CBitVector& output, CBitVector& rcv_buf, CBitVector& tmpmask, eot_flavor protocol) {
 		uint32_t bytelen = ceil_divide(m_nBitLength, 8);
 		uint32_t gprogress = progress * bytelen;
 		uint32_t lim = progress + processedOTs;
 
-		if (protocol == G_OT) {
+		if (protocol == OT) {
 			for (uint32_t u, i = progress, offset = processedOTs * bytelen, l = 0; i < lim; i++, gprogress += bytelen, l += bytelen) {
 				//TODO make this working for single bits
 				u = (uint32_t) choices.GetBitNoMask(i);

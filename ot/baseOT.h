@@ -19,6 +19,7 @@
 #include <fstream>
 #include <time.h>
 
+
 class BaseOT {
 public:
 	BaseOT(crypto* crypt, field_type ftype) {
@@ -39,8 +40,22 @@ protected:
 	crypto* m_cCrypto;
 	pk_crypto* m_cPKCrypto;
 
-	void hashReturn(uint8_t* ret, uint32_t ret_len, uint8_t* val, uint32_t val_len, uint32_t ctr) {
+	void hashReturn(uint8_t* ret, uint32_t ret_len, uint8_t* val, uint32_t val_len, uint64_t ctr) {
+#ifdef DEBUG_BASE_OT_HASH_RET
+		cout << ctr << " input : ";
+		for(uint32_t i = 0; i < val_len; i++) {
+			cout << (hex) << (uint32_t) val[i];
+		}
+		cout << (dec) << endl;
+#endif
 		m_cCrypto->hash_ctr(ret, ret_len, val, val_len, ctr);
+#ifdef DEBUG_BASE_OT_HASH_RET
+		cout << ctr << " output: ";
+		for(uint32_t i = 0; i < ret_len; i++) {
+			cout << (hex) << (uint32_t) ret[i];
+		}
+		cout << (dec) << endl;
+#endif
 	}
 
 };

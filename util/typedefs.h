@@ -7,6 +7,7 @@
 
 
 #define two_pow(e) (((uint64_t) 1) << (e))
+
 static int ceil_log2(int bits) {
 	if (bits == 1)
 		return 1;
@@ -24,6 +25,7 @@ static int floor_log2(int bits) {
 		++targetlevel;
 	return targetlevel;
 }
+#define pad_to_power_of_two(e) ( ((uint64_t) 1) << (ceil_log2(e)) )
 
 static double getMillies(timeval timestart, timeval timeend) {
 	long time1 = (timestart.tv_sec * 1000000) + (timestart.tv_usec);
@@ -137,6 +139,7 @@ typedef int socklen_t;
 #include <stdlib.h>
 #include <errno.h>
 #include <netinet/tcp.h>
+#include <queue>
 
 typedef int SOCKET;
 #define INVALID_SOCKET -1
@@ -145,6 +148,7 @@ typedef int SOCKET;
 #endif// WIN32
 
 #define ceil_divide(x, y)			(( ((x) + (y)-1)/(y)))
+#define bits_in_bytes(bits) (ceil_divide((bits), 8))
 
 #define PadToRegisterSize(x) 		(PadToMultiple(x, OTEXT_BLOCK_SIZE_BITS))
 #define PadToMultiple(x, y) 		( ceil_divide(x, y) * (y))

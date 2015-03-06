@@ -4,8 +4,6 @@
 
 BOOL Init(crypto* crypt)
 {
-
-
 	m_vSockets = (CSocket*) malloc(sizeof(CSocket) * m_nNumOTThreads);
 
 	if(m_bUseECC)
@@ -159,7 +157,7 @@ void InitOTSender(const char* address, int port, crypto* crypt)
 	printf("Time for performing the NP base-OTs: %f seconds\n", getMillies(np_begin, np_end));
 #endif	
 
-	sender = new OTExtensionSender (nSndVals, crypt, m_vSockets, U, vKeySeeds);
+	sender = new IKNPOTExtSnd(nSndVals, crypt, m_vSockets, U, vKeySeeds);
 }
 
 void InitOTReceiver(const char* address, int port, crypto* crypt)
@@ -187,14 +185,14 @@ void InitOTReceiver(const char* address, int port, crypto* crypt)
 	printf("Time for performing the NP base-OTs: %f seconds\n", getMillies(np_begin, np_end));
 #endif	
 
-	receiver = new OTExtensionReceiver(nSndVals, crypt, m_vSockets, vKeySeedMtx);
+	receiver = new IKNPOTExtRec(nSndVals, crypt, m_vSockets, vKeySeedMtx);
 }
 
 BOOL PrecomputeNaorPinkasSender(crypto* crypt)
 {
 
 	int nSndVals = 2;
-	BYTE* pBuf = (BYTE*) malloc(sizeof(BYTE) * crypt->get_seclvl().symbits * crypt->get_hash_bytes());
+	uint8_t* pBuf = (uint8_t*) malloc(crypt->get_seclvl().symbits * crypt->get_hash_bytes());
 	
 	U.Create(crypt->get_seclvl().symbits, crypt);
 	
@@ -217,7 +215,7 @@ BOOL PrecomputeNaorPinkasReceiver(crypto* crypt)
 	int nSndVals = 2;
 	
 	// Execute NP receiver routine and obtain the key 
-	BYTE* pBuf = (BYTE*) malloc(crypt->get_hash_bytes() * crypt->get_seclvl().symbits * nSndVals);
+	uint8_t* pBuf = (uint8_t*) malloc(crypt->get_hash_bytes() * crypt->get_seclvl().symbits * nSndVals);
 
 	//=================================================	
 	// N-P sender: send: C0 (=g^r), C1, C2, C3 
@@ -231,13 +229,13 @@ BOOL PrecomputeNaorPinkasReceiver(crypto* crypt)
 		pBufIdx += crypt->get_hash_bytes();
 	}
 	
-	//free(pBuf);
+	free(pBuf);
 
 	return true;
 }
 
 
-BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, BYTE version, crypto* crypt)
+BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, eot_flavor version, crypto* crypt)
 {
 	bool success = FALSE;
 	int nSndVals = 2; //Perform 1-out-of-2 OT
@@ -259,7 +257,7 @@ BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, 
 	return success;
 }
 
-BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, BYTE version, crypto* crypt)
+BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, eot_flavor version, crypto* crypt)
 {
 	bool success = FALSE;
 
@@ -294,20 +292,20 @@ int main(int argc, char** argv)
 	m_nPID = atoi(argv[1]);
 	cout << "Playing as role: " << m_nPID << endl;
 	//the number of OTs that are performed. Has to be initialized to a certain minimum size due to
-	int numOTs = 1000000;
+	int numOTs = 128;
 	//bitlength of the values that are transferred - NOTE that when bitlength is not 1 or a multiple of 8, the endianness has to be observed
-	int bitlength = 80;
+	int bitlength = 128;
 
 	//Use elliptic curve cryptography in the base-OTs
 	m_bUseECC = true;
 	//The symmetric security parameter (80, 112, 128)
-	m_nSecParam = 128;
+	uint32_t m_nSecParam = 128;
 
 	//Number of threads that will be used in OT extension
 	m_nNumOTThreads = 1;
 
 	//Specifies whether G_OT, C_OT, or R_OT should be used
-	BYTE version;
+	eot_flavor version;
 
 	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_vSeed);
 
@@ -342,9 +340,10 @@ int main(int argc, char** argv)
 		 * delta: is unused in G_OT and does not need to be initialized
 		 * Outputs: NONE
 		*/
-		version = G_OT;
+		version = OT;
 		cout << "Sender performing " << numOTs << " G_OT extensions on " << bitlength << " bit elements" << endl;
 		ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
+		cout << "Finished OT" << endl;
 
 		/* 
 		 * C_OT (correlated OT) generates X1 at random, obliviously transfers (X1,X1 XOR delta), and outputs X1, X2.  
@@ -358,7 +357,8 @@ int main(int argc, char** argv)
 		*/
 		version = C_OT;
 		cout << "Sender performing " << numOTs << " C_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
+		//ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
+		cout << "Finished C-OT" << endl;
 
 
 		/* 
@@ -371,7 +371,8 @@ int main(int argc, char** argv)
 		*/
 		version = R_OT;
 		cout << "Sender performing " << numOTs << " R_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
+	   // ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
+		cout << "Finished R-OT" << endl;
 
 		/*cout << "X1: "<< endl;
 		X1.PrintHex();
@@ -403,17 +404,20 @@ int main(int argc, char** argv)
 		 * variable that has to match the version of the sender. 
 		*/
 		
-		version = G_OT;
+		version = OT;
 		cout << "Receiver performing " << numOTs << " G_OT extensions on " << bitlength << " bit elements" << endl;
 		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
+		cout << "Finished OT" << endl;
 
 		version = C_OT;
 		cout << "Receiver performing " << numOTs << " C_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
+		//ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
+		cout << "Finished C-OT" << endl;
 
 		version = R_OT;
 		cout << "Receiver performing " << numOTs << " R_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
+		//ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
+		cout << "Finished R-OT" << endl;
 
 
 		/*cout << "Choices: " << endl;
@@ -422,6 +426,7 @@ int main(int argc, char** argv)
 		response.PrintHex();*/
 	}
 	delete crypt;
+
 	Cleanup();
 
 	return 1;

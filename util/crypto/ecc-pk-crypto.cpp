@@ -9,12 +9,17 @@
 
 char *ecx163 = (char *) "2fe13c0537bbc11acaa07d793de4e6d5e5c94eee8";
 char *ecy163 = (char *) "289070fb05d38ff58321f2e800536d538ccdaa3d9";
+char *ecr163 = (char *) "5846006549323611672814741753598448348329118574063";
 
 char *ecx233 = (char *) "17232ba853a7e731af129f22ff4149563a419c26bf50a4c9d6eefad6126";
 char *ecy233 = (char *) "1db537dece819b7f70f555a67c427a8cd9bf18aeb9b56e0c11056fae6a3";
+char *ecr233 = (char *) "3450873173395281893717377931138512760570940988862252126328087024741343";
+
 
 char *ecx283 = (char *) "503213f78ca44883f1a3b8162f188e553cd265f23c1567a16876913b0c2ac2458492836";
 char *ecy283 = (char *) "1ccda380f1c9e318d90f95d07e5426fe87e45c0e8184698e45962364e34116177dd2259";
+char *ecr283 = (char *) "3885337784451458141838923813647037813284811733793061324295874997529815829704422603873";
+
 
 void ecc_field::init(seclvl sp, uint8_t* seed) {
 
@@ -22,7 +27,7 @@ void ecc_field::init(seclvl sp, uint8_t* seed) {
 	fparams = (ecc_fparams*) malloc(sizeof(ecc_fparams));
 	secparam = sp;
 
-	char *ecp = NULL, *ecb = NULL, *ecx = ecx163, *ecy = ecy163;
+	char *ecp = NULL, *ecb = NULL, *ecx = ecx163, *ecy = ecy163, *ecr = ecr163;
 	fparams->BB = new Big();
 	fparams->BA = new Big();
 	fparams->BP = new Big();
@@ -30,6 +35,7 @@ void ecc_field::init(seclvl sp, uint8_t* seed) {
 	if (secparam.ecckcbits == ST.ecckcbits) {
 		ecx = ecx163;
 		ecy = ecy163;
+		ecr = ecr163;
 		fparams->m = 163;
 		fparams->a = 7;
 		fparams->b = 6;
@@ -39,6 +45,7 @@ void ecc_field::init(seclvl sp, uint8_t* seed) {
 	} else if (secparam.ecckcbits == MT.ecckcbits) {
 		ecx = ecx233;
 		ecy = ecy233;
+		ecr = ecr233;
 		fparams->m = 233;
 		fparams->a = 74;
 		fparams->b = 0;
@@ -48,6 +55,7 @@ void ecc_field::init(seclvl sp, uint8_t* seed) {
 	} else if (secparam.ecckcbits == LT.ecckcbits) {
 		ecx = ecx283;
 		ecy = ecy283;
+		ecr = ecr283;
 		fparams->m = 283;
 		fparams->a = 12;
 		fparams->b = 7;
@@ -57,6 +65,7 @@ void ecc_field::init(seclvl sp, uint8_t* seed) {
 	} else { //Long term security
 		ecx = ecx283;
 		ecy = ecy283;
+		ecr = ecy283;
 		fparams->m = 283;
 		fparams->a = 12;
 		fparams->b = 7;
@@ -82,7 +91,14 @@ void ecc_field::init(seclvl sp, uint8_t* seed) {
 	//For ECC, a coordinate is transferred as well as a 1/-1
 	fe_bytelen = ceil_divide(secparam.ecckcbits,8) + 1;
 
+
+	mip->IOBASE = 10;
+	Big* tmp = new Big();
+	*tmp = ecr;
+	//*((ecc_num*) order)->get_val() = ecr;//*((num2Big) *order) = ord;
 	mip->IOBASE = 16;
+	order = new ecc_num(this, tmp);
+
 }
 
 ecc_field::~ecc_field() {
@@ -157,11 +173,20 @@ ecc_fe::~ecc_fe() {
 
 void ecc_fe::set(fe* src) {
 	*val = *fe2ec2(src);
+	//*val = EC2(*fe2ec2(src));///copy(*val->getbig(), *fe2ec2(src)->getbig);
+	//Big x, y;
+	//int sign = fe2ec2(src)->get(x);
+	//val->set(x, sign);
+	//fe2ec2(src)->getxy(x, y);
+	//val->set(x, y);
+
 }
+
 EC2* ecc_fe::get_val() {
 	return val;
 }
 
+//Note: if the same value is processed, a has to be this value
 void ecc_fe::set_mul(fe* a, fe* b) {
 	set(a);
 	(*val) += (*fe2ec2(b));
@@ -173,6 +198,7 @@ void ecc_fe::set_pow(fe* a, num* e) {
 	//ecurve2_mult(num2Big(e)->getbig(), fe2ec2(a)->get_point(), fe2ec2(val)->get_point());
 }
 
+//Note: if the same value is processed, a has to be this value
 void ecc_fe::set_div(fe* a, fe* b) {
 	set(a);
 	(*val) -= (*fe2ec2(b));
@@ -213,6 +239,9 @@ void ecc_fe::sample_fe_from_bytes(uint8_t* buf, uint32_t bytelen) {
 	cerr << "Error while sampling point, exiting!" << endl;
 	exit(0);
 }
+bool ecc_fe::eq(fe* a) {
+	return (*val) == (*fe2ec2(a));
+}
 
 ecc_num::ecc_num(ecc_field* fld) {
 	field = fld;
@@ -241,8 +270,20 @@ void ecc_num::set_si(int32_t src) {
 void ecc_num::set_add(num* a, num* b) {
 	add(((ecc_num*) a)->get_val()->getbig(), ((ecc_num*) b)->get_val()->getbig(), val->getbig());
 }
+void ecc_num::set_sub(num* a, num* b) {
+	subtract(((ecc_num*) a)->get_val()->getbig(), ((ecc_num*) b)->get_val()->getbig(), val->getbig());
+}
 void ecc_num::set_mul(num* a, num* b) {
 	multiply(((ecc_num*) a)->get_val()->getbig(), ((ecc_num*) b)->get_val()->getbig(), val->getbig());
+}
+
+void ecc_num::mod(num* modulus) {
+	*val%=*((ecc_num*) modulus)->get_val();//modulo(val->getbig(), val->getbig(), (((ecc_num*) modulus)->get_val()->getbig()));
+}
+
+void ecc_num::set_mul_mod(num*a, num* b, num* modulus) {
+	*val = modmult((const Big) *((ecc_num*) a)->get_val(), (const Big) *((ecc_num*) b)->get_val(),
+			(const Big) *((ecc_num*) modulus)->get_val());
 }
 
 void ecc_num::import_from_bytes(uint8_t* buf, uint32_t field_size_bytes) {

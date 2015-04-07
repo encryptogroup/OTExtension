@@ -31,6 +31,9 @@ public:
 	virtual fe* get_generator() = 0;
 	virtual fe* get_rnd_generator() = 0;
 	virtual uint32_t num_byte_size() = 0;
+	num* get_order() {
+		return order;
+	}
 	uint32_t fe_byte_size() {
 		return fe_bytelen;
 	}
@@ -42,6 +45,7 @@ protected:
 	virtual void init(seclvl secparam, uint8_t* seed) = 0;
 	uint32_t fe_bytelen;
 	seclvl secparam;
+	num* order;
 };
 
 //class number
@@ -56,7 +60,10 @@ public:
 	virtual void set(num* src) = 0;
 	virtual void set_si(int32_t src) = 0;
 	virtual void set_add(num* a, num* b) = 0;
+	virtual void set_sub(num* a, num* b) = 0;
 	virtual void set_mul(num* a, num* b) = 0;
+	virtual void mod(num* modulus) = 0;
+	virtual void set_mul_mod(num* a, num* b, num* modulus) = 0;
 	virtual void export_to_bytes(uint8_t* buf, uint32_t field_size) = 0;
 	virtual void import_from_bytes(uint8_t* buf, uint32_t field_size) = 0;
 	virtual void print() = 0;
@@ -80,6 +87,7 @@ public:
 	virtual void import_from_bytes(uint8_t* buf) = 0;
 	virtual void sample_fe_from_bytes(uint8_t* buf, uint32_t bytelen) = 0;
 	virtual void print() = 0;
+	virtual bool eq(fe* a) = 0;
 
 protected:
 	virtual void init() = 0;

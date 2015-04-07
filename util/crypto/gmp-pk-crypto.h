@@ -71,6 +71,7 @@ public:
 	void export_to_bytes(uint8_t* buf);
 	void import_from_bytes(uint8_t* buf);
 	void sample_fe_from_bytes(uint8_t* buf, uint32_t bytelen);
+	bool eq(fe* a);
 	void print() {
 		cout << val << endl;
 	}
@@ -94,8 +95,10 @@ public:
 	void set(num* src);
 	void set_si(int32_t src);
 	void set_add(num* a, num* b);
+	void set_sub(num* a, num* b);
 	void set_mul(num* a, num* b);
-
+	void mod(num* mod);
+	void set_mul_mod(num* a, num* b, num* modulus) ;
 	mpz_t* get_val();
 
 	void export_to_bytes(uint8_t* buf, uint32_t field_size);

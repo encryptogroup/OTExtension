@@ -53,17 +53,28 @@ void gmp_num::set_si(int32_t src) {
 void gmp_num::set_add(num* a, num* b) {
 	mpz_add(val, *num2mpz(a), *num2mpz(b));
 }
+//a-b
+void gmp_num::set_sub(num* a, num* b) {
+	mpz_sub(val, *num2mpz(a), *num2mpz(b));
+}
 void gmp_num::set_mul(num* a, num* b) {
 	mpz_mul(val, *num2mpz(a), *num2mpz(b));
 }
+void gmp_num::mod(num* modulus) {
+	mpz_mod(val, val, *num2mpz(modulus));
+}
+void gmp_num::set_mul_mod(num* a, num* b, num* modulus) {
+	set_mul(a, b);
+	mod(modulus);
+}
 
-void gmp_num::import_from_bytes(uint8_t* buf, uint32_t field_size) {
-	mpz_import(val, field_size, 1, sizeof((buf)[0]), 0, 0, (buf));
+void gmp_num::import_from_bytes(uint8_t* buf, uint32_t field_size_bytes) {
+	mpz_import(val, field_size_bytes, 1, sizeof((buf)[0]), 0, 0, (buf));
 }
 
 //export and pad all leading zeros
-void gmp_num::export_to_bytes(uint8_t* buf, uint32_t field_size) {
-	mpz_export_padded(buf, ceil_divide(field_size, 8), val);
+void gmp_num::export_to_bytes(uint8_t* buf, uint32_t field_size_bytes) {
+	mpz_export_padded(buf, field_size_bytes, val);
 }
 
 num* prime_field::get_rnd_num(uint32_t bitlen) {
@@ -137,6 +148,9 @@ void gmp_fe::sample_fe_from_bytes(uint8_t* buf, uint32_t bytelen) {
 	mpz_import(val, bytelen, 1, sizeof((buf)[0]), 0, 0, (buf));
 	mpz_mod(val, val, *field->get_p());
 }
+bool gmp_fe::eq(fe* a) {
+	return mpz_cmp(val, *fe2mpz(a)) == 0;
+}
 
 num* prime_field::get_num() {
 	return new gmp_num(this);
@@ -201,6 +215,7 @@ void prime_field::init(seclvl sp, uint8_t* seed) {
 		mpz_set_str(g, ifcg3072, 10);
 		mpz_set_str(q, ifcq1024, 10);
 	}
+	order = new gmp_num(this, q);
 
 	gmp_randinit_default(rnd_state);
 	gmp_randseed(rnd_state, rnd_seed);

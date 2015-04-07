@@ -22,73 +22,35 @@ class OTExtSnd : public OTExt {
 public:
 	OTExtSnd() {};
 
-	/*OTExtSnd(uint32_t nSndVals, uint32_t nOTs, uint32_t bitlength, crypto* crypt, CSocket* sock, CBitVector& U, BYTE* keybytes, CBitVector& x0, CBitVector& x1, BYTE type,
-			int nbaseOTs = -1, int nchecks = -1, int nbaseseeds = -1) {
-		Init(nSndVals, crypt, sock, U, keybytes, nbaseOTs, nchecks, nbaseseeds);
-		m_nOTs = nOTs;
-		m_vValues[0] = x0;
-		m_vValues[1] = x1;
-		m_nBitLength = bitlength;
-		m_bProtocol = type;
-	}
-	;*/
-	BOOL send(uint32_t numOTs, uint32_t bitlength, CBitVector& s0, CBitVector& s1, eot_flavor type, uint32_t numThreads, MaskingFunction* maskfct);
+	BOOL send(uint32_t numOTs, uint32_t bitlength, CBitVector& s0, CBitVector& s1, snd_ot_flavor stype,
+			rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct);
 
+	virtual void ComputeBaseOTs(field_type ftype) = 0;
 protected:
-	void InitSnd(uint32_t nSndVals, crypto* crypt, CSocket* sock, CBitVector& U, BYTE* keybytes, uint32_t nbaseOTs) {
-		Init(nSndVals, crypt, sock, keybytes, nbaseOTs, nbaseOTs);
-		m_vU.Create(nbaseOTs);
-		m_vU.Copy(U.GetArr(), 0, bits_in_bytes(nbaseOTs));
-		for (int i = nbaseOTs; i < PadToMultiple(nbaseOTs, 8); i++)
-			m_vU.SetBit(i, 0);
+	void InitSnd(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
+		Init(nSndVals, crypt, rcvthread, sndthread, nbaseOTs, nbaseOTs);
+		m_vU.Create(nbaseOTs, crypt);
+		//m_vU.Copy(U.GetArr(), 0, bits_in_bytes(nbaseOTs));
+		//for (int i = nbaseOTs; i < PadToMultiple(nbaseOTs, 8); i++)
+		//	m_vU.SetBit(i, 0);
 
 		m_vValues = (CBitVector*) malloc(sizeof(CBitVector) * nSndVals);
 	}
 	;
-
-	/*void InitSnd(uint32_t nSndVals, crypto* crypt, CSocket* sock, CBitVector& U, BYTE* keybytes, int nbaseOTs, int nchecks, int nbaseseeds) {
-		m_nSndVals = nSndVals;
-		m_vSockets = sock;
-		m_nCounter = 0;
-		m_cCrypt = crypt;
-		m_nSymSecParam = m_cCrypt->get_seclvl().symbits;
-		m_nBaseOTs = m_nSymSecParam;
-
-		if (nbaseOTs != -1)
-			m_nBaseOTs = nbaseOTs;
-
-		int keyseeds = m_nBaseOTs;
-		if (nbaseseeds != -1)
-			keyseeds = nbaseseeds;
-
-		m_vU.Create(keyseeds);
-		m_vU.Copy(U.GetArr(), 0, ceil_divide(keyseeds, 8));
-		for (int i = keyseeds; i < PadToMultiple(keyseeds, 8); i++)
-			m_vU.SetBit(i, 0);
-
-		m_vValues = (CBitVector*) malloc(sizeof(CBitVector) * nSndVals);
-		m_vKeySeeds = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * keyseeds);
-		m_lSendLock = new CLock;
-
-		InitAESKey(m_vKeySeeds, keybytes, keyseeds, m_cCrypt);
-
-#ifdef FIXED_KEY_AES_HASHING
-		m_kCRFKey = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX));
-		m_cCrypt->init_aes_key(m_kCRFKey, (uint8_t*) fixed_key_aes_seed);
-#endif
-	}
-	;*/
 
 	BOOL start_send(uint32_t numThreads);
 	virtual BOOL sender_routine(uint32_t threadid, uint64_t numOTs) = 0;
 
 	BOOL OTSenderRoutine(uint32_t id, uint32_t myNumOTs);
 
-	void BuildQMatrix(CBitVector& T, CBitVector& RcvBuf, uint32_t blocksize, uint64_t ctr);
-	void MaskAndSend(CBitVector* snd_buf, uint32_t id, uint32_t progress, uint32_t processedOTs);
+	void BuildQMatrix(CBitVector& T, CBitVector& RcvBuf, uint64_t ctr, uint64_t blocksize);
+	void UnMaskBaseOTs(CBitVector& T, CBitVector& RcvBuf, uint64_t numblocks);
+	void MaskAndSend(CBitVector* snd_buf, uint64_t progress, uint64_t processedOTs, channel* chan);
 	//void SendBlocks(uint32_t numThreads);
 	void HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint64_t ctr, uint64_t processedOTs);
 	BOOL verifyOT(uint64_t myNumOTs);
+
+	void ComputePKBaseOTs();
 
 	CBitVector m_vU;
 	CBitVector* m_vValues;

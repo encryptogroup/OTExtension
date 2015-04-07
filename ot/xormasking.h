@@ -29,13 +29,13 @@ public:
 		m_nBitLength = bitlength;
 	}
 
-	void Mask(uint32_t progress, uint32_t processedOTs, CBitVector* values, CBitVector* snd_buf, eot_flavor protocol) {
+	void Mask(uint32_t progress, uint32_t processedOTs, CBitVector* values, CBitVector* snd_buf, snd_ot_flavor protocol) {
 		uint32_t nsndvals = 2;
 
-		if (protocol == OT) {
+		if (protocol == Snd_OT) {
 			snd_buf[0].XORBytes(values[0].GetArr() + ceil_divide(progress * m_nBitLength, 8), 0, ceil_divide(processedOTs * m_nBitLength, 8));
 			snd_buf[1].XORBytes(values[1].GetArr() + ceil_divide(progress * m_nBitLength, 8), 0, ceil_divide(processedOTs * m_nBitLength, 8));
-		} else if (protocol == C_OT) {
+		} else if (protocol == Snd_C_OT) {
 			values[0].SetBytes(snd_buf[0].GetArr(), ceil_divide(progress * m_nBitLength, 8), ceil_divide(processedOTs * m_nBitLength, 8)); //.SetBits(hash_buf, i*m_nBitLength, m_nBitLength);
 			int bitPos = progress * m_nBitLength;
 			int length = processedOTs * m_nBitLength;
@@ -45,7 +45,7 @@ public:
 			values[1].XORBits(m_vDelta->GetArr() + bytePos, bitPos, length);
 			snd_buf[1].XORBits(values[1].GetArr() + bytePos, 0, length);
 		}
-		else if (protocol == R_OT) {
+		else if (protocol == Snd_R_OT) {
 			values[0].SetBytes(snd_buf[0].GetArr(), ceil_divide(progress * m_nBitLength, 8), ceil_divide(processedOTs * m_nBitLength, 8));
 			values[1].SetBytes(snd_buf[1].GetArr(), ceil_divide(progress * m_nBitLength, 8), ceil_divide(processedOTs * m_nBitLength, 8));
 		}
@@ -53,19 +53,19 @@ public:
 	;
 
 	//output already has to contain the masks
-	void UnMask(uint32_t progress, uint32_t processedOTs, CBitVector& choices, CBitVector& output, CBitVector& rcv_buf, CBitVector& tmpmask, eot_flavor protocol) {
+	void UnMask(uint32_t progress, uint32_t processedOTs, CBitVector& choices, CBitVector& output, CBitVector& rcv_buf, CBitVector& tmpmask, snd_ot_flavor protocol) {
 		uint32_t bytelen = ceil_divide(m_nBitLength, 8);
 		uint32_t gprogress = progress * bytelen;
 		uint32_t lim = progress + processedOTs;
 
-		if (protocol == OT) {
+		if (protocol == Snd_OT) {
 			for (uint32_t u, i = progress, offset = processedOTs * bytelen, l = 0; i < lim; i++, gprogress += bytelen, l += bytelen) {
 				//TODO make this working for single bits
 				u = (uint32_t) choices.GetBitNoMask(i);
 				output.SetXOR(rcv_buf.GetArr() + (u * offset) + l, tmpmask.GetArr() + gprogress, gprogress, bytelen);
 			}
 
-		} else if (protocol == C_OT)
+		} else if (protocol == Snd_C_OT)
 				{
 			int gprogress = progress * bytelen;
 			output.Copy(tmpmask.GetArr() + gprogress, gprogress, bytelen * processedOTs);
@@ -75,7 +75,7 @@ public:
 					output.XORBytes(rcv_buf.GetArr() + l, gprogress, bytelen);
 				}
 			}
-		} else if (protocol == R_OT) {
+		} else if (protocol == Snd_R_OT) {
 			//The seed expansion has already been performed, so do nothing
 		}
 	}
@@ -88,8 +88,8 @@ public:
 				out.SetBits(sbp, (uint64_t) (offset + i) * bitlength, (uint64_t) bitlength);
 			}
 		} else {
-			BYTE m_bBuf[AES_BYTES];
-			BYTE ctr_buf[AES_BYTES] = { 0 };
+			uint8_t* m_bBuf = (uint8_t*) malloc(AES_BYTES);
+			uint8_t* ctr_buf = (uint8_t*) calloc(AES_BYTES, 1);
 			uint32_t counter = *((uint32_t*) ctr_buf);
 			AES_KEY_CTX tkey;
 			for (uint32_t i = 0, rem; i < processedOTs; i++, sbp += AES_KEY_BYTES) {
@@ -104,6 +104,8 @@ public:
 					out.SetBits(m_bBuf, ((uint64_t) offset + i) * bitlength + (counter * AES_BITS), (uint64_t) rem);
 				}
 			}
+			free(m_bBuf);
+			free(ctr_buf);
 		}
 	}
 

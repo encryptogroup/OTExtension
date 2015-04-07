@@ -31,8 +31,8 @@ class IKNPOTExtRec : public OTExtRec {
 	 * Output: was the execution successful?
 	 */
 public:
-	IKNPOTExtRec(uint32_t nSndVals, crypto* crypt, CSocket* sock, BYTE* keybytes) {
-		InitRec(nSndVals, crypt, sock, keybytes, crypt->get_seclvl().symbits);
+	IKNPOTExtRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread) {
+		InitRec(nSndVals, crypt, rcvthread, sndthread, crypt->get_seclvl().symbits);
 	}
 	;
 
@@ -44,6 +44,7 @@ public:
 	;
 
 	BOOL receiver_routine(uint32_t threadid, uint64_t numOTs);
+	void ComputeBaseOTs(field_type ftype);
 };
 
 #endif /* OT_EXTENSION_RECEIVER_H_ */

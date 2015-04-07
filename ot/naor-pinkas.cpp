@@ -7,7 +7,7 @@
 
 #include "naor-pinkas.h"
 
-void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, CSocket* socket, uint8_t* ret) {
+void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, channel* chan, uint8_t* ret) {
 
 	fe* PK0 = m_cPKCrypto->get_fe();
 	fe** PK_sigma = (fe**) malloc(sizeof(fe*) * nOTs);
@@ -25,7 +25,7 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 	brickexp *bg, *bc;
 	bg = m_cPKCrypto->get_brick(g);
 
-	uint8_t* pBuf = (uint8_t*) malloc(nOTs * fe_bytes);
+	//uint8_t* pBuf = (uint8_t*) malloc(nOTs * fe_bytes);
 	uint32_t nBufSize = nSndVals * fe_bytes;
 
 
@@ -37,7 +37,7 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 		bg->pow(PK_sigma[k], pK[k]);
 	}
 
-	socket->Receive(pBuf, nBufSize);
+	uint8_t* pBuf = chan->blocking_receive();
 	uint8_t* pBufIdx = pBuf;
 
 	for (u = 0; u < nSndVals; u++) {
@@ -50,6 +50,8 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 
 	//====================================================
 	// N-P receiver: send pk0
+	free(pBuf);
+	pBuf = (uint8_t*) malloc(nOTs * fe_bytes);
 	pBufIdx = pBuf;
 	for (k = 0; k < nOTs; k++) {
 		choice = choices.GetBit((int32_t) k);
@@ -62,7 +64,8 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 		pBufIdx += fe_bytes;
 	}
 
-	socket->Send(pBuf, nOTs * fe_bytes);
+	//socket->Send(pBuf, nOTs * fe_bytes);
+	chan->send(pBuf, nOTs * fe_bytes);
 
 	free(pBuf);
 	pBuf = (uint8_t*) malloc(fe_bytes);
@@ -89,7 +92,7 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 	free(pK);
 }
 
-void NaorPinkas::Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* socket, uint8_t* ret) {
+void NaorPinkas::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* ret) {
 	num *alpha, *PKr, *tmp;
 	fe **pCr, **pC, *fetmp, *PK0r, *g, **pPK0;
 	uint8_t* pBuf, *pBufIdx;
@@ -128,7 +131,7 @@ void NaorPinkas::Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* socket, uint8
 		pC[u]->export_to_bytes(pBufIdx);
 		pBufIdx += fe_bytes;
 	}
-	socket->Send(pBuf, nBufSize);
+	chan->send(pBuf, nBufSize);
 
 	//====================================================
 	// compute C^R
@@ -142,7 +145,7 @@ void NaorPinkas::Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* socket, uint8
 	// N-P sender: receive pk0
 	nBufSize = fe_bytes * nOTs;
 	pBuf = (uint8_t*) malloc(nBufSize);
-	socket->Receive(pBuf, nBufSize);
+	pBuf = chan->blocking_receive();//pBuf, nBufSize);
 
 	pBufIdx = pBuf;
 

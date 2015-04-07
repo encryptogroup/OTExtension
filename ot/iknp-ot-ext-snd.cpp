@@ -9,11 +9,12 @@
 
 //BOOL OTsender(int nSndVals, int nOTs, int startpos, CSocket& sock, CBitVector& U, AES_KEY* vKeySeeds, CBitVector* values, BYTE* seed)
 BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
-	uint64_t nProgress;
 	uint64_t myStartPos = id * myNumOTs;
-	uint64_t wd_size_bits = m_nBlockSizeBits;//1 << (ceil_log2(m_nBaseOTs));
+	uint64_t wd_size_bits = m_nBlockSizeBits;
 	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
+	channel* chan = new channel(id, m_cRcvThread, m_cSndThread);
+	uint64_t tmpctr, tmpotlen;
 
 	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	uint64_t lim = myStartPos + myNumOTs;
@@ -31,7 +32,7 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef ZDEBUG
 	cout << "seedbuf size = " <<OTsPerIteration * AES_KEY_BITS << endl;
 #endif
-	vSnd = new CBitVector[numsndvals];	//(CBitVector*) malloc(sizeof(CBitVector) * numsndvals);
+	vSnd = new CBitVector[numsndvals];
 	for (uint32_t i = 0; i < numsndvals; i++) {
 		vSnd[i].Create(OTsPerIteration * m_nBitLength);
 	}
@@ -39,26 +40,18 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	// Contains the parts of the V matrix
 	CBitVector Q(wd_size_bits * OTsPerIteration);
 
-	uint64_t counter = myStartPos + m_nCounter;
+	uint64_t otid = myStartPos;
 
-	nProgress = myStartPos;
-
-	CEvent* rcvev = new CEvent();
-	CEvent* finev = new CEvent();
-	queue<uint8_t*>* rcvqueue;
 	uint8_t *rcvbuftmpptr, *rcvbufptr;
-	cout << "Registering on channel" << endl;
-	rcvqueue = rcvthread->add_listener(id, rcvev, finev);
-	//rcvthread->Start();
 
 #ifdef OTTiming
-	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0;
+	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalUnMaskTime=0;
 	timeval tempStart, tempEnd;
 #endif
 
-	while (nProgress < lim && finev->Set()) //do while there are still transfers missing
+	while (otid < lim) //do while there are still transfers missing
 	{
-		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - nProgress, wd_size_bits));
+		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - otid, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 
 #ifdef ZDEBUG
@@ -68,29 +61,24 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		if(rcvqueue->empty())
-			rcvev->Wait();
-		rcvbufptr = rcvqueue->front();
-		rcvqueue->pop();
-		rcvbuftmpptr = rcvbufptr;
-		uint64_t tmpctr = *((uint64_t*) rcvbuftmpptr);
-		rcvbuftmpptr+=sizeof(uint64_t);
-		uint64_t tmpotlen = *((uint64_t*) rcvbuftmpptr);
-		rcvbuftmpptr+=sizeof(uint64_t);
+		rcvbufptr = chan->blocking_receive_id_len(&rcvbuftmpptr, &tmpctr, &tmpotlen);
 		vRcv.AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
-		cout << "I am processing OTs from " << tmpctr << " with len = " << tmpotlen << endl;
 
-		//sock->Receive(vRcv.GetArr(), ceil_divide(m_nBaseOTs * OTsPerIteration, 8));
-		//TODO
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalRcvTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildQMatrix(Q, vRcv, processedOTBlocks, counter);
+		BuildQMatrix(Q, vRcv, otid, processedOTBlocks);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
+		gettimeofday(&tempStart, NULL);
+#endif
+		UnMaskBaseOTs(Q, vRcv, processedOTBlocks);
+#ifdef OTTiming
+		gettimeofday(&tempEnd, NULL);
+		totalUnMaskTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
 		Q.EklundhBitTranspose(wd_size_bits, OTsPerIteration);
@@ -99,25 +87,25 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(Q, seedbuf, vSnd, nProgress, min(lim - nProgress, OTsPerIteration));
+		HashValues(Q, seedbuf, vSnd, otid, min(lim - otid, OTsPerIteration));
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		MaskAndSend(vSnd, id, nProgress, min(lim - nProgress, OTsPerIteration));
+		MaskAndSend(vSnd, otid, min(lim - otid, OTsPerIteration), chan);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalSndTime += getMillies(tempStart, tempEnd);
 #endif
-		counter += min(lim - nProgress, OTsPerIteration);
-		nProgress += min(lim - nProgress, OTsPerIteration);
+		otid += min(lim - otid, OTsPerIteration);
 		Q.Reset();
 		free(rcvbufptr);
 	}
 
-	sndthread->signal_end(id);
 	//vRcv.delCBitVector();
+	chan->synchronize_end();
+
 	Q.delCBitVector();
 	for (uint32_t u = 0; u < m_nSndVals; u++)
 		seedbuf[u].delCBitVector();
@@ -132,6 +120,7 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	cout << "Sender time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
 	cout << "Time needed for: " << endl;
 	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
+	cout << "\t Unmasking values:\t" << totalUnMaskTime << " ms" << endl;
 	cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << endl;
 	cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << endl;
 	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
@@ -139,7 +128,15 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 
 #ifndef BATCH
-	cout << "Sender finished successfully" << endl;
+	cout << "OT Extension Sender finished" << endl;
 #endif
+	delete chan;
 	return TRUE;
+}
+
+
+void IKNPOTExtSnd::ComputeBaseOTs(field_type ftype) {
+	m_cBaseOT = new NaorPinkas(m_cCrypt, ftype);
+	ComputePKBaseOTs();
+	delete m_cBaseOT;
 }

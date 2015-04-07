@@ -26,26 +26,27 @@ public:
 
 	OTExtRec(){};
 	BOOL receive(uint64_t numOTs, uint64_t bitlength, CBitVector& choices, CBitVector& ret,
-			eot_flavor type, uint32_t numThreads, MaskingFunction* maskfct);
+			snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct);
 
-
+	virtual void ComputeBaseOTs(field_type ftype) = 0;
 protected:
 
 	BOOL start_receive(uint32_t numThreads);
 
 	virtual BOOL receiver_routine(uint32_t threadid, uint64_t numOTs) = 0;
 
-	void InitRec(uint32_t nSndVals, crypto* crypt, CSocket* sock, BYTE* keybytes, uint32_t nbaseOTs) {
-		Init(nSndVals, crypt, sock, keybytes, nbaseOTs, nSndVals * nbaseOTs);
+	void InitRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
+		Init(nSndVals, crypt, rcvthread, sndthread, nbaseOTs, nSndVals * nbaseOTs);
 	}
 	;
 
 	//void ReceiveAndProcess(uint32_t numThreads);
-	void BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t numblocks, uint64_t ctr);
+	void BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t ctr, uint64_t numblocks);
+	void MaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t OTid, uint64_t numblocks);
+	void SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs);
 	void HashValues(CBitVector& T, CBitVector& seedbuf, uint64_t ctr, uint64_t lim);
-	void ReceiveAndUnMask(queue<uint8_t*> *rcvqueue);
+	void ReceiveAndUnMask(channel* chan);
 	BOOL verifyOT(uint64_t myNumOTs);
-
 
 	void Cleanup() {};//TODO check if necessary and implement
 
@@ -53,6 +54,7 @@ protected:
 	CBitVector m_nRet;
 	CBitVector m_vTempOTMasks;
 
+	void ComputePKBaseOTs();
 
 	class OTReceiverThread: public CThread {
 	public:

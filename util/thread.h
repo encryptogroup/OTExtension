@@ -221,6 +221,10 @@ public:
 		return TRUE;
 	}
 
+	BOOL IsSet() {
+		return m_bSet;
+	}
+
 	BOOL Reset()
 	{
 		pthread_mutex_lock( &m_mtx );

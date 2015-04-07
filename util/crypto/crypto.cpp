@@ -178,10 +178,21 @@ void crypto::hash_ctr(uint8_t* resbuf, uint32_t noutbytes, uint8_t* inbuf, uint3
 }
 
 void crypto::hash(uint8_t* resbuf, uint32_t noutbytes, uint8_t* inbuf, uint32_t ninbytes) {
+	uint8_t* hash_buf = (uint8_t*) malloc(get_hash_bytes());
+	hash_routine(resbuf, noutbytes, inbuf, ninbytes, hash_buf);
+	free(hash_buf);
+}
+
+void crypto::hash_buf(uint8_t* resbuf, uint32_t noutbytes, uint8_t* inbuf, uint32_t ninbytes, uint8_t* buf) {
+	hash_routine(resbuf, noutbytes, inbuf, ninbytes, buf);
+}
+
+void crypto::hash_non_threadsafe(uint8_t* resbuf, uint32_t noutbytes, uint8_t* inbuf, uint32_t ninbytes) {
 	hash_routine(resbuf, noutbytes, inbuf, ninbytes, sha_hash_buf);
 }
 
 //A fixed-key hashing scheme that uses AES, should not be used for real hashing, hashes to AES_BYTES bytes
+//TODO not thread safe
 void crypto::fixed_key_aes_hash(AES_KEY_CTX* aes_key, uint8_t* resbuf, uint32_t noutbytes, uint8_t* inbuf, uint32_t ninbytes) {
 	uint32_t i;
 	int32_t dummy;

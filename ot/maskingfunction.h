@@ -21,8 +21,8 @@ public:
 	}
 	;
 
-	virtual void Mask(uint32_t progress, uint32_t len, CBitVector* values, CBitVector* snd_buf, eot_flavor protocol) = 0;
-	virtual void UnMask(uint32_t progress, uint32_t len, CBitVector& choices, CBitVector& output, CBitVector& rcv_buf, CBitVector& tmpmask, eot_flavor version) = 0;
+	virtual void Mask(uint32_t progress, uint32_t len, CBitVector* values, CBitVector* snd_buf, snd_ot_flavor protocol) = 0;
+	virtual void UnMask(uint32_t progress, uint32_t len, CBitVector& choices, CBitVector& output, CBitVector& rcv_buf, CBitVector& tmpmask, snd_ot_flavor version) = 0;
 	virtual void expandMask(CBitVector& out, BYTE* sbp, uint32_t offset, uint32_t processedOTs, uint32_t bitlength, crypto* crypt) = 0;
 
 protected:

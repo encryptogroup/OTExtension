@@ -13,19 +13,18 @@
 class IKNPOTExtSnd : public OTExtSnd {
 
 public:
-	IKNPOTExtSnd(uint32_t nSndVals, crypto* crypt, CSocket* sock, CBitVector& U, BYTE* keybytes) {
-		InitSnd(nSndVals, crypt, sock, U, keybytes, crypt->get_seclvl().symbits);
+	IKNPOTExtSnd(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread) {
+		InitSnd(nSndVals, crypt, rcvthread, sndthread, crypt->get_seclvl().symbits);
 	}
 	;
 
 
 	~IKNPOTExtSnd() {
-		//TODO
-		//free(m_vKeySeedMtx);
 	}
 	;
 
 	BOOL sender_routine(uint32_t threadid, uint64_t numOTs);
+	void ComputeBaseOTs(field_type ftype);
 };
 
 

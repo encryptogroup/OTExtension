@@ -225,9 +225,9 @@ BOOL NaorPinkasNoRO::SenderIFC(int nSndVals, int nOTs, CSocket& socket, BYTE* re
 #endif*/
 
 
-void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, CSocket* sock, BYTE* ret)
+void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, channel* chan, BYTE* ret)
 {
-	num *a, **b, *btmp; //Big a, b[nOTs], btmp, xtmp, ytmp;
+	/*num *a, **b, *btmp; //Big a, b[nOTs], btmp, xtmp, ytmp;
 	fe *g, *x, *y, *w, *z0, *z1, *tmp; //EC2 g, x, y, w, z0, z1;
 	brickexp *bg, *bx;//ebrick2 bg, bx;
 	
@@ -344,15 +344,15 @@ void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choi
 	free(cpybuf);
 	free(pRecvBuf);
 	free(pBuf);
-	free(b);
+	free(b);*/
 }
 
 
 
 
-void NaorPinkasNoRO::Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* sock, BYTE* ret)
+void NaorPinkasNoRO::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, BYTE* ret)
 {
-	num **s0, **s1, **r0, **r1, *w;//Big s0[nOTs], s1[nOTs], r0[nOTs], r1[nOTs], w, xtmp, ytmp;
+	/*num **s0, **s1, **r0, **r1, *w;//Big s0[nOTs], s1[nOTs], r0[nOTs], r1[nOTs], w, xtmp, ytmp;
 	fe *g, *w0, *w1, *R0, *R1, *x, *y, *Y, *Z0, *Z1, *z0, *z1, *ztmp;//EC2 g, w0, w1, R0, R1, x, y, Y, Z0, Z1, z0, z1, ztmp;
 	brickexp *bg, *bx;//ebrick2 bg, bx;
 
@@ -474,6 +474,6 @@ void NaorPinkasNoRO::Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* sock, BYT
 	free(s0);
 	free(s1);
 	free(r0);
-	free(r1);
+	free(r1);*/
 }
 

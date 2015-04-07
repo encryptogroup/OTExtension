@@ -12,6 +12,7 @@
 #include "../util/cbitvector.h"
 #include "../util/socket.h"
 #include "../util/crypto/crypto.h"
+#include "../util/channel.h"
 #include <ctime>
 
 #include <iostream>
@@ -32,8 +33,8 @@ public:
 	}
 	;
 
-	virtual void Sender(uint32_t nSndVals, uint32_t nOTs, CSocket* sock, uint8_t* ret) = 0;
-	virtual void Receiver(uint32_t nSndVals, uint32_t uint32_t, CBitVector& choices, CSocket* sock, uint8_t* ret) = 0;
+	virtual void Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* ret) = 0;
+	virtual void Receiver(uint32_t nSndVals, uint32_t uint32_t, CBitVector& choices, channel* chan, uint8_t* ret) = 0;
 
 protected:
 

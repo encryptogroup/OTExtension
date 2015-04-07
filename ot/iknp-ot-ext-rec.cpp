@@ -10,31 +10,19 @@
 
 BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
-	uint64_t i = myStartPos, nProgress = myStartPos;
-	uint32_t RoundWindow = 2;
-	uint32_t roundctr = 0;
-	uint64_t wd_size_bits = m_nBlockSizeBits;//1 << (ceil_log2(m_nBaseOTs));
+	uint64_t wd_size_bits = m_nBlockSizeBits;
 
 	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	uint64_t lim = myStartPos + myNumOTs;
 
 	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
-	uint64_t OTwindow = NUMOTBLOCKS * wd_size_bits * RoundWindow;
-	//CSocket* sock = m_vSockets+id;
+	uint64_t OTwindow = NUMOTBLOCKS * wd_size_bits;
+	channel* chan = new channel(id, m_cRcvThread, m_cSndThread);
 
 	//counter variables
 	uint64_t numblocks = ceil_divide(myNumOTs, OTsPerIteration);
-	uint64_t nSize;
 
-	// The receive buffer
-	//CBitVector vRcv;
-	//if (m_eOTFlav == OT)
-	//	vRcv.Create(OTsPerIteration * m_nBitLength * m_nSndVals);
-	//else if (m_eOTFlav == C_OT)	// || m_eOTFlav == S_OT)
-	//	vRcv.Create(OTsPerIteration * m_nBitLength);
-
-	cout << "windowsize = " << wd_size_bits << ", ots per iter: " << OTsPerIteration << endl;
 	// A temporary part of the T matrix
 	CBitVector T(wd_size_bits * OTsPerIteration);
 
@@ -45,61 +33,59 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	//TODO: Check for some maximum size
 	CBitVector seedbuf(OTwindow * m_cCrypt->get_aes_key_bytes() * 8);
 
-	uint64_t counter = myStartPos + m_nCounter;
+	uint64_t otid = myStartPos;
 
-
-	CEvent* notifyrcv = new CEvent;
-	CEvent* finevent = new CEvent;
-	//Register new receiving thread
-
-	queue<uint8_t*>* rcv_buf = rcvthread->add_listener(id, notifyrcv, finevent);
-	//rcvthread->Start();
 #ifdef OTTiming
-	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalChkTime = 0;
+	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalChkTime = 0, totalMaskTime = 0;
 	timeval tempStart, tempEnd;
 #endif
 
-	while (i < lim) {
-		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - i, wd_size_bits));
+	while (otid < lim) {
+		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - otid, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
-		nSize = bits_in_bytes(m_nBaseOTs * OTsPerIteration);
+		//nSize = bits_in_bytes(m_nBaseOTs * OTsPerIteration);
 
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildMatrices(T, vSnd, processedOTBlocks, i);
+		BuildMatrices(T, vSnd, otid, processedOTBlocks);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		cout << "transposing T as a " << wd_size_bits << " x " << OTsPerIteration << " matrix" << endl;
-
+		MaskBaseOTs(T, vSnd, otid, processedOTBlocks);
+#ifdef OTTiming
+		gettimeofday(&tempEnd, NULL);
+		totalMaskTime += getMillies(tempStart, tempEnd);
+		gettimeofday(&tempStart, NULL);
+#endif
 		T.EklundhBitTranspose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(T, seedbuf, i, min(lim - i, OTsPerIteration));
+		HashValues(T, seedbuf, otid, min(lim - otid, OTsPerIteration));
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		sndthread->add_snd_task_start_len(id, nSize, vSnd.GetArr(), i, OTsPerIteration);
+		SendMasks(vSnd, chan, otid, OTsPerIteration);
+		//chan->send_id_len(vSnd.GetArr(), nSize, otid, OTsPerIteration);
+		//sndthread->add_snd_task_start_len(id, nSize, vSnd.GetArr(), i, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalSndTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-
-		if(!rcv_buf->empty()) {
-			ReceiveAndUnMask(rcv_buf);
+		if(chan->data_available()) {
+			ReceiveAndUnMask(chan);
 		}
 
-		counter += min(lim - i, OTsPerIteration);
-		i += min(lim - i, OTsPerIteration);
+		//counter += min(lim - OT_ptr, OTsPerIteration);
+		otid += min(lim - otid, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalRcvTime += getMillies(tempStart, tempEnd);
@@ -108,12 +94,15 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		vSnd.Reset();
 		T.Reset();
 	}
-	sndthread->signal_end(id);
+	//sndthread->signal_end(id);
 
-	if(m_eOTFlav != R_OT) {
-		finevent->Wait();
-		ReceiveAndUnMask(rcv_buf);
+	if(m_eSndOTFlav != Snd_R_OT && m_eSndOTFlav != Snd_GC_OT) {
+		//finevent->Wait();
+		while(chan->is_alive())
+			ReceiveAndUnMask(chan);
 	}
+
+	chan->synchronize_end();
 
 	T.delCBitVector();
 	vSnd.delCBitVector();
@@ -123,14 +112,21 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	cout << "Receiver time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
 	cout << "Time needed for: " << endl;
 	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
+	cout << "\t Base OT Masking:\t" << totalMaskTime << " ms" << endl;
 	cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << endl;
 	cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << endl;
 	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
 	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
 #endif
 #ifndef BATCH
-	cout << "Receiver finished successfully" << endl;
+	cout << "OT Extension Receiver finished" << endl;
 #endif
-	//sleep(1);
 	return TRUE;
+}
+
+
+void IKNPOTExtRec::ComputeBaseOTs(field_type ftype) {
+	m_cBaseOT = new NaorPinkas(m_cCrypt, ftype);
+	ComputePKBaseOTs();
+	delete m_cBaseOT;
 }

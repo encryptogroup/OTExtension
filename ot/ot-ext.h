@@ -38,6 +38,12 @@ struct ot_block {
 	uint8_t* buf;
 };
 
+struct mask_block {
+	uint64_t startotid;
+	uint64_t otlen;
+	CBitVector buf;
+};
+
 typedef struct {
 	uint32_t ida;
 	uint32_t idb;
@@ -49,6 +55,13 @@ public:
 	OTExt(){};
 	virtual void ComputeBaseOTs(field_type ftype) = 0;
 
+	void EnableMinEntCorrRobustness() {
+		m_bUseMinEntCorRob = true;
+	}
+	void DisableMinEntCorrRobustness() {
+		m_bUseMinEntCorRob = false;
+	}
+
 protected:
 	void Init(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs, uint32_t nbasekeys) {
 		m_nSndVals = nSndVals;
@@ -58,6 +71,7 @@ protected:
 		m_nBlockSizeBits = pad_to_power_of_two(m_nBaseOTs);
 		m_nBlockSizeBytes = pad_to_power_of_two(m_nBaseOTs/8);
 		m_nCounter = 0;
+		m_bUseMinEntCorRob = false;
 
 		//sndthread = new SndThread(sock);
 		//rcvthread = new RcvThread(sock);
@@ -98,6 +112,9 @@ protected:
 
 	crypto* m_cCrypt;
 
+	//The flag whether to use min-entropy correlation robustness instead of correlation robustness
+	bool m_bUseMinEntCorRob;
+
 	SndThread* m_cSndThread;
 	RcvThread* m_cRcvThread;
 
@@ -107,14 +124,53 @@ protected:
 
 	BaseOT* m_cBaseOT;
 
-
 #ifdef FIXED_KEY_AES_HASHING
 	AES_KEY_CTX* m_kCRFKey;
 #endif
 };
 
+static void fillRndMatrix(uint8_t* seed, uint64_t** mat, uint64_t cols, uint64_t rows, crypto* crypt) {
+	uint32_t columnlen = ceil_divide(cols, sizeof(uint64_t) * 8);
+	prf_state_ctx tmpstate;
+	crypt->init_prf_state(&tmpstate, seed);
+	for(uint32_t i = 0; i < rows; i++) {
+		gen_rnd_bytes(&tmpstate, (uint8_t*) mat[i], columnlen * sizeof(uint64_t));
+	}
+	crypt->free_prf_state(&tmpstate);
+}
 
+static void initRndMatrix(uint64_t*** mat, uint64_t cols, uint64_t rows) {
+	uint32_t columnlen = ceil_divide(cols, sizeof(uint64_t) * 8);
+	*mat = (uint64_t**) malloc(sizeof(uint64_t*) * rows);
+	for(uint32_t i = 0; i < rows; i++) {
+		(*mat)[i] = (uint64_t*) malloc(sizeof(uint64_t) * columnlen);
+	}}
 
+static void freeRndMatrix(uint64_t** mat, uint32_t nrows) {
+	for(uint32_t i = 0; i < nrows; i++)
+		free(mat[i]);
+	free(mat);
+}
+
+static void BitMatrixMultiplication(uint8_t* resbuf, uint64_t resbytelen, uint8_t* invec, uint32_t inveclen,
+		uint64_t** matrix, uint64_t* tmpbuf) {
+	uint32_t columniters = ceil_divide(resbytelen, sizeof(uint64_t));
+	uint32_t rowbit;
+	memset((uint8_t*) tmpbuf, 0, columniters * sizeof(uint64_t));
+	for(uint32_t i = 0, j; i < inveclen; i++) {
+		rowbit = !!(invec[i>>3] & (0x01<<(i&0x07)));
+		for(j = 0; j < columniters; j++) {
+			tmpbuf[j] ^= (matrix[i][j] * rowbit);
+			//cout << "rowbit = " << rowbit << ", matrix[i][j] = " << matrix[i][j] << ", tmpbuf = " << tmpbuf[j] << endl;
+		}
+	}
+	memcpy(resbuf, tmpbuf, resbytelen);
+	/*cout << (dec) << "out: " << resbytelen << ": "<<  (hex);
+	for(uint32_t i = 0; i < resbytelen; i++) {
+		cout << (uint32_t) resbuf[i];
+	}
+	cout << (dec) << endl;*/
+}
 
 #ifdef FIXED_KEY_AES_HASHING
 static const uint8_t fixed_key_aes_seed[32] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55,

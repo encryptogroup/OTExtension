@@ -18,6 +18,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	uint64_t OTwindow = NUMOTBLOCKS * wd_size_bits;
+	uint64_t** rndmat;
 	channel* chan = new channel(id, m_cRcvThread, m_cSndThread);
 
 	//counter variables
@@ -34,6 +35,18 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	CBitVector seedbuf(OTwindow * m_cCrypt->get_aes_key_bytes() * 8);
 
 	uint64_t otid = myStartPos;
+
+	queue<mask_block> mask_queue;
+
+	CBitVector maskbuf;
+	maskbuf.Create(m_nBitLength * OTwindow);
+
+	if(m_eSndOTFlav == Snd_GC_OT) {
+		uint8_t* rnd_seed = chan->blocking_receive();
+		initRndMatrix(&rndmat, m_nBitLength, m_nBaseOTs);
+		fillRndMatrix(rnd_seed, rndmat, m_nBitLength, m_nBaseOTs, m_cCrypt);
+		free(rnd_seed);
+	}
 
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalChkTime = 0, totalMaskTime = 0;
@@ -66,7 +79,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(T, seedbuf, otid, min(lim - otid, OTsPerIteration));
+		HashValues(T, seedbuf, maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -80,9 +93,9 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalSndTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		if(chan->data_available()) {
-			ReceiveAndUnMask(chan);
-		}
+		//if(chan->data_available()) {
+		SetOutput(maskbuf, otid, OTsPerIteration, &mask_queue, chan);//ReceiveAndUnMask(chan);
+		//}
 
 		//counter += min(lim - OT_ptr, OTsPerIteration);
 		otid += min(lim - otid, OTsPerIteration);
@@ -99,7 +112,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	if(m_eSndOTFlav != Snd_R_OT && m_eSndOTFlav != Snd_GC_OT) {
 		//finevent->Wait();
 		while(chan->is_alive())
-			ReceiveAndUnMask(chan);
+			ReceiveAndUnMask(chan, &mask_queue);
 	}
 
 	chan->synchronize_end();
@@ -107,7 +120,9 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	T.delCBitVector();
 	vSnd.delCBitVector();
 	seedbuf.delCBitVector();
-
+	maskbuf.delCBitVector();
+	if(m_eSndOTFlav==Snd_GC_OT)
+		freeRndMatrix(rndmat, m_nBaseOTs);
 #ifdef OTTiming
 	cout << "Receiver time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
 	cout << "Time needed for: " << endl;

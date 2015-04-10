@@ -45,38 +45,68 @@ public:
 			values[1].XORBits(m_vDelta->GetArr() + bytePos, bitPos, length);
 			snd_buf[1].XORBits(values[1].GetArr() + bytePos, 0, length);
 		}
-		else if (protocol == Snd_R_OT) {
+		else if (protocol == Snd_R_OT || protocol == Snd_GC_OT) {
 			values[0].SetBytes(snd_buf[0].GetArr(), ceil_divide(progress * m_nBitLength, 8), ceil_divide(processedOTs * m_nBitLength, 8));
 			values[1].SetBytes(snd_buf[1].GetArr(), ceil_divide(progress * m_nBitLength, 8), ceil_divide(processedOTs * m_nBitLength, 8));
 		}
+		//else if (protocol == Snd_GC_OT) {
+			//TODO
+		//}
 	}
 	;
 
 	//output already has to contain the masks
-	void UnMask(uint32_t progress, uint32_t processedOTs, CBitVector& choices, CBitVector& output, CBitVector& rcv_buf, CBitVector& tmpmask, snd_ot_flavor protocol) {
-		uint32_t bytelen = ceil_divide(m_nBitLength, 8);
-		uint32_t gprogress = progress * bytelen;
-		uint32_t lim = progress + processedOTs;
+	void UnMask(uint32_t progress, uint32_t processedOTs, CBitVector& choices, CBitVector& output, CBitVector& rcv_buf,
+			CBitVector& tmpmask, snd_ot_flavor protocol) {
+		uint32_t bytelen = bits_in_bytes(m_nBitLength);
+		uint64_t gprogress = progress * bytelen;
+		uint64_t lim = progress + processedOTs;
 
 		if (protocol == Snd_OT) {
-			for (uint32_t u, i = progress, offset = processedOTs * bytelen, l = 0; i < lim; i++, gprogress += bytelen, l += bytelen) {
-				//TODO make this working for single bits
-				u = (uint32_t) choices.GetBitNoMask(i);
-				output.SetXOR(rcv_buf.GetArr() + (u * offset) + l, tmpmask.GetArr() + gprogress, gprogress, bytelen);
-			}
-
-		} else if (protocol == Snd_C_OT)
-				{
-			int gprogress = progress * bytelen;
-			output.Copy(tmpmask.GetArr() + gprogress, gprogress, bytelen * processedOTs);
-			for (int i = progress, l = 0; i < lim; i++, l += bytelen, gprogress += bytelen) {
-				if (choices.GetBitNoMask(i)) {
-					//TODO make this working for single bits
-					output.XORBytes(rcv_buf.GetArr() + l, gprogress, bytelen);
+			if(m_nBitLength & 0x07) {
+				gprogress = progress * m_nBitLength;
+				uint32_t offset = PadToMultiple(processedOTs * m_nBitLength, 8);
+				//output.Copy(tmpmask.GetArr() + bits_in_bytes(gprogress), bits_in_bytes(gprogress),
+				//		bits_in_bytes(offset));
+				output.Copy(tmpmask.GetArr(), bits_in_bytes(gprogress),
+						bits_in_bytes(offset));
+				for (uint32_t u, i = progress,	l = 0; i < lim; i++, gprogress += m_nBitLength, l += m_nBitLength) {
+					u = (uint32_t) choices.GetBitNoMask(i);
+					output.XORBitsPosOffset(rcv_buf.GetArr(), (u * offset) + l, gprogress, m_nBitLength);
+				}
+			} else {
+				for (uint32_t u, i = progress, offset = processedOTs * bytelen, l = 0; i < lim; i++, gprogress += bytelen, l += bytelen) {
+					u = (uint32_t) choices.GetBitNoMask(i);
+					//output.SetXOR(rcv_buf.GetArr() + (u * offset) + l, tmpmask.GetArr() + gprogress, gprogress, bytelen);
+					output.SetXOR(rcv_buf.GetArr() + (u * offset) + l, tmpmask.GetArr(), gprogress, bytelen);
 				}
 			}
-		} else if (protocol == Snd_R_OT) {
-			//The seed expansion has already been performed, so do nothing
+
+		} else if (protocol == Snd_C_OT) {
+			if(m_nBitLength & 0x07) {
+				gprogress = progress * m_nBitLength;
+				uint32_t offset = PadToMultiple(processedOTs * m_nBitLength, 8);
+				//output.Copy(tmpmask.GetArr() + bits_in_bytes(gprogress), bits_in_bytes(gprogress),
+				//		bits_in_bytes(offset));
+				output.Copy(tmpmask.GetArr(), bits_in_bytes(gprogress), bits_in_bytes(offset));
+				for (uint32_t u, i = progress,	l = 0; i < lim; i++, gprogress += m_nBitLength, l += m_nBitLength) {
+					if(choices.GetBitNoMask(i)) {
+						output.XORBitsPosOffset(rcv_buf.GetArr(), l, gprogress, m_nBitLength);
+					}
+				}
+			} else {
+				//output.Copy(tmpmask.GetArr() + gprogress, gprogress, bytelen * processedOTs);
+				output.Copy(tmpmask.GetArr(), gprogress, bytelen * processedOTs);
+				for (int i = progress, l = 0; i < lim; i++, l += bytelen, gprogress += bytelen) {
+					if (choices.GetBitNoMask(i)) {
+						output.XORBytes(rcv_buf.GetArr() + l, gprogress, bytelen);
+					}
+				}
+			}
+		} else if (protocol == Snd_R_OT || protocol == Snd_GC_OT) {
+			//TODO
+			gprogress = bits_in_bytes(progress * m_nBitLength);
+			output.Copy(tmpmask.GetArr(), gprogress, bits_in_bytes(processedOTs * m_nBitLength));
 		}
 	}
 	;

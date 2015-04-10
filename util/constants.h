@@ -14,7 +14,7 @@
 #define DEBUG
 //#define FIXED_KEY_AES_HASHING
 //#define AES_OWF
-//#define VERIFY_OT
+#define VERIFY_OT
 //#define DEBUG_OT_HASH_IN
 //#define DEBUG_OT_HASH_OUT
 //#define DEBUG_OT_SEED_EXPANSION
@@ -24,6 +24,8 @@
 //#define OTTiming
 //#define HIGH_SPEED_ROT_LT
 //#define DEBUG_ALSZ_CHECKS
+//#define DEBUG_ALSZ_CHECKS_INPUT
+//#define DEBUG_ALSZ_CHECKS_OUTPUT
 
 
 
@@ -33,7 +35,7 @@
 #define AES_BYTES				16
 #define LOG2_AES_BITS			ceil_log2(AES_BITS)
 
-#define NUMOTBLOCKS 128
+#define NUMOTBLOCKS 256
 #define MAX_NUM_COMM_CHANNELS 256
 #define ADMIN_CHANNEL MAX_NUM_COMM_CHANNELS-1
 #define OT_ADMIN_CHANNEL ADMIN_CHANNEL-1
@@ -49,6 +51,8 @@ static const seclvl MT = { 40, 112, 2048, 192, 233 };
 static const seclvl LT = { 40, 128, 3072, 256, 283 };
 static const seclvl XLT = { 40, 192, 7680, 384, 409 };
 static const seclvl XXLT = { 40, 256, 15360, 512, 571 };
+
+enum ot_ext_prot {IKNP, ALSZ, NNOB};
 
 enum snd_ot_flavor { Snd_OT, Snd_C_OT, Snd_R_OT, Snd_GC_OT, Snd_OT_LAST };
 enum rec_ot_flavor { Rec_OT, Rec_R_OT, Rec_OT_LAST };

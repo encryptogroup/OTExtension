@@ -43,7 +43,7 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt);
 
 // Network Communication
-CSocket* m_vSockets;
+CSocket* m_vSocket;
 int m_nPID; // thread id
 field_type m_eFType;
 int m_nBitLength;
@@ -54,9 +54,6 @@ MaskingFunction* m_fMaskFct;
 //BaseOT* bot;
 OTExtSnd *sender;
 OTExtRec *receiver;
-//CBitVector U;
-//BYTE *vKeySeeds;
-//BYTE *vKeySeedMtx;
 
 SndThread* sndthread;
 RcvThread* rcvthread;
@@ -64,6 +61,9 @@ RcvThread* rcvthread;
 int m_nNumOTThreads;
 uint32_t m_nBaseOTs;
 uint32_t m_nChecks;
+
+bool m_bUseMinEntCorAssumption;
+ot_ext_prot m_eProt;
 
 double rndgentime;
 

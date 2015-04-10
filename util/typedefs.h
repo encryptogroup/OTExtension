@@ -150,6 +150,7 @@ typedef int SOCKET;
 #define ceil_divide(x, y)			(( ((x) + (y)-1)/(y)))
 #define bits_in_bytes(bits) (ceil_divide((bits), 8))
 
+
 #define PadToRegisterSize(x) 		(PadToMultiple(x, OTEXT_BLOCK_SIZE_BITS))
 #define PadToMultiple(x, y) 		( ceil_divide(x, y) * (y))
 

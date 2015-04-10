@@ -44,15 +44,17 @@ protected:
 	void BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t ctr, uint64_t numblocks);
 	void MaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t OTid, uint64_t numblocks);
 	void SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs);
-	void HashValues(CBitVector& T, CBitVector& seedbuf, uint64_t ctr, uint64_t lim);
-	void ReceiveAndUnMask(channel* chan);
+	void HashValues(CBitVector& T, CBitVector& seedbuf, CBitVector& maskbuf, uint64_t ctr, uint64_t lim, uint64_t** mat);
+	void SetOutput(CBitVector& maskbuf, uint64_t otid, uint64_t otlen, queue<mask_block>* mask_queue, channel* chan);
+	void ReceiveAndUnMask(channel* chan, queue<mask_block>* mask_queue);
+	void ReceiveAndXORCorRobVector(CBitVector& T, uint64_t OT_len, channel* chan);
 	BOOL verifyOT(uint64_t myNumOTs);
 
 	void Cleanup() {};//TODO check if necessary and implement
 
 	CBitVector m_nChoices;
 	CBitVector m_nRet;
-	CBitVector m_vTempOTMasks;
+	//CBitVector m_vTempOTMasks;
 
 	void ComputePKBaseOTs();
 

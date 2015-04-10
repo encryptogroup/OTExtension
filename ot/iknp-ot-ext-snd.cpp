@@ -15,6 +15,7 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	channel* chan = new channel(id, m_cRcvThread, m_cSndThread);
 	uint64_t tmpctr, tmpotlen;
+	uint64_t** rndmat;
 
 	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	uint64_t lim = myStartPos + myNumOTs;
@@ -49,6 +50,15 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	timeval tempStart, tempEnd;
 #endif
 
+	if(m_eSndOTFlav == Snd_GC_OT) {
+		uint8_t* rnd_seed = (uint8_t*) malloc(m_nSymSecParam);
+		m_cCrypt->gen_rnd(rnd_seed, m_nSymSecParam);
+		chan->send(rnd_seed, m_nSymSecParam);
+		initRndMatrix(&rndmat, m_nBitLength, m_nBaseOTs);
+		fillRndMatrix(rnd_seed, rndmat, m_nBitLength, m_nBaseOTs, m_cCrypt);
+		free(rnd_seed);
+	}
+
 	while (otid < lim) //do while there are still transfers missing
 	{
 		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - otid, wd_size_bits));
@@ -61,15 +71,16 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		rcvbufptr = chan->blocking_receive_id_len(&rcvbuftmpptr, &tmpctr, &tmpotlen);
-		vRcv.AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+		//rcvbufptr = chan->blocking_receive_id_len(&rcvbuftmpptr, &tmpctr, &tmpotlen);
+		//vRcv.AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+		ReceiveMasks(vRcv, chan, OTsPerIteration);
 
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalRcvTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildQMatrix(Q, vRcv, otid, processedOTBlocks);
+		BuildQMatrix(Q, otid, processedOTBlocks);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
@@ -87,7 +98,7 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(Q, seedbuf, vSnd, otid, min(lim - otid, OTsPerIteration));
+		HashValues(Q, seedbuf, vSnd, otid, min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -100,7 +111,7 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 		otid += min(lim - otid, OTsPerIteration);
 		Q.Reset();
-		free(rcvbufptr);
+		//free(rcvbufptr);
 	}
 
 	//vRcv.delCBitVector();
@@ -115,6 +126,8 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	if (numsndvals > 0)
 		free(vSnd);
 
+	if(m_eSndOTFlav==Snd_GC_OT)
+		freeRndMatrix(rndmat, m_nBaseOTs);
 
 #ifdef OTTiming
 	cout << "Sender time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << endl;

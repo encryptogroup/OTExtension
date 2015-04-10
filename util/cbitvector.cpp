@@ -124,6 +124,15 @@ void CBitVector::SetBits(BYTE* p, uint64_t pos, uint64_t len) {
 	}
 }
 
+//XOR bits given an offset on the bits for p which is not necessarily divisible by 8
+void CBitVector::SetBitsPosOffset(BYTE* p, int ppos, int pos, int len) {
+	uint8_t bit;
+	for (int i = pos, j = ppos; j < ppos + len; i++, j++) {
+		bit = !!(p[j>>3] & (1<<(j&0x07)));
+		SetBit(bit, i);
+	}
+}
+
 void CBitVector::SetBitsToZero(int bitpos, int bitlen) {
 	int firstlim = ceil_divide(bitpos, 8);
 	int firstlen = ceil_divide(bitlen - (bitpos % 8), 8);
@@ -136,6 +145,11 @@ void CBitVector::SetBitsToZero(int bitpos, int bitlen) {
 	for (int i = (firstlim + firstlen) << 8; i < bitpos + bitlen; i++) {
 		SetBitNoMask(i, 0);
 	}
+}
+
+void CBitVector::SetBytesToZero(int bytepos, int bytelen) {
+	assert(bytepos + bytelen < m_nByteSize);
+	memset(m_pBits + bytepos, 0x00, bytelen);
 }
 
 void CBitVector::GetBits(BYTE* p, int pos, int len) {

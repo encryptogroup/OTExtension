@@ -16,6 +16,7 @@ BOOL OTExtSnd::send(uint32_t numOTs, uint32_t bitlength, CBitVector& x0, CBitVec
 	m_eSndOTFlav = stype;
 	m_eRecOTFlav = rtype;
 	m_fMaskFct = maskfct;
+
 	return start_send(numThreads);
 }
 
@@ -26,21 +27,18 @@ BOOL OTExtSnd::start_send(uint32_t numThreads) {
 
 	//The total number of OTs that is performed has to be a multiple of numThreads*Z_REGISTER_BITS
 	uint32_t wd_size_bits = m_nBlockSizeBits;//pad_to_power_of_two(m_nBaseOTs);//1 << (ceil_log2(m_nBaseOTs));
-	uint64_t numOTs = ceil_divide(PadToMultiple(m_nOTs, wd_size_bits), numThreads);
-
+	//uint64_t numOTs = ceil_divide(PadToMultiple(m_nOTs, wd_size_bits), numThreads);
+	uint64_t internal_numOTs = PadToMultiple(ceil_divide(m_nOTs, numThreads), wd_size_bits);
 	vector<OTSenderThread*> sThreads(numThreads);
 
 	for (uint32_t i = 0; i < numThreads; i++) {
-		sThreads[i] = new OTSenderThread(i, numOTs, this);
+		sThreads[i] = new OTSenderThread(i, internal_numOTs, this);
 		sThreads[i]->Start();
 	}
 
 	for (uint32_t i = 0; i < numThreads; i++) {
 		sThreads[i]->Wait();
 	}
-
-	//finev->Wait();
-
 
 	m_nCounter += m_nOTs;
 
@@ -51,17 +49,11 @@ BOOL OTExtSnd::start_send(uint32_t numThreads) {
 #ifdef VERIFY_OT
 	verifyOT(m_nOTs);
 #endif
-	//sndthread->kill_task();
-
-	//delete rcvev;
-	//delete finev;
-
 	return true;
 }
 
 
-void OTExtSnd::BuildQMatrix(CBitVector& T, CBitVector& RcvBuf, uint64_t OT_ptr, uint64_t numblocks) {
-	BYTE* rcvbufptr = RcvBuf.GetArr();
+void OTExtSnd::BuildQMatrix(CBitVector& T, uint64_t OT_ptr, uint64_t numblocks) {
 	BYTE* Tptr = T.GetArr();
 	uint8_t* ctr_buf = (uint8_t*) calloc (AES_BYTES, sizeof(uint8_t));
 
@@ -75,7 +67,7 @@ void OTExtSnd::BuildQMatrix(CBitVector& T, CBitVector& RcvBuf, uint64_t OT_ptr, 
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
 
 	uint64_t iters = rowbytelen / AES_BYTES;
-	for (uint64_t k = 0, b; k < m_nBaseOTs; k++, rcvbufptr += rowbytelen) {
+	for (uint64_t k = 0, b; k < m_nBaseOTs; k++) {
 		*counter = global_OT_ptr;
 		for (b = 0; b < iters; b++, (*counter)++, Tptr += AES_BYTES) {
 			m_cCrypt->encrypt(seedptr + k, Tptr, ctr_buf, AES_BYTES);
@@ -98,22 +90,44 @@ void OTExtSnd::BuildQMatrix(CBitVector& T, CBitVector& RcvBuf, uint64_t OT_ptr, 
 void OTExtSnd::UnMaskBaseOTs(CBitVector& T, CBitVector& RcvBuf, uint64_t numblocks) {
 	uint64_t rowbytelen = m_nBlockSizeBytes * numblocks;
 	uint8_t* rcvbufptr = RcvBuf.GetArr();
-	uint32_t startpos;
 
-	if(m_eRecOTFlav == Rec_R_OT) {
-		startpos = 1;
-	} else {
-		startpos = 0;
-	}
-
-	for (uint64_t k = startpos; k < m_nBaseOTs; k++, rcvbufptr += rowbytelen) {
+	for (uint64_t k = 0; k < m_nBaseOTs; k++, rcvbufptr += rowbytelen) {
 		if (m_vU.GetBit(k)) {
 			T.XORBytes(rcvbufptr, k * rowbytelen, rowbytelen);
 		}
 	}
 }
 
-void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len) {
+void OTExtSnd::ReceiveMasks(CBitVector& vRcv, channel* chan, uint64_t processedOTs) {
+	//uint64_t nSize = bits_in_bytes(m_nBaseOTs * processedOTs);
+	uint64_t tmpctr, tmpotlen;
+	uint32_t startpos = 0;
+	uint8_t *rcvbuftmpptr, *rcvbufptr;
+
+	rcvbufptr = chan->blocking_receive_id_len(&rcvbuftmpptr, &tmpctr, &tmpotlen);
+
+	if(m_eRecOTFlav == Rec_R_OT) {
+		startpos = 1;
+		vRcv.SetBytesToZero(0, bits_in_bytes(processedOTs));
+	}
+	vRcv.SetBytes(rcvbuftmpptr, bits_in_bytes(startpos * processedOTs), bits_in_bytes((m_nBaseOTs - startpos) * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+
+	free(rcvbufptr);
+}
+
+void OTExtSnd::GenerateSendAndXORCorRobVector(CBitVector& Q, uint64_t OT_len, channel* chan) {
+	if(m_bUseMinEntCorRob) {
+		uint64_t len = bits_in_bytes(m_nBaseOTs * OT_len);
+		uint8_t* rndvec = (uint8_t*) malloc(len);
+		m_cCrypt->gen_rnd(rndvec, len);
+		Q.XORBytes(rndvec, len);
+		chan->send(rndvec, len);
+		free(rndvec);
+	}
+}
+
+
+void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len, uint64_t** mat_mul) {
 	uint64_t numhashiters = ceil_divide(m_nBitLength, m_cCrypt->get_hash_bytes());
 	uint32_t rowbytelen = bits_in_bytes(m_nBaseOTs);
 	uint32_t hashinbytelen = rowbytelen + sizeof(uint64_t);
@@ -131,6 +145,9 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 	uint8_t* hash_buf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes());
 
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
+
+	uint64_t* tmpbuf = (uint64_t*) malloc(PadToMultiple(bits_in_bytes(m_nBitLength), sizeof(uint64_t)));
+	uint8_t* tmpbufb = (uint8_t*) malloc(bits_in_bytes(m_nBitLength));
 
 	for (u = 0; u < m_nSndVals; u++)
 		sbp[u] = seedbuf[u].GetArr();
@@ -164,10 +181,13 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 				m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
 				memcpy(sbp[u], resbuf, aes_key_bytes);
 
-				sbp[u] += aes_key_bytes;
 			} else {
-				//TODO aes key bytes to m_nBitLength
-				m_vValues[u].SetBytes(Q.GetArr() + i * wd_size_bytes, (OT_ptr + i)* wd_size_bytes, rowbytelen);
+
+				BitMatrixMultiplication(tmpbufb, bits_in_bytes(m_nBitLength), Q.GetArr() + i * wd_size_bytes, m_nBaseOTs, mat_mul, tmpbuf);
+				//m_vValues[u].SetBits(tmpbufb, (OT_ptr + i)* m_nBitLength, m_nBitLength);
+				snd_buf[u].SetBits(tmpbufb, i * m_nBitLength, m_nBitLength);
+					//m_vTempOTMasks.SetBytes(tmpbufb, (uint64_t) (OT_ptr + i) * aes_key_bytes, (uint64_t) aes_key_bytes);
+				//m_vValues[u].SetBytes(Q.GetArr() + i * wd_size_bytes, (OT_ptr + i)* wd_size_bytes, rowbytelen);
 			}
 #endif
 
@@ -177,9 +197,12 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 				cout << (uint32_t) sbp[u][p];
 			cout << (dec) << endl;
 #endif
+			sbp[u] += aes_key_bytes;
 
 		}
 	}
+	//m_vValues[0].PrintHex();
+	//m_vValues[1].PrintHex();
 
 #ifndef HIGH_SPEED_ROT_LT
 	if(m_eSndOTFlav != Snd_GC_OT) {
@@ -193,16 +216,18 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 	free(inbuf);
 	free(sbp);
 	free(hash_buf);
+	free(tmpbuf);
+	free(tmpbufb);
 }
 
 void OTExtSnd::MaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len, channel* chan) {
 	//TODO
-	if(m_eSndOTFlav == Snd_GC_OT)
-		return;
+	//if(m_eSndOTFlav == Snd_GC_OT)
+	//	return;
 
 	m_fMaskFct->Mask(OT_ptr, OT_len, m_vValues, snd_buf, m_eSndOTFlav);
 
-	if (m_eSndOTFlav == Snd_R_OT)
+	if (m_eSndOTFlav == Snd_R_OT || m_eSndOTFlav == Snd_GC_OT)
 		return;
 
 	uint64_t bufsize = bits_in_bytes(OT_len * m_nBitLength);

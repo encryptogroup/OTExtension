@@ -43,11 +43,13 @@ protected:
 
 	BOOL OTSenderRoutine(uint32_t id, uint32_t myNumOTs);
 
-	void BuildQMatrix(CBitVector& T, CBitVector& RcvBuf, uint64_t ctr, uint64_t blocksize);
+	void BuildQMatrix(CBitVector& T, uint64_t ctr, uint64_t blocksize);
 	void UnMaskBaseOTs(CBitVector& T, CBitVector& RcvBuf, uint64_t numblocks);
 	void MaskAndSend(CBitVector* snd_buf, uint64_t progress, uint64_t processedOTs, channel* chan);
 	//void SendBlocks(uint32_t numThreads);
-	void HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint64_t ctr, uint64_t processedOTs);
+	void ReceiveMasks(CBitVector& vRcv, channel* chan, uint64_t processedOTs);
+	void GenerateSendAndXORCorRobVector(CBitVector& Q, uint64_t OT_len, channel* chan);
+	void HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint64_t ctr, uint64_t processedOTs, uint64_t** mat);
 	BOOL verifyOT(uint64_t myNumOTs);
 
 	void ComputePKBaseOTs();

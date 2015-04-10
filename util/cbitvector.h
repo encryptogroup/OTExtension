@@ -232,12 +232,16 @@ public:
 	void SetBits(BYTE* p, int pos, int len) {
 		SetBits(p, (uint64_t) pos, (uint64_t) len);
 	}
+	void SetBitsPosOffset(BYTE* p, int ppos, int pos, int len);
+
 	void SetBytes(BYTE* p, int pos, int len);
 	template<class T> void SetBytes(T* dst, T* src, T* lim);
 	template<class T> void Set(T val, int pos, int len) {
 		SetBits((BYTE*) &val, (uint64_t) pos, (uint64_t) len);
 	}
 	void SetBitsToZero(int bitpos, int bitlen);
+	void SetBytesToZero(int bytepos, int bytelen);
+
 
 	/*
 	 * XOR Operations
@@ -328,7 +332,6 @@ public:
 private:
 	BYTE* m_pBits;
 	uint64_t m_nByteSize;
-	uint64_t m_nBits; //The exact number of bits
 	uint64_t m_nElementLength;
 	uint64_t m_nNumElements;
 	uint64_t m_nNumElementsDimB;

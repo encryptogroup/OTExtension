@@ -95,6 +95,13 @@ void crypto::gen_rnd_uniform(uint8_t* resbuf, uint64_t mod) {
 	//TODO: implement
 }
 
+void crypto::gen_rnd_from_seed(uint8_t* resbuf, uint32_t resbytes, uint8_t* seed) {
+	prf_state_ctx tmpstate;
+	init_prf_state(&tmpstate, seed);
+	gen_rnd_bytes(&tmpstate, resbuf, resbytes);
+	free_prf_state(&tmpstate);
+}
+
 void crypto::encrypt(AES_KEY_CTX* enc_key, uint8_t* resbuf, uint8_t* inbuf, uint32_t ninbytes) {
 	int32_t dummy;
 	EVP_EncryptUpdate(enc_key, resbuf, &dummy, inbuf, ninbytes);

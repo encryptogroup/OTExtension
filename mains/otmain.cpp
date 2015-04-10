@@ -4,18 +4,20 @@
 
 BOOL Init(crypto* crypt)
 {
-	m_vSockets = (CSocket*) malloc(sizeof(CSocket) * m_nNumOTThreads);
+	m_vSocket = new CSocket();//*) malloc(sizeof(CSocket) * m_nNumOTThreads);
 
 	return TRUE;
 }
 
 BOOL Cleanup()
 {
-	for(int i = 0; i < m_nNumOTThreads; i++)
-	{
-		m_vSockets[i].Close();
-	}
-	free(m_vSockets);
+	delete sndthread;
+
+	delete rcvthread;
+
+	//cout << "Cleaning" << endl;
+	delete m_vSocket;
+	//cout << "done" << endl;
 	return true;
 }
 
@@ -28,20 +30,20 @@ BOOL Connect()
 #ifndef BATCH
 	cout << "Connecting to party "<< !m_nPID << ": " << m_nAddr << ", " << m_nPort << endl;
 #endif
-	for(int k = m_nNumOTThreads-1; k >= 0 ; k--)
+	for(int k = 0; k >= 0 ; k--)
 	{
 		for( int i=0; i<RETRY_CONNECT; i++ )
 		{
-			if( !m_vSockets[k].Socket() ) 
+			if( !m_vSocket->Socket() )
 			{	
 				printf("Socket failure: ");
 				goto connect_failure; 
 			}
 			
-			if( m_vSockets[k].Connect( m_nAddr, m_nPort, lTO))
+			if( m_vSocket->Connect( m_nAddr, m_nPort, lTO))
 			{
 				// send pid when connected
-				m_vSockets[k].Send( &k, sizeof(int) );
+				m_vSocket->Send( &k, sizeof(int) );
 		#ifndef BATCH
 				cout << " (" << !m_nPID << ") (" << k << ") connected" << endl;
 		#endif
@@ -55,7 +57,7 @@ BOOL Connect()
 					break;
 				}
 				SleepMiliSec(10);
-				m_vSockets[k].Close();
+				m_vSocket->Close();
 			}
 			SleepMiliSec(20);
 			if(i+1 == RETRY_CONNECT)
@@ -76,20 +78,20 @@ BOOL Listen()
 #ifndef BATCH
 	cout << "Listening: " << m_nAddr << ":" << m_nPort << ", with size: " << m_nNumOTThreads << endl;
 #endif
-	if( !m_vSockets[0].Socket() ) 
+	if( !m_vSocket->Socket() )
 	{
 		goto listen_failure;
 	}
-	if( !m_vSockets[0].Bind(m_nPort, m_nAddr) )
+	if( !m_vSocket->Bind(m_nPort, m_nAddr) )
 		goto listen_failure;
-	if( !m_vSockets[0].Listen() )
+	if( !m_vSocket->Listen() )
 		goto listen_failure;
 
-	for( int i = 0; i<m_nNumOTThreads; i++ ) //twice the actual number, due to double sockets for OT
+	for( int i = 0; i<1; i++ ) //twice the actual number, due to double sockets for OT
 	{
 		CSocket sock;
 		//cout << "New round! " << endl;
-		if( !m_vSockets[0].Accept(sock) )
+		if( !m_vSocket->Accept(sock) )
 		{
 			cerr << "Error in accept" << endl;
 			goto listen_failure;
@@ -98,7 +100,7 @@ BOOL Listen()
 		UINT threadID;
 		sock.Receive(&threadID, sizeof(int));
 
-		if( threadID >= m_nNumOTThreads )
+		if( threadID >= 1)
 		{
 			sock.Close();
 			i--;
@@ -109,7 +111,7 @@ BOOL Listen()
 		cout <<  " (" << m_nPID <<") (" << threadID << ") connection accepted" << endl;
 	#endif
 		// locate the socket appropriately
-		m_vSockets[threadID].AttachFrom(sock);
+		m_vSocket->AttachFrom(sock);
 		sock.Detach();
 	}
 
@@ -141,14 +143,21 @@ void InitOTSender(const char* address, int port, crypto* crypt)
 	//Server listen
 	Listen();
 
-	sndthread = new SndThread(m_vSockets);
-	rcvthread = new RcvThread(m_vSockets);
+	sndthread = new SndThread(m_vSocket);
+	rcvthread = new RcvThread(m_vSocket);
 
 	rcvthread->Start();
 	sndthread->Start();
 
-	//sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true);
-	sender = new IKNPOTExtSnd(nSndVals, crypt, rcvthread, sndthread);
+	switch(m_eProt) {
+		case ALSZ: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true); break;
+		case IKNP: sender = new IKNPOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
+		case NNOB: break; //TODO
+		default: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true); break;
+	}
+
+	if(m_bUseMinEntCorAssumption)
+		sender->EnableMinEntCorrRobustness();
 	sender->ComputeBaseOTs(m_eFType);
 }
 
@@ -165,14 +174,22 @@ void InitOTReceiver(const char* address, int port, crypto* crypt)
 	//Client connect
 	Connect();
 
-	sndthread = new SndThread(m_vSockets);
-	rcvthread = new RcvThread(m_vSockets);
+	sndthread = new SndThread(m_vSocket);
+	rcvthread = new RcvThread(m_vSocket);
 	
 	rcvthread->Start();
 	sndthread->Start();
 
-	//receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true);
-	receiver = new IKNPOTExtRec(nSndVals, crypt, rcvthread, sndthread);
+	switch(m_eProt) {
+		case ALSZ: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true); break;
+		case IKNP: receiver = new IKNPOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
+		case NNOB: break; //TODO
+		default: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true); break;
+	}
+
+
+	if(m_bUseMinEntCorAssumption)
+		receiver->EnableMinEntCorrRobustness();
 	receiver->ComputeBaseOTs(m_eFType);
 }
 
@@ -182,8 +199,8 @@ BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength,
 {
 	bool success = FALSE;
 
-	m_vSockets->reset_bytes_sent();
-	m_vSockets->reset_bytes_received();
+	m_vSocket->reset_bytes_sent();
+	m_vSocket->reset_bytes_received();
 	int nSndVals = 2; //Perform 1-out-of-2 OT
 #ifdef OTTiming
 	timeval ot_begin, ot_end;
@@ -198,11 +215,11 @@ BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength,
 	
 #ifdef OTTiming
 	gettimeofday(&ot_end, NULL);
-	printf("%f\n", getMillies(ot_begin, ot_end) + rndgentime);
+	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
 #endif
 
-	cout << "Sent: " << m_vSockets->get_bytes_sent() << " bytes" << endl;
-	cout << "Received: " << m_vSockets->get_bytes_received() <<" bytes" << endl;
+	cout << "Sent:\t\t" << m_vSocket->get_bytes_sent() << " bytes" << endl;
+	cout << "Received:\t" << m_vSocket->get_bytes_received() <<" bytes" << endl;
 	return success;
 }
 
@@ -211,8 +228,8 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 {
 	bool success = FALSE;
 
-	m_vSockets->reset_bytes_sent();
-	m_vSockets->reset_bytes_received();
+	m_vSocket->reset_bytes_sent();
+	m_vSocket->reset_bytes_received();
 
 #ifdef OTTiming
 	timeval ot_begin, ot_end;
@@ -223,12 +240,12 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 	
 #ifdef OTTiming
 	gettimeofday(&ot_end, NULL);
-	printf("%f\n", getMillies(ot_begin, ot_end) + rndgentime);
+	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
 #endif
 	
 
-	cout << "Sent: " << m_vSockets->get_bytes_sent() << " bytes" << endl;
-	cout << "Received: " << m_vSockets->get_bytes_received() <<" bytes" << endl;
+	cout << "Sent:\t\t" << m_vSocket->get_bytes_sent() << " bytes" << endl;
+	cout << "Received:\t" << m_vSocket->get_bytes_received() <<" bytes" << endl;
 	return success;
 }
 
@@ -251,7 +268,7 @@ int main(int argc, char** argv)
 	//the number of OTs that are performed. Has to be initialized to a certain minimum size due to
 	uint64_t numOTs = 1000000;
 	//bitlength of the values that are transferred - NOTE that when bitlength is not 1 or a multiple of 8, the endianness has to be observed
-	uint32_t bitlength = 128;
+	uint32_t bitlength = 4;
 
 	//Use elliptic curve cryptography in the base-OTs
 	m_eFType = ECC_FIELD;
@@ -264,10 +281,14 @@ int main(int argc, char** argv)
 	//Specifies whether G_OT, C_OT, or R_OT should be used
 	uint32_t stype, rtype;
 
-	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);//, (uint8_t*) m_vSeed);
+	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);
 
 	m_nBaseOTs = 190;
 	m_nChecks = 380;
+
+	m_bUseMinEntCorAssumption = false;
+
+	m_eProt = ALSZ;
 
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
@@ -305,6 +326,8 @@ int main(int argc, char** argv)
 				cout << "Sender performing " << numOTs << " " << getSndFlavor((snd_ot_flavor) stype) << " / " <<
 						getRecFlavor((rec_ot_flavor) rtype) << " extensions on " << bitlength << " bit elements" << endl;
 				ObliviouslySend(X1, X2, numOTs, bitlength, (snd_ot_flavor) stype, (rec_ot_flavor) rtype, crypt);
+				//X1.PrintHex();
+				//X2.PrintHex();
 			}
 		}
 
@@ -380,6 +403,8 @@ int main(int argc, char** argv)
 				cout << "Receiver performing " << numOTs << " " << getSndFlavor((snd_ot_flavor) stype) << " / "
 						<< getRecFlavor((rec_ot_flavor)rtype) << " extensions on " << bitlength << " bit elements" << endl;
 				ObliviouslyReceive(choices, response, numOTs, bitlength, (snd_ot_flavor) stype, (rec_ot_flavor) rtype, crypt);
+				//choices.PrintBinary();
+				//response.PrintHex();
 			}
 		}
 		/*version = OT;
@@ -416,9 +441,9 @@ int main(int argc, char** argv)
 	}
 
 
-	delete crypt;
 
 	Cleanup();
+	delete crypt;
 
 	return 1;
 }

@@ -174,12 +174,12 @@ void OTExtRec::HashValues(CBitVector& T, CBitVector& seedbuf, CBitVector& maskbu
 	uint8_t* Tptr = T.GetArr();
 	uint8_t* bufptr = seedbuf.GetArr();
 
-	uint8_t* inbuf = (uint8_t*) malloc(hashinbytelen);
-	uint8_t* resbuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes());
-	uint8_t* hash_buf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes());
+	uint8_t* inbuf = (uint8_t*) calloc(hashinbytelen, 1);
+	uint8_t* resbuf = (uint8_t*) calloc(m_cCrypt->get_hash_bytes(), 1);
+	uint8_t* hash_buf = (uint8_t*) calloc(m_cCrypt->get_hash_bytes(), 1);
 
-	uint64_t* tmpbuf = (uint64_t*) malloc(PadToMultiple(bits_in_bytes(m_nBitLength), sizeof(uint64_t)));
-	uint8_t* tmpbufb = (uint8_t*) malloc(bits_in_bytes(m_nBitLength));
+	uint64_t* tmpbuf = (uint64_t*) calloc(PadToMultiple(bits_in_bytes(m_nBitLength), sizeof(uint64_t)), 1);
+	uint8_t* tmpbufb = (uint8_t*) calloc(bits_in_bytes(m_nBitLength), 1);
 
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
 	if(m_eSndOTFlav != Snd_GC_OT) {
@@ -187,7 +187,7 @@ void OTExtRec::HashValues(CBitVector& T, CBitVector& seedbuf, CBitVector& maskbu
 #ifdef DEBUG_OT_HASH_IN
 			cout << "Hash-In for i = " << global_OT_ptr << ": " << (hex);
 			for(uint32_t p = 0; p < rowbytelen; p++)
-				cout << (uint32_t) Tptr[p];
+				cout << setw(2) << setfill('0') << (uint32_t) Tptr[p];
 				cout << (dec) << endl;
 #endif
 
@@ -204,7 +204,7 @@ void OTExtRec::HashValues(CBitVector& T, CBitVector& seedbuf, CBitVector& maskbu
 #ifdef DEBUG_OT_HASH_OUT
 			cout << "Hash-Out for i = " << global_OT_ptr << ": " << (hex);
 			for(uint32_t p = 0; p < aes_key_bytes; p++)
-				cout << (uint32_t) bufptr[p];
+				cout << setw(2) << setfill('0') << (uint32_t) bufptr[p];
 			cout << (dec) << endl;
 #endif
 		}

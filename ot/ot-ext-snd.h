@@ -31,8 +31,9 @@ protected:
 		Init(nSndVals, crypt, rcvthread, sndthread, nbaseOTs, nbaseOTs);
 		m_vU.Create(nbaseOTs, crypt);
 		//m_vU.Copy(U.GetArr(), 0, bits_in_bytes(nbaseOTs));
-		//for (int i = nbaseOTs; i < PadToMultiple(nbaseOTs, 8); i++)
-		//	m_vU.SetBit(i, 0);
+		//fill zero into the remaining positions - is needed if nbaseots is not a multiple of 8
+		for (uint32_t i = nbaseOTs; i < PadToMultiple(nbaseOTs, 8); i++)
+			m_vU.SetBit(i, 0);
 
 		m_vValues = (CBitVector*) malloc(sizeof(CBitVector) * nSndVals);
 	}

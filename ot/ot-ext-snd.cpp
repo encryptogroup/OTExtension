@@ -135,19 +135,19 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 	uint32_t u;
 	uint32_t aes_key_bytes = m_cCrypt->get_aes_key_bytes();
 
-	uint8_t* resbuf= (uint8_t*) malloc(m_cCrypt->get_hash_bytes());
-	uint8_t* inbuf= (uint8_t*) malloc(hashinbytelen);
+	uint8_t* resbuf= (uint8_t*) calloc(m_cCrypt->get_hash_bytes(), 1);
+	uint8_t* inbuf= (uint8_t*) calloc(hashinbytelen, 1);
 
 	uint64_t* Qptr = (uint64_t*) Q.GetArr();
 	uint64_t* Uptr = (uint64_t*) m_vU.GetArr();
 
 	uint8_t** sbp = (uint8_t**) malloc(sizeof(uint8_t*) * m_nSndVals);
-	uint8_t* hash_buf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes());
+	uint8_t* hash_buf = (uint8_t*) calloc(m_cCrypt->get_hash_bytes(), 1);
 
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
 
-	uint64_t* tmpbuf = (uint64_t*) malloc(PadToMultiple(bits_in_bytes(m_nBitLength), sizeof(uint64_t)));
-	uint8_t* tmpbufb = (uint8_t*) malloc(bits_in_bytes(m_nBitLength));
+	uint64_t* tmpbuf = (uint64_t*) calloc(PadToMultiple(bits_in_bytes(m_nBitLength), sizeof(uint64_t)), 1);
+	uint8_t* tmpbufb = (uint8_t*) calloc(bits_in_bytes(m_nBitLength), 1);
 
 	for (u = 0; u < m_nSndVals; u++)
 		sbp[u] = seedbuf[u].GetArr();
@@ -168,7 +168,7 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 #ifdef DEBUG_OT_HASH_IN
 			cout << "Hash-In for i = " << global_OT_ptr << ", u = " << u << ": " << (hex);
 			for(uint32_t p = 0; p < rowbytelen; p++)
-				cout << (uint32_t) (Q.GetArr() + i * wd_size_bytes)[p];
+				cout << setw(2) << setfill('0') << (uint32_t) (Q.GetArr() + i * wd_size_bytes)[p];
 			cout << (dec) << endl;
 #endif
 
@@ -194,7 +194,7 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 #ifdef DEBUG_OT_HASH_OUT
 			cout << "Hash-Out for i = " << global_OT_ptr << ", u = " << u << ": " << (hex);
 			for(uint32_t p = 0; p < aes_key_bytes; p++)
-				cout << (uint32_t) sbp[u][p];
+				cout << setw(2) << setfill('0') << (uint32_t) sbp[u][p];
 			cout << (dec) << endl;
 #endif
 			sbp[u] += aes_key_bytes;

@@ -278,7 +278,7 @@ int main(int argc, char** argv)
 	//Number of threads that will be used in OT extension
 	m_nNumOTThreads = 1;
 
-	//Specifies whether G_OT, C_OT, or R_OT should be used
+	//Specifies which OT flavor should be used
 	uint32_t stype, rtype;
 
 	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);
@@ -301,26 +301,11 @@ int main(int argc, char** argv)
 
 		//creates delta as an array with "numOTs" entries of "bitlength" bit-values and fills delta with random values
 		delta.Create(numOTs, bitlength, crypt);
+
 		//Create X1 and X2 as two arrays with "numOTs" entries of "bitlength" bit-values and resets them to 0
 		X1.Create(numOTs, bitlength, crypt);
-		//X1.Reset();
 		X2.Create(numOTs, bitlength, crypt);
-		//X2.Reset();
 
-		/*for(int i = 0; i < numOTs; i++)
-		{
-			//access and set the i-th element in the bitvectors
-			X1.Set(i, 0x55);
-			X2.Set(i, 0xAA);
-		}*/
-
-		/* 
-		 * G_OT (general OT) obliviously transfers (X1,X2) and omits delta. 
-		 * Inputs: 
-		 * X1,X2: strings that are obliviously transferred in the OT
-		 * delta: is unused in G_OT and does not need to be initialized
-		 * Outputs: NONE
-		*/
 		for(stype = Snd_OT; stype < Snd_OT_LAST; stype++) {
 			for(rtype = Rec_OT; rtype < Rec_OT_LAST; rtype++) {
 				cout << "Sender performing " << numOTs << " " << getSndFlavor((snd_ot_flavor) stype) << " / " <<
@@ -330,53 +315,6 @@ int main(int argc, char** argv)
 				//X2.PrintHex();
 			}
 		}
-
-		//cout << "Finished OT" << endl;
-		/*cout << "X0: ";
-		X1.PrintHex();
-		cout << "X1: ";
-		X2.PrintHex();*/
-
-		/* 
-		 * C_OT (correlated OT) generates X1 at random, obliviously transfers (X1,X1 XOR delta), and outputs X1, X2.  
-		 * Inputs: 
-		 * delta: string that stores the correlation of the values in C_OT
-		 * Outputs: 
-		 * X1: is filled with random values. Needs to be a CBitVector of size bitlength*numOTs
-		 * X2: is filled with X1 XOR delta. Needs to be a CBitVector of size bitlength*numOTs
-		 * 
-		 * Note that the correlation (XOR in the example) can be changed in fMaskFct by implementing a different routine.  
-		*/
-		/*version = C_OT;
-		cout << "Sender performing " << numOTs << " C_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
-		cout << "Finished C-OT" << endl;*/
-		/*cout << "X0: ";
-		X1.PrintHex();
-		cout << "X1: ";
-		X2.PrintHex();*/
-
-		/* 
-		 * R_OT (random OT) generates X1 and X2 at random, obliviously transfers (X1,X2), and outputs X1, X2.  
-		 * Inputs: 
-		 * delta:  is unused in R_OT and does not need to be initialized
-		 * Outputs: 
-		 * X1: is filled with random values. Needs to be a CBitVector of size bitlength*numOTs
-		 * X2: is filled with random values. Needs to be a CBitVector of size bitlength*numOTs
-		*/
-		/*version = R_OT;
-		cout << "Sender performing " << numOTs << " R_OT extensions on " << bitlength << " bit elements" << endl;
-	    ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
-		cout << "Finished R-OT" << endl;
-
-		version = RR_OT;
-		cout << "Sender performing " << numOTs << " RR_OT extensions on " << bitlength << " bit elements" << endl;
-	    ObliviouslySend(X1, X2, numOTs, bitlength, version, crypt);
-		cout << "Finished RR-OT" << endl;*/
-		/*cout << "X0: ";
-		X1.PrintHex();
-		cout << "X1: ";
-		X2.PrintHex();*/
 	}
 	else //Play as OT receiver
 	{
@@ -407,37 +345,6 @@ int main(int argc, char** argv)
 				//response.PrintHex();
 			}
 		}
-		/*version = OT;
-		cout << "Receiver performing " << numOTs << " G_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
-		cout << "Finished OT" << endl;*/
-		/*cout << "C : ";
-		choices.PrintBinary();
-		cout << "Xc: ";
-		response.PrintHex();*/
-
-		/*version = C_OT;
-		cout << "Receiver performing " << numOTs << " C_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
-		cout << "Finished C-OT" << endl;*/
-		/*cout << "C : ";
-		choices.PrintBinary();
-		cout << "Xc: ";
-		response.PrintHex();*/
-
-		/*version = R_OT;
-		cout << "Receiver performing " << numOTs << " R_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
-		cout << "Finished R-OT" << endl;
-
-		version = RR_OT;
-		cout << "Receiver performing " << numOTs << " RR_OT extensions on " << bitlength << " bit elements" << endl;
-		ObliviouslyReceive(choices, response, numOTs, bitlength, version, crypt);
-		cout << "Finished RR-OT" << endl;*/
-		/*cout << "C : ";
-		choices.PrintBinary();
-		cout << "Xc: ";
-		response.PrintHex();*/
 	}
 
 

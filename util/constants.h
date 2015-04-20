@@ -45,9 +45,7 @@
 
 
 
-enum field_type {
-	P_FIELD, ECC_FIELD
-};
+enum field_type {P_FIELD, ECC_FIELD, FIELD_LAST};
 
 static const seclvl ST = { 40, 80, 1024, 160, 163 };
 static const seclvl MT = { 40, 112, 2048, 192, 233 };
@@ -55,7 +53,7 @@ static const seclvl LT = { 40, 128, 3072, 256, 283 };
 static const seclvl XLT = { 40, 192, 7680, 384, 409 };
 static const seclvl XXLT = { 40, 256, 15360, 512, 571 };
 
-enum ot_ext_prot {IKNP, ALSZ, NNOB};
+enum ot_ext_prot {IKNP, ALSZ, NNOB, PROT_LAST};
 
 enum snd_ot_flavor { Snd_OT, Snd_C_OT, Snd_R_OT, Snd_GC_OT, Snd_OT_LAST };
 enum rec_ot_flavor { Rec_OT, Rec_R_OT, Rec_OT_LAST };
@@ -81,6 +79,23 @@ static const char* getRecFlavor(rec_ot_flavor rtype) {
 	case Rec_OT: return "Rec_OT";
 	case Rec_R_OT: return "Rec_R_OT";
 	default: return "unknown rec type";
+	}
+}
+
+static const char* getProt(ot_ext_prot prot) {
+	switch (prot) {
+	case IKNP: return "IKNP";
+	case ALSZ: return "ALSZ";
+	case NNOB: return "NNOB";
+	default: return "unknown protocol";
+	}
+}
+
+static const char* getFieldType(field_type ftype) {
+	switch (ftype) {
+	case P_FIELD: return "P_FIELD";
+	case ECC_FIELD: return "ECC_FIELD";
+	default: return "unknown field";
 	}
 }
 #endif /* CONSTANTS_H_ */

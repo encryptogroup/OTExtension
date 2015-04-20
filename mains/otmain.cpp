@@ -268,7 +268,7 @@ int main(int argc, char** argv)
 	//the number of OTs that are performed. Has to be initialized to a certain minimum size due to
 	uint64_t numOTs = 1000000;
 	//bitlength of the values that are transferred - NOTE that when bitlength is not 1 or a multiple of 8, the endianness has to be observed
-	uint32_t bitlength = 4;
+	uint32_t bitlength = 8;
 
 	//Use elliptic curve cryptography in the base-OTs
 	m_eFType = ECC_FIELD;
@@ -276,19 +276,19 @@ int main(int argc, char** argv)
 	uint32_t m_nSecParam = 128;
 
 	//Number of threads that will be used in OT extension
-	m_nNumOTThreads = 4;
+	m_nNumOTThreads = 1;
 
 	//Specifies which OT flavor should be used
 	uint32_t stype, rtype;
 
 	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);
 
-	m_nBaseOTs = 323;
-	m_nChecks = 128;
+	m_nBaseOTs = 190;
+	m_nChecks = 380;
 
 	m_bUseMinEntCorAssumption = false;
 
-	m_eProt = NNOB;
+	m_eProt = ALSZ;
 
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{

@@ -140,9 +140,6 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
 #endif
 
-#ifndef BATCH
-	cout << "OT Extension Sender finished" << endl;
-#endif
 	delete chan;
 	return TRUE;
 }

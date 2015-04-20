@@ -39,8 +39,6 @@ BOOL Listen();
 void InitOTSender(const char* address, int port, crypto* crypt);
 void InitOTReceiver(const char* address, int port, crypto* crypt);
 
-//BOOL PrecomputeNaorPinkasSender(crypto* crypt);
-//BOOL PrecomputeNaorPinkasReceiver(crypto* crypt);
 BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt);
 BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt);
 
@@ -49,7 +47,6 @@ CSocket* m_vSocket;
 int m_nPID; // thread id
 field_type m_eFType;
 int m_nBitLength;
-int m_nMod;
 MaskingFunction* m_fMaskFct;
 
 // Naor-Pinkas OT

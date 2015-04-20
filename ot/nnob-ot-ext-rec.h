@@ -34,7 +34,7 @@ class NNOBOTExtRec : public OTExtRec {
 public:
 	NNOBOTExtRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread,
 			bool dobaseots=true) {
-		uint32_t nbaseots = (crypt->get_seclvl().symbits * 8 / 3);
+		uint32_t nbaseots = ceil_divide(crypt->get_seclvl().symbits * 8, 3);
 		InitRec(nSndVals, crypt, rcvthread, sndthread, nbaseots);
 		m_nChecks = nbaseots/2;
 		m_bDoBaseOTs=dobaseots;

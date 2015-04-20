@@ -61,31 +61,29 @@ public:
 		uint32_t bytelen = bits_in_bytes(m_nBitLength);
 		uint64_t gprogress = progress * bytelen;
 		uint64_t lim = progress + processedOTs;
+		uint64_t offset;
 
 		if (protocol == Snd_OT) {
 			if(m_nBitLength & 0x07) {
 				gprogress = progress * m_nBitLength;
-				uint32_t offset = PadToMultiple(processedOTs * m_nBitLength, 8);
-				//output.Copy(tmpmask.GetArr() + bits_in_bytes(gprogress), bits_in_bytes(gprogress),
-				//		bits_in_bytes(offset));
-				output.Copy(tmpmask.GetArr(), bits_in_bytes(gprogress),
-						bits_in_bytes(offset));
+				offset = PadToMultiple(processedOTs * m_nBitLength, 8);
+				output.Copy(tmpmask.GetArr(), bits_in_bytes(gprogress),	bits_in_bytes(offset));
 				for (uint32_t u, i = progress,	l = 0; i < lim; i++, gprogress += m_nBitLength, l += m_nBitLength) {
 					u = (uint32_t) choices.GetBitNoMask(i);
 					output.XORBitsPosOffset(rcv_buf.GetArr(), (u * offset) + l, gprogress, m_nBitLength);
 				}
 			} else {
-				for (uint32_t u, i = progress, offset = processedOTs * bytelen, l = 0; i < lim; i++, gprogress += bytelen, l += bytelen) {
+				offset = processedOTs * bytelen;
+				for (uint32_t u, i = progress, l = 0; i < lim; i++, gprogress += bytelen, l += bytelen) {
 					u = (uint32_t) choices.GetBitNoMask(i);
-					//output.SetXOR(rcv_buf.GetArr() + (u * offset) + l, tmpmask.GetArr() + gprogress, gprogress, bytelen);
-					output.SetXOR(rcv_buf.GetArr() + (u * offset) + l, tmpmask.GetArr(), gprogress, bytelen);
+					output.SetXOR(rcv_buf.GetArr() + (u * offset) + l, tmpmask.GetArr() + l, gprogress, bytelen);
 				}
 			}
 
 		} else if (protocol == Snd_C_OT) {
 			if(m_nBitLength & 0x07) {
 				gprogress = progress * m_nBitLength;
-				uint32_t offset = PadToMultiple(processedOTs * m_nBitLength, 8);
+				offset = PadToMultiple(processedOTs * m_nBitLength, 8);
 				//output.Copy(tmpmask.GetArr() + bits_in_bytes(gprogress), bits_in_bytes(gprogress),
 				//		bits_in_bytes(offset));
 				output.Copy(tmpmask.GetArr(), bits_in_bytes(gprogress), bits_in_bytes(offset));
@@ -97,14 +95,13 @@ public:
 			} else {
 				//output.Copy(tmpmask.GetArr() + gprogress, gprogress, bytelen * processedOTs);
 				output.Copy(tmpmask.GetArr(), gprogress, bytelen * processedOTs);
-				for (int i = progress, l = 0; i < lim; i++, l += bytelen, gprogress += bytelen) {
+				for (uint32_t i = progress, l = 0; i < lim; i++, l += bytelen, gprogress += bytelen) {
 					if (choices.GetBitNoMask(i)) {
 						output.XORBytes(rcv_buf.GetArr() + l, gprogress, bytelen);
 					}
 				}
 			}
 		} else if (protocol == Snd_R_OT || protocol == Snd_GC_OT) {
-			//TODO
 			gprogress = bits_in_bytes(progress * m_nBitLength);
 			output.Copy(tmpmask.GetArr(), gprogress, bits_in_bytes(processedOTs * m_nBitLength));
 		}

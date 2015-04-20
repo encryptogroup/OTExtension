@@ -25,6 +25,11 @@ BOOL OTExtSnd::start_send(uint32_t numThreads) {
 	if (m_nOTs == 0)
 		return true;
 
+	if(numThreads * m_nBlockSizeBits > m_nOTs) {
+		cerr << "Decreasing nthreads from " << numThreads << " to " << m_nOTs / m_nBlockSizeBits << " to fit window size" << endl;
+		numThreads = m_nOTs / m_nBlockSizeBits;
+	}
+
 	//The total number of OTs that is performed has to be a multiple of numThreads*Z_REGISTER_BITS
 	uint32_t wd_size_bits = m_nBlockSizeBits;//pad_to_power_of_two(m_nBaseOTs);//1 << (ceil_log2(m_nBaseOTs));
 	//uint64_t numOTs = ceil_divide(PadToMultiple(m_nOTs, wd_size_bits), numThreads);

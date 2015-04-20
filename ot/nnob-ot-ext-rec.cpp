@@ -1,15 +1,15 @@
 /*
- * alsz-ot-ext-rec.cpp
+ * nnob-ot-ext-rec.cpp
  *
  *  Created on: Mar 23, 2015
  *      Author: mzohner
  */
 
 
-#include "alsz-ot-ext-rec.h"
+#include "nnob-ot-ext-rec.h"
 
 
-BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
+BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t wd_size_bits = m_nBlockSizeBits;
 
@@ -47,7 +47,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	CBitVector seedbuf(OTwindow * m_cCrypt->get_aes_key_bytes() * 8);
 
 	uint64_t otid = myStartPos;
-	queue<alsz_rcv_check_t> check_buf;
+	queue<nnob_rcv_check_t> check_buf;
 
 	queue<mask_block> mask_queue;
 	CBitVector maskbuf;
@@ -78,7 +78,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalMtxTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		check_buf.push(EnqueueSeed(T.GetArr(), vSnd.GetArr(), otid, processedOTBlocks));
+		check_buf.push(EnqueueSeed(T.GetArr(), otid, processedOTBlocks));
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalEnqueueTime += getMillies(tempStart, tempEnd);
@@ -178,7 +178,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 }
 
 
-void ALSZOTExtRec::ReceiveAndFillMatrix(uint64_t** rndmat, channel* mat_chan) {
+void NNOBOTExtRec::ReceiveAndFillMatrix(uint64_t** rndmat, channel* mat_chan) {
 	if(m_eSndOTFlav == Snd_GC_OT) {
 		uint8_t* rnd_seed = mat_chan->blocking_receive();
 		//initRndMatrix(&rndmat, m_nBitLength, m_nBaseOTs);
@@ -187,34 +187,34 @@ void ALSZOTExtRec::ReceiveAndFillMatrix(uint64_t** rndmat, channel* mat_chan) {
 	}
 }
 
-alsz_rcv_check_t ALSZOTExtRec::EnqueueSeed(uint8_t* T0, uint8_t* T1, uint64_t otid, uint64_t numblocks) {
+nnob_rcv_check_t NNOBOTExtRec::EnqueueSeed(uint8_t* T0, uint64_t otid, uint64_t numblocks) {
 	uint64_t expseedbytelen = m_nBaseOTs * numblocks * m_nBlockSizeBytes;
-	alsz_rcv_check_t seedstr;
+	nnob_rcv_check_t seedstr;
 
 	seedstr.otid = otid;
 	seedstr.numblocks = numblocks;
 	seedstr.T0 = (uint8_t*) malloc(expseedbytelen);
-	seedstr.T1 = (uint8_t*) malloc(expseedbytelen);
 
 	memcpy(seedstr.T0, T0, expseedbytelen);
-	memcpy(seedstr.T1, T1, expseedbytelen);
 
 	return seedstr;
 }
 
 
 
-void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* check_chan) {//linking_t* permbits, int nchecks, int otid, int processedOTs, BYTE* outhashes) {
+void NNOBOTExtRec::ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* check_chan) {//linking_t* permbits, int nchecks, int otid, int processedOTs, BYTE* outhashes) {
 
 	//Obtain T0 and T1 from the SeedPointers
 	BOOL found = false;
-	uint32_t receiver_hashes = 4;
+	uint32_t receiver_hashes = 1;
 
 	uint64_t tmpid, tmpnblocks;
 	linking_t* perm;
-	uint8_t* rcv_buf = check_chan->blocking_receive_id_len((uint8_t**) &perm, &tmpid, &tmpnblocks);
+	uint8_t* rcv_buf_perm = check_chan->blocking_receive_id_len((uint8_t**) &perm, &tmpid, &tmpnblocks);
+	uint8_t* rcv_buf_permchoices = check_chan->blocking_receive();
+	uint8_t* sender_permchoicebitptr = rcv_buf_permchoices;
 
-	alsz_rcv_check_t check_buf = check_buf_q->front();
+	nnob_rcv_check_t check_buf = check_buf_q->front();
 	check_buf_q->pop();
 
 	assert(tmpid == check_buf.otid);
@@ -223,13 +223,14 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 	//the bufsize has to be padded to a multiple of the PRF-size since we will omit boundary checks there
 	uint32_t i, k, j;
 	uint64_t bufrowbytelen = m_nBlockSizeBytes * check_buf.numblocks;//seedptr->expstrbitlen>>3;//(CEIL_DIVIDE(processedOTs, wd_size_bits) * wd_size_bits) >>3;
+	uint64_t checkbytelen = min(bufrowbytelen, bits_in_bytes(m_nOTs - check_buf.otid));
 	//contains the T-matrix
 	uint8_t* T0 = check_buf.T0;
 	//contains the T-matrix XOR the receive bits
-	uint8_t* T1 = check_buf.T1;
+	//uint8_t* T1 = check_buf.T1;
 
 	uint8_t* T0ptr = T0;
-	uint8_t* T1ptr = T1;
+	//uint8_t* T1ptr = T1;
 
 	uint32_t outhashbytelen = m_nChecks * OWF_BYTES * receiver_hashes;
 	uint8_t* outhashes = (uint8_t*) malloc(outhashbytelen);
@@ -247,40 +248,44 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 	uint8_t* outptr = outhashes;
 	uint32_t ida, idb;
 
-	//Compute all hashes for the permutations given Ta and Tb
-	for(i = 0; i < m_nChecks; i++) {
+
+	uint8_t* receiver_choicebits = m_vChoices.GetArr() + ceil_divide(check_buf.otid, 8);
+	CBitVector tmp;
+	tmp.AttachBuf(tmpbuf, bufrowbytelen*8);
+
+	//Compute all hashes for the permutations given Ta, Tb and the choice bits
+	for(i = 0; i < m_nChecks; i++, sender_permchoicebitptr++) {
 		ka[0] = T0 + perm[i].ida * bufrowbytelen;
-		ka[1] = T1 + perm[i].ida * bufrowbytelen;
-
 		kb[0] = T0 + perm[i].idb * bufrowbytelen;
-		kb[1] = T1 + perm[i].idb * bufrowbytelen;
-		//cout << "ida = " << perm[i].ida <<", idb= " <<  perm[i].idb << endl;
 
-		//XOR all four possibilities
-#ifdef DEBUG_ALSZ_CHECKS
-		cout << i << "-th check: between " << perm[i].ida << ", and " << perm[i].idb << ": " << endl;
-#endif
+	#ifdef DEBUG_MALICIOUS
+		cout << (dec) << i << "-th check: between " << perm[i].ida << ", and " << perm[i].idb << endl;
+	#endif
 		for(j = 0; j < receiver_hashes; j++, outptr+=OWF_BYTES) {
-			kaptr = ka[j>>1];
-			kbptr = kb[j&0x01];
+			kaptr = ka[0];
+			kbptr = kb[0];
 
-			for(k = 0; k < bufrowbytelen / sizeof(uint64_t); k++) {
-				((uint64_t*) tmpbuf)[k] = ((uint64_t*) kaptr)[k] ^ ((uint64_t*) kbptr)[k];
+			assert((*sender_permchoicebitptr) == 0 || (*sender_permchoicebitptr == 1));
+
+			tmp.SetXOR(kaptr, kbptr, 0, bufrowbytelen);
+			if((*sender_permchoicebitptr == 1)) {
+				tmp.XORBytesReverse(receiver_choicebits, 0, checkbytelen);
 			}
-#ifdef DEBUG_ALSZ_CHECKS_INPUT
-			cout << (hex)  <<  "\t";
-			for(uint32_t t = 0; t < bufrowbytelen; t++) {
+
+#ifdef DEBUG_NNOB_CHECKS_INPUT
+			cout << "XOR-OWF Input:\t" << (hex);
+			for(uint32_t t = 0; t < checkbytelen; t++) {
 				cout << setw(2) << setfill('0') << (uint32_t) tmpbuf[t];
 			}
 			cout << (dec) << endl;
 #endif
-#ifdef AES_OWF
-			owf(&aesowfkey, rowbytelen, tmpbuf, outptr);
-#else
-			m_cCrypt->hash_buf(outptr, OWF_BYTES, tmpbuf, bufrowbytelen, hash_buf);//owf(hash_buf, rowbytelen, tmpbuf, outptr);
-#endif
-#ifdef DEBUG_ALSZ_CHECKS_OUTPUT
-			cout << (hex) << "\t";
+	#ifdef AES_OWF
+			owf(&aesowfkey, rowbytelen, tmpbuf, outhashes);
+	#else
+			m_cCrypt->hash_buf(outptr, OWF_BYTES, tmpbuf, checkbytelen, hash_buf);
+	#endif
+#ifdef DEBUG_NNOB_CHECKS_OUTPUT
+			cout << "XOR-OWF Output:\t" << (hex);
 			for(uint32_t t = 0; t < OWF_BYTES; t++) {
 				cout << (uint32_t) outptr[t];
 			}
@@ -288,21 +293,21 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 #endif
 		}
 	}
-
 	check_chan->send_id_len(outhashes, outhashbytelen, check_buf.otid, check_buf.numblocks);
 
-	free(rcv_buf);
+	free(rcv_buf_perm);
+	free(rcv_buf_permchoices);
 	free(tmpbuf);
 	free(ka);
 	free(kb);
 	free(check_buf.T0);
-	free(check_buf.T1);
+	//free(check_buf.T1);
 #ifndef AES_OWF
 	free(hash_buf);
 #endif
 }
 
-void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
+void NNOBOTExtRec::ComputeBaseOTs(field_type ftype) {
 	if(m_bDoBaseOTs) {
 		m_cBaseOT = new SimpleOT(m_cCrypt, ftype);
 		ComputePKBaseOTs();

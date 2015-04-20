@@ -52,8 +52,8 @@ protected:
 
 	void Cleanup() {};//TODO check if necessary and implement
 
-	CBitVector m_nChoices;
-	CBitVector m_nRet;
+	CBitVector m_vChoices;
+	CBitVector m_vRet;
 	//CBitVector m_vTempOTMasks;
 
 	void ComputePKBaseOTs();

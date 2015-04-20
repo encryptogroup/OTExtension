@@ -78,7 +78,7 @@ void OTExtSnd::BuildQMatrix(CBitVector& T, uint64_t OT_ptr, uint64_t numblocks) 
 #ifdef DEBUG_OT_SEED_EXPANSION
 		cout << "Xs[" << k << "]: " << (hex);
 		for(uint64_t i = 0; i < AES_BYTES * iters; i++) {
-			cout << (uint32_t) (Tptr-AES_BYTES*iters)[i];
+			cout  << setw(2) << setfill('0') << (uint32_t) (Tptr-AES_BYTES*iters)[i];
 		}
 		cout << (dec) << " (" << (*counter)-iters << ")" <<endl;
 #endif

@@ -150,10 +150,10 @@ void InitOTSender(const char* address, int port, crypto* crypt)
 	sndthread->Start();
 
 	switch(m_eProt) {
-		case ALSZ: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true); break;
+		case ALSZ: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 		case IKNP: sender = new IKNPOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
-		case NNOB: break; //TODO
-		default: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true); break;
+		case NNOB: sender = new NNOBOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs); break;
+		default: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 
 	if(m_bUseMinEntCorAssumption)
@@ -181,10 +181,10 @@ void InitOTReceiver(const char* address, int port, crypto* crypt)
 	sndthread->Start();
 
 	switch(m_eProt) {
-		case ALSZ: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true); break;
+		case ALSZ: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 		case IKNP: receiver = new IKNPOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
-		case NNOB: break; //TODO
-		default: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks, true); break;
+		case NNOB: receiver = new NNOBOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs); break;
+		default: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 
 
@@ -276,19 +276,19 @@ int main(int argc, char** argv)
 	uint32_t m_nSecParam = 128;
 
 	//Number of threads that will be used in OT extension
-	m_nNumOTThreads = 1;
+	m_nNumOTThreads = 4;
 
 	//Specifies which OT flavor should be used
 	uint32_t stype, rtype;
 
 	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);
 
-	m_nBaseOTs = 190;
-	m_nChecks = 380;
+	m_nBaseOTs = 323;
+	m_nChecks = 128;
 
 	m_bUseMinEntCorAssumption = false;
 
-	m_eProt = ALSZ;
+	m_eProt = NNOB;
 
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{

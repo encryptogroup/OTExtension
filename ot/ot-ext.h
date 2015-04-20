@@ -49,6 +49,16 @@ typedef struct {
 	uint32_t idb;
 } linking_t;
 
+
+
+typedef struct mask_buf_ctx {
+	uint64_t otid;
+	uint64_t otlen;
+	CBitVector* maskbuf;
+} mask_buf_t;
+
+
+
 class OTExt {
 
 public:
@@ -171,6 +181,8 @@ static void BitMatrixMultiplication(uint8_t* resbuf, uint64_t resbytelen, uint8_
 	}
 	cout << (dec) << endl;*/
 }
+
+
 
 #ifdef FIXED_KEY_AES_HASHING
 static const uint8_t fixed_key_aes_seed[32] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55,

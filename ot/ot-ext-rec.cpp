@@ -10,8 +10,8 @@ BOOL OTExtRec::receive(uint64_t numOTs, uint64_t bitlength, CBitVector& choices,
 		snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* unmaskfct) {
 	m_nOTs = numOTs;
 	m_nBitLength = bitlength;
-	m_nChoices = choices;
-	m_nRet = ret;
+	m_vChoices = choices;
+	m_vRet = ret;
 	m_eSndOTFlav = stype;
 	m_eRecOTFlav = rtype;
 	m_fMaskFct = unmaskfct;
@@ -85,31 +85,25 @@ void OTExtRec::BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t OT_ptr,
 
 		for (uint32_t b = 0; b < iters; b++, (*counter)++) {
 			m_cCrypt->encrypt(seedptr + 2 * k, Tptr, ctr_buf, AES_BYTES);
-#ifdef DEBUG_MALICIOUS
-			cout << "correct: Tka = " << k << ": " << (hex) << ((uint64_t*) Tptr)[0] << ((uint64_t*) Tptr)[1] << (hex) << endl;
-#endif
 			Tptr += AES_BYTES;
 
 			m_cCrypt->encrypt(seedptr + (2 * k) + 1, sndbufptr, ctr_buf, AES_BYTES);
-#ifdef DEBUG_MALICIOUS
-			cout << "correct: Tkb = " << k << ": " << (hex) << ((uint64_t*) sndbufptr)[0] << ((uint64_t*) sndbufptr)[1] << (hex) << endl;
-#endif
 			sndbufptr += AES_BYTES;
 		}
 #ifdef DEBUG_OT_SEED_EXPANSION
 		cout << "X0[" << k << "]: " << (hex);
 		for(uint64_t i = 0; i < AES_BYTES * iters; i++) {
-			cout << (uint32_t) (Tptr-AES_BYTES*iters)[i];
+			cout  << setw(2) << setfill('0') << (uint32_t) (Tptr-AES_BYTES*iters)[i];
 		}
 		cout << (dec) << " (" << (*counter)-iters << ")" <<endl;
 		cout << "X1[" << k << "]: " << (hex);
 		for(uint64_t i = 0; i < AES_BYTES * iters; i++) {
-			cout << (uint32_t) (sndbufptr-AES_BYTES*iters)[i];
+			cout  << setw(2) << setfill('0') << (uint32_t) (sndbufptr-AES_BYTES*iters)[i];
 		}
 		cout << (dec) << " (" << (*counter)-iters << ")" <<endl;
 #endif
 	}
-
+	//m_vChoices.PrintHex();
 	free(ctr_buf);
 }
 
@@ -137,9 +131,9 @@ void OTExtRec::MaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t OTid, uin
 		//m_nChoices.XORBytesReverse(T.GetArr(), ceil_divide(OTid, 8), rowbytelen);
 		//cout << "Choices:";
 		//m_nChoices.PrintHex();
-		m_nChoices.Copy(tmp.GetArr(), ceil_divide(OTid, 8), choicebytelen);
+		m_vChoices.Copy(tmp.GetArr(), ceil_divide(OTid, 8), choicebytelen);
 	} else {
-		tmp.Copy(m_nChoices.GetArr()+ ceil_divide(OTid, 8), 0, choicebytelen);
+		tmp.Copy(m_vChoices.GetArr()+ ceil_divide(OTid, 8), 0, choicebytelen);
 	}
 	choiceptr = tmp.GetArr();
 	for (uint32_t k = 0; k < m_nBaseOTs; k++) {
@@ -235,7 +229,7 @@ void OTExtRec::SetOutput(CBitVector& maskbuf, uint64_t otid, uint64_t otlen, que
 
 	if (m_eSndOTFlav == Snd_R_OT || m_eSndOTFlav == Snd_GC_OT) {
 		CBitVector dummy;//is not used for random OT or GC_OT
-		m_fMaskFct->UnMask(otid, remots, m_nChoices, m_nRet, dummy, maskbuf, m_eSndOTFlav);
+		m_fMaskFct->UnMask(otid, remots, m_vChoices, m_vRet, dummy, maskbuf, m_eSndOTFlav);
 	} else {
 		mask_block tmpblock;
 		tmpblock.startotid = otid;
@@ -273,7 +267,7 @@ void OTExtRec::ReceiveAndUnMask(channel* chan, queue<mask_block>* mask_queue) {
 		vRcv.AttachBuf(tmpbuf, buflen);
 
 		uint32_t remots = min(otlen, m_nOTs - startotid);
-		m_fMaskFct->UnMask(startotid, remots, m_nChoices, m_nRet, vRcv, tmpblock.buf, m_eSndOTFlav);
+		m_fMaskFct->UnMask(startotid, remots, m_vChoices, m_vRet, vRcv, tmpblock.buf, m_eSndOTFlav);
 		mask_queue->pop();
 		tmpblock.buf.delCBitVector();
 		free(buf);
@@ -314,7 +308,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 		}
 
 		for (uint64_t j = 0; j < otlen && i < NumOTs; j++, i++) {
-			if (m_nChoices.GetBitNoMask(i) == 0) {
+			if (m_vChoices.GetBitNoMask(i) == 0) {
 				Xc = &vRcvX[0];
 				Xn = &vRcvX[1];
 			} else {
@@ -323,11 +317,11 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 			}
 			Xc->GetBits(tempXc, j * m_nBitLength, m_nBitLength);
 			Xn->GetBits(tempXn, j * m_nBitLength, m_nBitLength);
-			m_nRet.GetBits(tempRet, i * m_nBitLength, m_nBitLength);
+			m_vRet.GetBits(tempRet, i * m_nBitLength, m_nBitLength);
 			for (uint64_t k = 0; k < bytelen; k++) {
 				if (tempXc[k] != tempRet[k]) {
-					cout << "Error at position i = " << i << ", k = " << k << ", with X" << (hex) << (uint32_t) m_nChoices.GetBitNoMask(i) <<
-							" = " << (uint32_t) tempXc[k] << " and res = " << (uint32_t) tempRet[k] << " (X" << ((uint32_t) !m_nChoices.GetBitNoMask(i)) <<
+					cout << "Error at position i = " << i << ", k = " << k << ", with X" << (hex) << (uint32_t) m_vChoices.GetBitNoMask(i) <<
+							" = " << (uint32_t) tempXc[k] << " and res = " << (uint32_t) tempRet[k] << " (X" << ((uint32_t) !m_vChoices.GetBitNoMask(i)) <<
 							" = " << (uint32_t) tempXn[k] << ")" << (dec) << endl;
 					resp = 0x00;
 					chan->send(&resp, 1);

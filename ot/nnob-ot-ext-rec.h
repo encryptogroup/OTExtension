@@ -1,26 +1,26 @@
 /*
- * alsz-ot-ext-rec.h
+ * nnob-ot-ext-rec.h
  *
  *  Created on: Mar 23, 2015
  *      Author: mzohner
  *
- * Malicious OT extension routine from ALSZ15
+ * Malicious OT extension routine from NNOB12
  */
 
-#ifndef ALSZ_OT_EXT_REC_H_
-#define ALSZ_OT_EXT_REC_H_
+#ifndef NNOB_OT_EXT_REC_H_
+#define NNOB_OT_EXT_REC_H_
 
 #include "ot-ext-rec.h"
 
 
-typedef struct alsz_rcv_check_ctx {
+
+typedef struct nnob_rcv_check_ctx {
 	uint64_t otid;
 	uint64_t numblocks;
 	uint8_t* T0;
-	uint8_t* T1;
-} alsz_rcv_check_t;
+} nnob_rcv_check_t;
 
-class ALSZOTExtRec : public OTExtRec {
+class NNOBOTExtRec : public OTExtRec {
 	/*
 	 * OT receiver part
 	 * Input:
@@ -32,16 +32,16 @@ class ALSZOTExtRec : public OTExtRec {
 	 * Output: was the execution successful?
 	 */
 public:
-	ALSZOTExtRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread,
-			uint32_t nbaseots, uint32_t nchecks, bool dobaseots=true) {
+	NNOBOTExtRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread,
+			uint32_t nbaseots, bool dobaseots=true) {
 		InitRec(nSndVals, crypt, rcvthread, sndthread, nbaseots);
-		m_nChecks = nchecks;
+		m_nChecks = nbaseots/2;
 		m_bDoBaseOTs=dobaseots;
 	}
 	;
 
 
-	~ALSZOTExtRec() {
+	~NNOBOTExtRec() {
 	}
 	;
 
@@ -49,10 +49,10 @@ public:
 	void ComputeBaseOTs(field_type ftype);
 
 private:
-	alsz_rcv_check_t EnqueueSeed(uint8_t* T0, uint8_t* T1, uint64_t otid, uint64_t numblocks);
-	void ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* check_chan);
+	nnob_rcv_check_t EnqueueSeed(uint8_t* T0, uint64_t otid, uint64_t numblocks);
+	void ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* check_chan);
 	void ReceiveAndFillMatrix(uint64_t** rndmat, channel* mat_chan);
 	bool m_bDoBaseOTs;
 };
 
-#endif /* ALSZ_OT_EXT_REC_H_ */
+#endif /* NNOB_OT_EXT_REC_H_ */

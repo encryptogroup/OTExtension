@@ -56,7 +56,7 @@ public:
 	void gen_rnd(uint8_t* resbuf, uint32_t numbytes);
 	void gen_rnd_from_seed(uint8_t* resbuf, uint32_t resbytes, uint8_t* seed);
 	//void gen_rnd(prf_state_ctx* prf_state, uint8_t* resbuf, uint32_t nbytes);
-	void gen_rnd_uniform(uint8_t* resbuf, uint64_t mod);
+	void gen_rnd_uniform(uint32_t* res, uint32_t mod);
 	void gen_rnd_perm(uint32_t* perm, uint32_t neles);
 
 	//Encryption routines

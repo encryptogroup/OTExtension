@@ -91,8 +91,23 @@ void crypto::gen_rnd(uint8_t* resbuf, uint32_t nbytes) {
 	gen_rnd_bytes(&global_prf_state, resbuf, nbytes);
 }
 
-void crypto::gen_rnd_uniform(uint8_t* resbuf, uint64_t mod) {
-	//TODO: implement
+void crypto::gen_rnd_uniform(uint32_t* res, uint32_t mod) {
+	//pad to multiple of 4 bytes for uint32_t length
+	uint32_t nrndbytes = PadToMultiple(bits_in_bytes(secparam.symbits) + ceil_log2(mod), sizeof(uint32_t));
+	uint64_t bitsint = (8*sizeof(uint32_t));
+	uint32_t rnditers = ceil_divide(nrndbytes * 8, bitsint);
+
+	uint32_t* rndbuf = (uint32_t*) malloc(nrndbytes);
+	gen_rnd((uint8_t*) rndbuf, nrndbytes);
+
+	uint64_t tmpval = 0, tmpmod = mod;
+
+	for(uint32_t i = 0; i < rnditers; i++) {
+		tmpval = (((uint64_t) (tmpval << bitsint)) | ((uint64_t)rndbuf[i]));
+		tmpval %= tmpmod;
+	}
+	*res = (uint32_t) tmpval;
+	free(rndbuf);
 }
 
 void crypto::gen_rnd_from_seed(uint8_t* resbuf, uint32_t resbytes, uint8_t* seed) {

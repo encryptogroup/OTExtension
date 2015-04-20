@@ -1,5 +1,5 @@
 ###DESCRIPTION
-Passive and active secure OT extension implementation of the papers [1] and [2]. Implements the general OT (G_OT), correlated OT (C_OT), global correlated OT (GC_OT), sender random OT (SR_OT), and receiver random OT (RR_OT) (Definitions of the functionalities will follow). Implements the base-OTs by Naor-Pinkas [3], Peikert-Vaikuntanathan-Waters [4], and Chou-Orlandi [5]. The code is based on the OT extension implementation of [6] and uses the MIRACL libary [7] for elliptic curve arithmetic. 
+Passive and active secure OT extension implementation of the papers [1] (passive), [2] and [3] (both active). Implements the general OT (G_OT), correlated OT (C_OT), global correlated OT (GC_OT), sender random OT (SR_OT), and receiver random OT (RR_OT) (Definitions of the functionalities will follow). Implements the base-OTs by Naor-Pinkas [4], Peikert-Vaikuntanathan-Waters [5], and Chou-Orlandi [6]. The code is based on the OT extension implementation of [7] and uses the MIRACL libary [8] for elliptic curve arithmetic. 
 
 ###COMPILE
 ####Linux: 
@@ -35,19 +35,19 @@ Different compilation flags can be set in `util/constants.h`.
 
 ###TBD
 The current version is in a prototypical state. Next steps: 
-1. Implementation of the NNOB OT extension protocol in [8]. 
-2. Better documentation. Clean interfaces and source code.
-3. Integration into the ABY framework [9] and Miracl [7] as external GIT project.
-4. Test and enable support under Windows. 
+
+1. Better documentation. Clean interfaces and source code
+2. Integration into the ABY framework [9] and Miracl [8] as external GIT project
+3. Test and enable support under Windows
 
 
 ###REFERENCES
 * [1] G. Asharov, Y. Lindell, T. Schneider, M. Zohner: More Efficient Oblivious Transfer and Extensions for Faster Secure Computation (CCS'13). 
 * [2] G. Asharov, Y. Lindell, T. Schneider, M. Zohner: More Efficient Oblivious Transfer Extensions with Security for Malicious Adversaries. EUROCRYPT (1) 2015: 673-701.
-* [3] M. Naor, B. Pinkas: Efficient oblivious transfer protocols. SODA 2001: 448-457. 
-* [4] C. Peikert, V. Vaikuntanathan, B. Waters: A Framework for Efficient and Composable Oblivious Transfer. CRYPTO 2008: 554-571.
-* [5] T. Chou, C. Orlandi: The Simplest Protocol for Oblivious Transfer. Online at: http://eprint.iacr.org/2015/267. 
-* [6] S.G. Choi, K.W. Hwang, J.Katz, T. Malkin, D. Rubenstein: Secure multi-party computation of Boolean circuits with applications to privacy in on-line market-places. In CT-RSA’12. LNCS, vol. 7178, pp. 416–432. 
-* [7] CertiVox, Multiprecision Integer and Rational Arithmetic Cryptographic Library (MIRACL) https://github.com/CertiVox/MIRACL
-* [8] J. B. Nielsen, P. S. Nordholt, C. Orlandi, S. S. Burra: A New Approach to Practical Active-Secure Two-Party Computation. CRYPTO 2012: 681-700.
+* [3] J. B. Nielsen, P. S. Nordholt, C. Orlandi, S. S. Burra: A New Approach to Practical Active-Secure Two-Party Computation. CRYPTO 2012: 681-700.
+* [4] M. Naor, B. Pinkas: Efficient oblivious transfer protocols. SODA 2001: 448-457. 
+* [5] C. Peikert, V. Vaikuntanathan, B. Waters: A Framework for Efficient and Composable Oblivious Transfer. CRYPTO 2008: 554-571.
+* [6] T. Chou, C. Orlandi: The Simplest Protocol for Oblivious Transfer. Online at: http://eprint.iacr.org/2015/267. 
+* [7] S.G. Choi, K.W. Hwang, J.Katz, T. Malkin, D. Rubenstein: Secure multi-party computation of Boolean circuits with applications to privacy in on-line market-places. In CT-RSA’12. LNCS, vol. 7178, pp. 416–432. 
+* [8] CertiVox, Multiprecision Integer and Rational Arithmetic Cryptographic Library (MIRACL) https://github.com/CertiVox/MIRACL
 * [9] D. Demmler, T. Schneider, M. Zohner: ABY - A Framework for Efficient Mixed-Protocol Secure Two-Party Computation. NDSS 2015.

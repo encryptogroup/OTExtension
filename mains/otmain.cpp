@@ -152,7 +152,7 @@ void InitOTSender(const char* address, int port, crypto* crypt)
 	switch(m_eProt) {
 		case ALSZ: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 		case IKNP: sender = new IKNPOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
-		case NNOB: sender = new NNOBOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs); break;
+		case NNOB: sender = new NNOBOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
 		default: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 
@@ -183,7 +183,7 @@ void InitOTReceiver(const char* address, int port, crypto* crypt)
 	switch(m_eProt) {
 		case ALSZ: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 		case IKNP: receiver = new IKNPOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
-		case NNOB: receiver = new NNOBOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs); break;
+		case NNOB: receiver = new NNOBOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
 		default: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 

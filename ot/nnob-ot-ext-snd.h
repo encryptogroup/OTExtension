@@ -23,8 +23,8 @@ typedef struct nnob_snd_check_ctx {
 class NNOBOTExtSnd : public OTExtSnd {
 
 public:
-	NNOBOTExtSnd(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseots,
-			bool dobaseots=true) {
+	NNOBOTExtSnd(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool dobaseots=true) {
+		uint32_t nbaseots = (crypt->get_seclvl().symbits * 8 / 3);
 		InitSnd(nSndVals, crypt, rcvthread, sndthread, nbaseots);
 		m_nChecks = nbaseots / 2;
 		m_bDoBaseOTs = dobaseots;

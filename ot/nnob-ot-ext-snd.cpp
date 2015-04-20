@@ -105,7 +105,6 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		gettimeofday(&tempStart, NULL);
 #endif
 		check_queue.push(UpdateCheckBuf(Q.GetArr(), vRcv.GetArr(), OT_ptr, processedOTBlocks, check_chan));
-		//TODO
 		FillAndSendRandomMatrix(rndmat, mat_chan);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
@@ -121,7 +120,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalUnMaskTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		Q.EklundhBitTranspose(wd_size_bits, OTsPerIteration);
+		Q.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalTnsTime += getMillies(tempStart, tempEnd);

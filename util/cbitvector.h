@@ -110,6 +110,9 @@ public:
 	void CreateBytes(uint64_t bytes) {
 		Create(bytes << 3);
 	}
+	void CreateBytes(uint64_t bytes, crypto* crypt) {
+		Create(bytes << 3, crypt);
+	}
 	void CreateZeros(uint64_t bits) {
 		Create(bits);
 		memset(m_pBits, 0, m_nByteSize);
@@ -326,6 +329,7 @@ public:
 	//useful when accessing elements using an index
 
 	//View the cbitvector as a rows x columns matrix and transpose
+	void Transpose(int rows, int columns);
 	void EklundhBitTranspose(int rows, int columns);
 	void SimpleTranspose(int rows, int columns);
 

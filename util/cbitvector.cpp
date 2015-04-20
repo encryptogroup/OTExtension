@@ -439,6 +439,14 @@ unsigned int CBitVector::GetInt(int bitPos, int bitLen) {
 	return ret;
 }
 
+void CBitVector::Transpose(int rows, int columns) {
+#ifdef SIMPLE_TRANSPOSE
+	SimpleTranspose(rows, columns);
+#else
+	EklundhBitTranspose(rows, columns);
+#endif
+}
+
 void CBitVector::SimpleTranspose(int rows, int columns) {
 	CBitVector temp(rows * columns);
 	temp.Copy(m_pBits, 0, rows * columns / 8);

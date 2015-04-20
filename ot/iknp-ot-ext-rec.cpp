@@ -28,7 +28,11 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	CBitVector T(wd_size_bits * OTsPerIteration);
 
 	// The send buffer
+#ifdef GENERATE_T_EXPLICITELY
+	CBitVector vSnd(m_nBaseOTs * OTsPerIteration * 2);
+#else
 	CBitVector vSnd(m_nBaseOTs * OTsPerIteration);
+#endif
 
 	// A temporary buffer that stores the resulting seeds from the hash buffer
 	//TODO: Check for some maximum size
@@ -73,7 +77,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalMaskTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		T.EklundhBitTranspose(wd_size_bits, OTsPerIteration);
+		T.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalTnsTime += getMillies(tempStart, tempEnd);

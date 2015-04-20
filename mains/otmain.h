@@ -15,6 +15,7 @@
 #include "../util/rcvthread.h"
 #include "../util/sndthread.h"
 #include "../util/channel.h"
+#include "../util/parse_options.h"
 
 #include <vector>
 #include <sys/time.h>
@@ -44,9 +45,9 @@ BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength, 
 
 // Network Communication
 CSocket* m_vSocket;
-int m_nPID; // thread id
+uint32_t m_nPID; // thread id
 field_type m_eFType;
-int m_nBitLength;
+uint32_t m_nBitLength;
 MaskingFunction* m_fMaskFct;
 
 // Naor-Pinkas OT
@@ -57,7 +58,7 @@ OTExtRec *receiver;
 SndThread* sndthread;
 RcvThread* rcvthread;
 
-int m_nNumOTThreads;
+uint32_t m_nNumOTThreads;
 uint32_t m_nBaseOTs;
 uint32_t m_nChecks;
 
@@ -65,5 +66,9 @@ bool m_bUseMinEntCorAssumption;
 ot_ext_prot m_eProt;
 
 double rndgentime;
+
+int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_t* numots, uint32_t* bitlen,
+		uint32_t* secparam, string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
+		rec_ot_flavor* rcvflav, uint32_t* nthreads, uint32_t* nbaseots, uint32_t* nchecks, bool* usemecr, uint32_t* runs);
 
 #endif //_MPC_H_

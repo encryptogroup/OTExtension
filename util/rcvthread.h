@@ -36,6 +36,7 @@ public:
 	}
 	;
 	~RcvThread() {
+		this->Kill();
 		delete rcvlock;
 		free(listeners);
 	}
@@ -109,6 +110,7 @@ public:
 #ifdef DEBUG_RECEIVE_THREAD
 					cout << "Receiver thread is being killed" << endl;
 #endif
+					m_bRunning = false;
 					return;//continue;
 				}
 
@@ -125,6 +127,7 @@ public:
 			}
 
 		}
+
 	}
 	;
 private:

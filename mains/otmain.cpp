@@ -1,6 +1,5 @@
 #include "otmain.h"
 
-#define OTTiming
 
 BOOL Init(crypto* crypt)
 {
@@ -12,6 +11,8 @@ BOOL Init(crypto* crypt)
 BOOL Cleanup()
 {
 	delete sndthread;
+
+	//rcvthread->Wait();
 
 	delete rcvthread;
 
@@ -202,24 +203,23 @@ BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength,
 	m_vSocket->reset_bytes_sent();
 	m_vSocket->reset_bytes_received();
 	int nSndVals = 2; //Perform 1-out-of-2 OT
-#ifdef OTTiming
 	timeval ot_begin, ot_end;
-#endif
 
 	
-#ifdef OTTiming
 	gettimeofday(&ot_begin, NULL);
-#endif
 	// Execute OT sender routine 	
 	success = sender->send((uint32_t) numOTs, (uint32_t) bitlength, X1, X2, stype, rtype, m_nNumOTThreads, m_fMaskFct);
-	
-#ifdef OTTiming
 	gettimeofday(&ot_end, NULL);
-	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
-#endif
 
+#ifndef BATCH
+	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
 	cout << "Sent:\t\t" << m_vSocket->get_bytes_sent() << " bytes" << endl;
 	cout << "Received:\t" << m_vSocket->get_bytes_received() <<" bytes" << endl;
+#else
+	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->get_bytes_sent() << "\t" << m_vSocket->get_bytes_received() << endl;
+#endif
+
+
 	return success;
 }
 
@@ -231,44 +231,40 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 	m_vSocket->reset_bytes_sent();
 	m_vSocket->reset_bytes_received();
 
-#ifdef OTTiming
+
 	timeval ot_begin, ot_end;
 	gettimeofday(&ot_begin, NULL);
-#endif
 	// Execute OT receiver routine 	
 	success = receiver->receive(numOTs, bitlength, choices, ret, stype, rtype, m_nNumOTThreads, m_fMaskFct);
-	
-#ifdef OTTiming
 	gettimeofday(&ot_end, NULL);
+
+#ifndef BATCH
 	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
-#endif
-	
 
 	cout << "Sent:\t\t" << m_vSocket->get_bytes_sent() << " bytes" << endl;
 	cout << "Received:\t" << m_vSocket->get_bytes_received() <<" bytes" << endl;
+#else
+	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->get_bytes_sent() << "\t" << m_vSocket->get_bytes_received() << endl;
+#endif
+	
+
 	return success;
 }
 
 
 int main(int argc, char** argv)
 {
-	const char* addr = "127.0.0.1";
-	int port = 7766;
-
-	if(argc != 2)
-	{
-		cout << "Please call with 0 if acting as server or 1 if acting as client" << endl;
-		return 0;
-	}
+	string* addr = new string("127.0.0.1");
+	uint16_t port = 7766;
 
 	//Determines whether the program is executed in the sender or receiver role
 	m_nPID = atoi(argv[1]);
-	cout << "Playing as role: " << m_nPID << endl;
-	assert(m_nPID >= 0 && m_nPID <= 1);
 	//the number of OTs that are performed. Has to be initialized to a certain minimum size due to
 	uint64_t numOTs = 1000000;
 	//bitlength of the values that are transferred - NOTE that when bitlength is not 1 or a multiple of 8, the endianness has to be observed
 	uint32_t bitlength = 8;
+
+	uint32_t runs = 1;
 
 	//Use elliptic curve cryptography in the base-OTs
 	m_eFType = ECC_FIELD;
@@ -279,20 +275,30 @@ int main(int argc, char** argv)
 	m_nNumOTThreads = 1;
 
 	//Specifies which OT flavor should be used
-	uint32_t stype, rtype;
+	snd_ot_flavor stype = Snd_OT;
+	rec_ot_flavor rtype = Rec_OT;
 
-	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);
 
 	m_nBaseOTs = 190;
 	m_nChecks = 380;
 
 	m_bUseMinEntCorAssumption = false;
 
-	m_eProt = ALSZ;
+	m_eProt = IKNP;
+
+	read_test_options(&argc, &argv, &m_nPID, &numOTs, &bitlength, &m_nSecParam, addr, &port, &m_eProt, &stype, &rtype,
+			&m_nNumOTThreads, &m_nBaseOTs, &m_nChecks, &m_bUseMinEntCorAssumption, &runs);
+
+	/*int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_t* numots, uint32_t* bitlen,
+			uint32_t* secparam, string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
+			rec_ot_flavor* rcvflav, uint32_t* nthreads, uint32_t* nbaseots, uint32_t* nchecks, bool* usemecr, uint32_t* runs) {*/
+
+	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);
+
 
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
-		InitOTSender(addr, port, crypt);
+		InitOTSender(addr->c_str(), port, crypt);
 
 		CBitVector delta, X1, X2;
 
@@ -306,19 +312,19 @@ int main(int argc, char** argv)
 		X1.Create(numOTs, bitlength, crypt);
 		X2.Create(numOTs, bitlength, crypt);
 
-		for(stype = Snd_OT; stype < Snd_OT_LAST; stype++) {
-			for(rtype = Rec_OT; rtype < Rec_OT_LAST; rtype++) {
-				cout << "Sender performing " << numOTs << " " << getSndFlavor((snd_ot_flavor) stype) << " / " <<
-						getRecFlavor((rec_ot_flavor) rtype) << " extensions on " << bitlength << " bit elements" << endl;
-				ObliviouslySend(X1, X2, numOTs, bitlength, (snd_ot_flavor) stype, (rec_ot_flavor) rtype, crypt);
-				//X1.PrintHex();
-				//X2.PrintHex();
-			}
+#ifndef BATCH
+		cout << getProt(m_eProt) << " Sender performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
+				getRecFlavor(rtype) << " extensions on " << bitlength << " bit elements with " <<	m_nNumOTThreads << " threads, " <<
+				getFieldType(m_eFType) << " and" << (m_bUseMinEntCorAssumption ? "": " no" ) << " min-ent-corr-robustness " <<
+				runs << " times" << endl;
+#endif
+		for(uint32_t i = 0; i < runs; i++) {
+			ObliviouslySend(X1, X2, numOTs, bitlength, stype, rtype, crypt);
 		}
 	}
 	else //Play as OT receiver
 	{
-		InitOTReceiver(addr, port, crypt);
+		InitOTReceiver(addr->c_str(), port, crypt);
 
 		CBitVector choices, response;
 
@@ -336,21 +342,78 @@ int main(int argc, char** argv)
 		 * The inputs of the receiver in G_OT, C_OT and R_OT are the same. The only difference is the version
 		 * variable that has to match the version of the sender. 
 		*/
-		for(stype = Snd_OT; stype < Snd_OT_LAST; stype++) {
-			for(rtype = Rec_OT; rtype < Rec_OT_LAST; rtype++) {
-				cout << "Receiver performing " << numOTs << " " << getSndFlavor((snd_ot_flavor) stype) << " / "
-						<< getRecFlavor((rec_ot_flavor)rtype) << " extensions on " << bitlength << " bit elements" << endl;
-				ObliviouslyReceive(choices, response, numOTs, bitlength, (snd_ot_flavor) stype, (rec_ot_flavor) rtype, crypt);
-				//choices.PrintBinary();
-				//response.PrintHex();
-			}
+#ifndef BATCH
+		cout << getProt(m_eProt) << " Receiver performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
+				getRecFlavor(rtype) << " extensions on " << bitlength << " bit elements with " <<	m_nNumOTThreads << " threads, " <<
+				getFieldType(m_eFType) << " and" << (m_bUseMinEntCorAssumption ? "": " no" ) << " min-ent-corr-robustness " <<
+				runs << " times" << endl;
+#endif
+		for(uint32_t i = 0; i < runs; i++) {
+			ObliviouslyReceive(choices, response, numOTs, bitlength, stype, rtype, crypt);
 		}
 	}
 
 
 
-	Cleanup();
+	//Cleanup();
 	delete crypt;
+
+	return 1;
+}
+
+
+int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_t* numots, uint32_t* bitlen,
+		uint32_t* secparam, string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
+		rec_ot_flavor* rcvflav, uint32_t* nthreads, uint32_t* nbaseots, uint32_t* nchecks, bool* usemecr, uint32_t* runs) {
+
+	uint32_t int_port = 0, int_prot = 0, int_snd_flav = 0, int_rec_flav = 0;
+
+	parsing_ctx options[] = {
+			{ (void*) role, T_NUM, 'r', "Role: 0/1", true, false },
+			{ (void*) numots, T_NUM, 'n', "Number of OTs, default 10^6", false, false },
+			{ (void*) bitlen, T_NUM, 'b', "Bit-length of elements in OTs, default 8", false, false },
+			{ (void*) secparam, T_NUM, 's', "Symmetric Security Bits, default: 128", false, false },
+			{ (void*) address, T_STR, 'a', "IP-address, default: localhost", false, false },
+			{ (void*) &int_port, T_NUM, 'p', "Port, default: 7766", false, false },
+			{ (void*) &int_prot, T_NUM, 'o', "Protocol, 0: IKNP, 1: ALSZ, 2: NNOB, default: IKNP", false, false },
+			{ (void*) &int_snd_flav, T_NUM, 'f', "Sender OT Functionality, 0: OT, 1: C_OT, 2: Snd_R_OT, default: OT", false, false },
+			{ (void*) &int_rec_flav, T_NUM, 'v', "Receiver OT Functionality, 0: OT, 1: Rec_R_OT, default: OT", false, false },
+			{ (void*) nthreads, T_NUM, 't', "Number of threads, default 1", false, false },
+			{ (void*) nbaseots, T_NUM, 'e', "Number of baseots for ALSZ, default 190", false, false },
+			{ (void*) nchecks, T_NUM, 'c', "Number of checks for ALSZ, default 380", false, false },
+			{ (void*) usemecr, T_FLAG, 'm', "Use Min-Entropy Correlation-Robustness Assumption, default: false", false, false },
+			{ (void*) runs, T_NUM, 'u', "Number of repetitions, default: 1", false, false }
+	};
+
+	if (!parse_options(argcp, argvp, options, sizeof(options) / sizeof(parsing_ctx))) {
+		print_usage(*argvp[0], options, sizeof(options) / sizeof(parsing_ctx));
+		cout << "Exiting" << endl;
+		exit(0);
+	}
+
+	assert(*role < 2);
+
+	if (int_port != 0) {
+		assert(int_port < 1 << (sizeof(uint16_t) * 8));
+		*port = (uint16_t) int_port;
+	}
+
+	if (int_prot != 0) {
+		assert(int_prot > 0 && int_prot < PROT_LAST);
+		*protocol = (ot_ext_prot) int_prot;
+	}
+
+	if (int_snd_flav != 0) {
+		assert(int_snd_flav > 0 && int_snd_flav < Snd_OT_LAST);
+		*sndflav = (snd_ot_flavor) int_snd_flav;
+	}
+
+	if (int_rec_flav != 0) {
+		assert(int_rec_flav > 0 && int_rec_flav < Rec_OT_LAST);
+		*rcvflav = (rec_ot_flavor) int_rec_flav;
+	}
+
+	//delete options;
 
 	return 1;
 }

@@ -21,7 +21,11 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t lim = myStartPos + myNumOTs;
 
 	// The vector with the received bits
+#ifdef GENERATE_T_EXPLICITELY
+	CBitVector vRcv(2 * m_nBaseOTs * OTsPerIteration);
+#else
 	CBitVector vRcv(m_nBaseOTs * OTsPerIteration);
+#endif
 
 	// Holds the reply that is sent back to the receiver
 	uint32_t numsndvals = 2;
@@ -92,7 +96,7 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalUnMaskTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		Q.EklundhBitTranspose(wd_size_bits, OTsPerIteration);
+		Q.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalTnsTime += getMillies(tempStart, tempEnd);

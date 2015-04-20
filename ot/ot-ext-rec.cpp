@@ -117,28 +117,32 @@ void OTExtRec::MaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t OTid, uin
 	uint64_t choicebytelen = bits_in_bytes(min(numblocks * m_nBlockSizeBits, m_nOTs - OTid));
 	uint8_t* choiceptr;// = m_nChoices.GetArr() + ceil_divide(OTid, 8);
 	CBitVector tmp;
+
+
+#ifdef GENERATE_T_EXPLICITELY
+	//Some nasty moving to compress the code, this part is only required for benchmarking
+	uint32_t blockbytesize = rowbytelen * m_nBaseOTs;
+	SndBuf.SetBytes(SndBuf.GetArr(), blockbytesize, blockbytesize);
+	SndBuf.SetBytes(T.GetArr(), 0, blockbytesize);
+	T.FillRand(blockbytesize << 3, m_cCrypt);
+	SndBuf.XORBytes(T.GetArr(), 0, blockbytesize);
+	SndBuf.XORBytes(T.GetArr(), blockbytesize, blockbytesize);
+
+	for (uint32_t k = 0; k < m_nBaseOTs; k++) {
+		SndBuf.XORBytesReverse(m_vChoices.GetArr() + ceil_divide(OTid, 8), blockbytesize +  k * rowbytelen, choicebytelen);
+	}
+
+#else
 	tmp.CreateBytes(rowbytelen);
 	tmp.Reset();
-	//cout << "T0: ";
-	//T.PrintHex(0, 32);
-	//cout << "T1: ";
-	//SndBuf.PrintHex(0, 32);
-	if(m_eRecOTFlav == Rec_R_OT) {
-		//m_nChoices.SetBytes(SndBuf.GetArr(), ceil_divide(OTid, 8), rowbytelen);
-		//m_nChoices.XORBytesReverse(T.GetArr(), ceil_divide(OTid, 8), rowbytelen);
-		//m_nChoices.SetXOR(SndBuf.GetArr(), T.GetArr(), ceil_divide(OTid, 8), rowbytelen);
 
+	if(m_eRecOTFlav == Rec_R_OT) {
 		tmp.XORBytesReverse(SndBuf.GetArr(), 0, rowbytelen);
 		tmp.XORBytesReverse(T.GetArr(), 0, rowbytelen);
 
-		//m_nChoices.SetBitsToZero(OTid, rowbytelen*8);
-		//m_nChoices.XORBytesReverse(SndBuf.GetArr(), ceil_divide(OTid, 8), rowbytelen);
-		//m_nChoices.XORBytesReverse(T.GetArr(), ceil_divide(OTid, 8), rowbytelen);
-		//cout << "Choices:";
-		//m_nChoices.PrintHex();
 		m_vChoices.Copy(tmp.GetArr(), ceil_divide(OTid, 8), choicebytelen);
 	} else {
-		tmp.Copy(m_vChoices.GetArr()+ ceil_divide(OTid, 8), 0, choicebytelen);
+		tmp.Copy(m_vChoices.GetArr() + ceil_divide(OTid, 8), 0, choicebytelen);
 	}
 	choiceptr = tmp.GetArr();
 	for (uint32_t k = 0; k < m_nBaseOTs; k++) {
@@ -147,13 +151,18 @@ void OTExtRec::MaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t OTid, uin
 
 	SndBuf.XORBytes(T.GetArr(), 0, rowbytelen * m_nBaseOTs);
 	tmp.delCBitVector();
+#endif
 	//cout << "SB: ";
 	//SndBuf.PrintHex(0, 32);
 }
 
 
 void OTExtRec::SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs) {
+#ifdef GENERATE_T_EXPLICITELY
+	uint64_t nSize = 2 * bits_in_bytes(m_nBaseOTs * processedOTs);
+#else
 	uint64_t nSize = bits_in_bytes(m_nBaseOTs * processedOTs);
+#endif
 	uint8_t* bufptr = Sndbuf.GetArr();
 
 	if(m_eRecOTFlav == Rec_R_OT) {
@@ -367,15 +376,18 @@ void OTExtRec::ComputePKBaseOTs() {
 	uint8_t* pBuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes() * m_nBaseOTs * m_nSndVals);
 	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs * m_nSndVals);
 
-#ifdef OTTiming
 	timeval np_begin, np_end;
 	gettimeofday(&np_begin, NULL);
-#endif
 	m_cBaseOT->Sender(m_nSndVals, m_nBaseOTs, chan, pBuf);
-#ifdef OTTiming
 	gettimeofday(&np_end, NULL);
+
+#ifndef BATCH
 	printf("Time for performing the base-OTs: %f seconds\n", getMillies(np_begin, np_end));
+#else
+	cout << getMillies(np_begin, np_end) << "\t";
 #endif
+
+
 
 	//Key expansion
 	uint8_t* pBufIdx = pBuf;

@@ -95,11 +95,23 @@ void OTExtSnd::BuildQMatrix(CBitVector& T, uint64_t OT_ptr, uint64_t numblocks) 
 void OTExtSnd::UnMaskBaseOTs(CBitVector& T, CBitVector& RcvBuf, uint64_t numblocks) {
 	uint64_t rowbytelen = m_nBlockSizeBytes * numblocks;
 	uint8_t* rcvbufptr = RcvBuf.GetArr();
+#ifdef GENERATE_T_EXPLICITELY
+	uint64_t blocksizebytes = m_nBaseOTs * rowbytelen;
+#endif
 
 	for (uint64_t k = 0; k < m_nBaseOTs; k++, rcvbufptr += rowbytelen) {
+#ifdef GENERATE_T_EXPLICITELY
+		if (m_vU.GetBit(k) == 0) {
+			T.XORBytes(rcvbufptr, k * rowbytelen, rowbytelen);
+		} else {
+			T.XORBytes(rcvbufptr + blocksizebytes, k * rowbytelen, rowbytelen);
+		}
+#else
 		if (m_vU.GetBit(k)) {
 			T.XORBytes(rcvbufptr, k * rowbytelen, rowbytelen);
 		}
+#endif
+
 	}
 }
 
@@ -115,8 +127,11 @@ void OTExtSnd::ReceiveMasks(CBitVector& vRcv, channel* chan, uint64_t processedO
 		startpos = 1;
 		vRcv.SetBytesToZero(0, bits_in_bytes(processedOTs));
 	}
+#ifdef GENERATE_T_EXPLICITELY
+	vRcv.SetBytes(rcvbuftmpptr, 0, 2 * bits_in_bytes(m_nBaseOTs * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+#else
 	vRcv.SetBytes(rcvbuftmpptr, bits_in_bytes(startpos * processedOTs), bits_in_bytes((m_nBaseOTs - startpos) * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
-
+#endif
 	free(rcvbufptr);
 }
 
@@ -226,10 +241,6 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 }
 
 void OTExtSnd::MaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len, channel* chan) {
-	//TODO
-	//if(m_eSndOTFlav == Snd_GC_OT)
-	//	return;
-
 	m_fMaskFct->Mask(OT_ptr, OT_len, m_vValues, snd_buf, m_eSndOTFlav);
 
 	if (m_eSndOTFlav == Snd_R_OT || m_eSndOTFlav == Snd_GC_OT)
@@ -300,14 +311,15 @@ void OTExtSnd::ComputePKBaseOTs() {
 	uint8_t* pBuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes() * m_nBaseOTs);
 	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs);
 
-#ifdef OTTiming
 	timeval np_begin, np_end;
 	gettimeofday(&np_begin, NULL);
-#endif
 	m_cBaseOT->Receiver(m_nSndVals, m_nBaseOTs, m_vU, chan, pBuf);
-#ifdef OTTiming
 	gettimeofday(&np_end, NULL);
+
+#ifndef BATCH
 	printf("Time for performing the base-OTs: %f seconds\n", getMillies(np_begin, np_end));
+#else
+	cout << getMillies(np_begin, np_end) << "\t";
 #endif
 
 	//Key expansion

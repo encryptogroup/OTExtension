@@ -100,7 +100,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		ReceiveAndFillMatrix(rndmat, mat_chan);
 		ReceiveAndXORCorRobVector(T, OTsPerIteration, mat_chan);
 
-		T.EklundhBitTranspose(wd_size_bits, OTsPerIteration);
+		T.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalTnsTime += getMillies(tempStart, tempEnd);

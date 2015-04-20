@@ -133,9 +133,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
 	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
 #endif
-#ifndef BATCH
-	cout << "OT Extension Receiver finished" << endl;
-#endif
+
 	return TRUE;
 }
 

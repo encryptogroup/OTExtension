@@ -221,7 +221,7 @@ nnob_snd_check_t NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* toc
 	uint64_t rowbytelen = m_nBlockSizeBytes * numblocks;
 	uint64_t checkbytelen = min(rowbytelen, bits_in_bytes(m_nOTs - otid));
 
-	uint8_t* hash_buf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes());
+	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
 	uint8_t* tmpbuf = (uint8_t*) malloc(rowbytelen);
 	uint8_t *idaptr, *idbptr;
 	nnob_snd_check_t check_buf;
@@ -299,7 +299,8 @@ nnob_snd_check_t NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* toc
 #ifdef AES_OWF
 			owf(&aesowfkey, rowbytelen, tmpbuf, resbuf);
 #else
-		m_cCrypt->hash_buf(chk_buf_ptr, OWF_BYTES, tmpbuf, checkbytelen, hash_buf);//hash_buf, rowbytelen, tmpbuf, resbuf, hash_buf);
+		//m_cCrypt->hash_buf(chk_buf_ptr, OWF_BYTES, tmpbuf, checkbytelen, hash_buf);//hash_buf, rowbytelen, tmpbuf, resbuf, hash_buf);
+		sha512_hash(chk_buf_ptr, OWF_BYTES, tmpbuf, checkbytelen, hash_buf);
 #endif
 #ifdef DEBUG_NNOB_CHECKS_OUTPUT
 		cout << "XOR-OWF Output:\t" << (hex);

@@ -72,7 +72,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalUnMaskTime = 0,
-			totalHashCheckTime = 0;
+			totalHashCheckTime = 0, totalChkCompTime = 0;
 	timeval tempStart, tempEnd;
 #endif
 
@@ -105,17 +105,15 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		gettimeofday(&tempStart, NULL);
 #endif
 		check_queue.push(UpdateCheckBuf(Q.GetArr(), vRcv.GetArr(), OT_ptr, processedOTBlocks, check_chan));
-		//TODO
-		FillAndSendRandomMatrix(rndmat, mat_chan);
+		GenerateSendAndXORCorRobVector(Q, OTsPerIteration, mat_chan);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
-		totalHashCheckTime += getMillies(tempStart, tempEnd);
+		totalChkCompTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
+		FillAndSendRandomMatrix(rndmat, mat_chan);
+
 		UnMaskBaseOTs(Q, vRcv, processedOTBlocks);
-
-		GenerateSendAndXORCorRobVector(Q, OTsPerIteration, mat_chan);
-
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalUnMaskTime += getMillies(tempStart, tempEnd);
@@ -143,34 +141,50 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		mask_queue.push(tmpmaskbuf);
 
 		if(check_chan->data_available()) {
-			assert(CheckConsistency(&check_queue, check_chan));//TODO assert
+			assert(CheckConsistency(&check_queue, check_chan));
 			tmpmaskbuf = mask_queue.front();
 			mask_queue.pop();
 			MaskAndSend(tmpmaskbuf.maskbuf, tmpmaskbuf.otid, tmpmaskbuf.otlen, ot_chan);
 		}
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
+		totalHashCheckTime += getMillies(tempStart, tempEnd);
+		gettimeofday(&tempStart, NULL);
+#endif
+#ifdef OTTiming
+		gettimeofday(&tempEnd, NULL);
 		totalSndTime += getMillies(tempStart, tempEnd);
 #endif
 		OT_ptr += min(lim - OT_ptr, OTsPerIteration);
 		Q.Reset();
-
-		//free(rcvbufptr);
 	}
 
 	while(!check_queue.empty()) {
 		if(check_chan->data_available()) {
-			assert(CheckConsistency(&check_queue, check_chan));//TODO assert
+#ifdef OTTiming
+		gettimeofday(&tempStart, NULL);
+#endif
+			assert(CheckConsistency(&check_queue, check_chan));
+#ifdef OTTiming
+			gettimeofday(&tempEnd, NULL);
+			totalHashCheckTime += getMillies(tempStart, tempEnd);
+			gettimeofday(&tempStart, NULL);
+#endif
 			tmpmaskbuf = mask_queue.front();
 			mask_queue.pop();
 			MaskAndSend(tmpmaskbuf.maskbuf, tmpmaskbuf.otid, tmpmaskbuf.otlen, ot_chan);
+#ifdef OTTiming
+			gettimeofday(&tempEnd, NULL);
+			totalSndTime += getMillies(tempStart, tempEnd);
+#endif
 		}
 	}
 
-	//vRcv.delCBitVector();
 	ot_chan->synchronize_end();
 	check_chan->synchronize_end();
 
+
+	vRcv.delCBitVector();
 	Q.delCBitVector();
 	for (uint32_t u = 0; u < m_nSndVals; u++)
 		seedbuf[u].delCBitVector();
@@ -192,10 +206,11 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	cout << "Time needed for: " << endl;
 	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
 	cout << "\t BaseOT Unmasking:\t" << totalUnMaskTime << " ms" << endl;
-	cout << "\t Check Hashing:\t" << totalHashCheckTime << " ms" << endl;
+	cout << "\t Check Hashing: \t" << totalHashCheckTime << " ms" << endl;
 	cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << endl;
 	cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << endl;
 	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
+	cout << "\t Checking Consistency:\t" << totalChkCompTime << " ms" << endl;
 	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
 #endif
 
@@ -220,14 +235,18 @@ void ALSZOTExtSnd::FillAndSendRandomMatrix(uint64_t **rndmat, channel* mat_chan)
 
 alsz_snd_check_t ALSZOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* tocheckrcv, uint64_t otid, uint64_t numblocks, channel* check_chan) {
 	uint64_t rowbytelen = m_nBlockSizeBytes * numblocks;
-	uint8_t* hash_buf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes());
-	uint8_t* tmpbuf = (uint8_t*) malloc(rowbytelen);
+	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
+	//uint8_t* tmpbuf = (uint8_t*) malloc(rowbytelen);
+	uint8_t** tmpbuf = (uint8_t**) malloc(2 * sizeof(uint8_t*));
 	uint8_t *idaptr, *idbptr;
 	alsz_snd_check_t check_buf;
 	check_buf.rcv_chk_buf = (uint8_t*) malloc(m_nChecks * OWF_BYTES);
 	check_buf.seed_chk_buf = (uint8_t*) malloc(m_nChecks * OWF_BYTES);
 	uint8_t *seedcheckbufptr = check_buf.seed_chk_buf, *rcvcheckbufptr = check_buf.rcv_chk_buf;
-
+	uint32_t iters = rowbytelen/sizeof(uint64_t);
+	for(uint32_t i = 0; i < 2; i++) {
+		tmpbuf[i] = (uint8_t*) malloc(rowbytelen);
+	}
 	check_buf.otid = otid;
 	check_buf.numblocks = numblocks;
 	check_buf.perm = (linking_t*) malloc(sizeof(linking_t*) * m_nChecks);
@@ -239,24 +258,33 @@ alsz_snd_check_t ALSZOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* toc
 	cout << "rowbytelen = " << rowbytelen << endl;
 	m_vU.PrintHex();
 #endif
-
+	uint8_t *pas, *pbs, *par, *pbr;
 	for(uint64_t i = 0; i < m_nChecks; i++, seedcheckbufptr+=OWF_BYTES, rcvcheckbufptr+=OWF_BYTES) {
-		memset(tmpbuf, 0, rowbytelen);
+		//memset(tmpbuf, 0, rowbytelen);
 #ifdef DEBUG_ALSZ_CHECKS
 		cout << i << "-th check between " << check_buf.perm[i].ida << " and " << check_buf.perm[i].idb << ": " << endl;
 #endif
-		XORandOWF(tocheckseed + check_buf.perm[i].ida * rowbytelen, tocheckseed + check_buf.perm[i].idb * rowbytelen,
+		pas = tocheckseed + check_buf.perm[i].ida * rowbytelen;
+		pbs = tocheckseed + check_buf.perm[i].idb * rowbytelen;
+		par = tocheckrcv + check_buf.perm[i].ida * rowbytelen;
+		pbr = tocheckrcv + check_buf.perm[i].idb * rowbytelen;
+		for(uint64_t j = 0; j < iters; j++) {
+			((uint64_t*) tmpbuf[0])[j] = ((uint64_t*) pas)[j] ^ ((uint64_t*) pbs)[j];
+			((uint64_t*) tmpbuf[1])[j] = ((uint64_t*) tmpbuf[0])[j] ^ ((uint64_t*) par)[j] ^ ((uint64_t*) pbr)[j];
+		}
+		sha512_hash(seedcheckbufptr, OWF_BYTES, tmpbuf[0], rowbytelen, hash_buf);
+		sha512_hash(rcvcheckbufptr, OWF_BYTES, tmpbuf[1], rowbytelen, hash_buf);
+		/*XORandOWF(tocheckseed + check_buf.perm[i].ida * rowbytelen, tocheckseed + check_buf.perm[i].idb * rowbytelen,
 				rowbytelen, tmpbuf, seedcheckbufptr, hash_buf);
 		XORandOWF(tocheckrcv + check_buf.perm[i].ida * rowbytelen, tocheckrcv + check_buf.perm[i].idb * rowbytelen,
-				rowbytelen, tmpbuf, rcvcheckbufptr, hash_buf);
+				rowbytelen, tmpbuf, rcvcheckbufptr, hash_buf);*/
 	}
 
+	for(uint32_t i = 0; i < 2; i++)
+		free(tmpbuf[i]);
 	free(tmpbuf);
+	//free(tmpbuf);
 	free(hash_buf);
-
-	/*if(m_eSndOTFlav == Snd_GC_OT) {
-
-	}*/
 
 	//Send the permutation over to the receiver
 	check_chan->send_id_len((uint8_t*) check_buf.perm, sizeof(linking_t) * m_nChecks, otid, numblocks);
@@ -281,7 +309,13 @@ void ALSZOTExtSnd::XORandOWF(uint8_t* idaptr, uint8_t* idbptr, uint64_t rowbytel
 #ifdef AES_OWF
 		owf(&aesowfkey, rowbytelen, tmpbuf, resbuf);
 #else
-		m_cCrypt->hash_buf(resbuf, OWF_BYTES, tmpbuf, rowbytelen, hash_buf);//hash_buf, rowbytelen, tmpbuf, resbuf, hash_buf);
+	/*SHA512_CTX sha;
+	SHA512_Init(&sha);
+	SHA512_Update(&sha, tmpbuf, rowbytelen);
+	SHA512_Final(hash_buf, &sha);
+	memcpy(resbuf, hash_buf, OWF_BYTES);*/
+	sha512_hash(resbuf, OWF_BYTES, tmpbuf, rowbytelen, hash_buf);
+	//m_cCrypt->hash_buf(resbuf, OWF_BYTES, tmpbuf, rowbytelen, hash_buf);//hash_buf, rowbytelen, tmpbuf, resbuf, hash_buf);
 #endif
 #ifdef DEBUG_ALSZ_CHECKS_OUTPUT
 		cout << "\t" << (hex);
@@ -372,6 +406,7 @@ void ALSZOTExtSnd::genRandomPermutation(linking_t* outperm, uint32_t nids, uint3
 			tmpval = tmpval % nids;
 		}*/
 		m_cCrypt->gen_rnd_uniform(&outperm[i].idb, nids);
+		//outperm[i].idb = 0;
 		//if(outperm[i].idb == 0) outperm[i].idb++;
 		//cout << "Permutation " << i << ": " << outperm[i].ida << " <-> " << outperm[i].idb << endl;
 	}

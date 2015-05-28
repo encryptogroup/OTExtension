@@ -90,16 +90,12 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		gettimeofday(&tempStart, NULL);
 #endif
 		SendMasks(vSnd, chan, otid, OTsPerIteration);
-		//chan->send_id_len(vSnd.GetArr(), nSize, otid, OTsPerIteration);
-		//sndthread->add_snd_task_start_len(id, nSize, vSnd.GetArr(), i, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalSndTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		//if(chan->data_available()) {
 		SetOutput(maskbuf, otid, OTsPerIteration, &mask_queue, chan);//ReceiveAndUnMask(chan);
-		//}
 
 		//counter += min(lim - OT_ptr, OTsPerIteration);
 		otid += min(lim - otid, OTsPerIteration);

@@ -75,8 +75,6 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		//rcvbufptr = chan->blocking_receive_id_len(&rcvbuftmpptr, &tmpctr, &tmpotlen);
-		//vRcv.AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
 		ReceiveMasks(vRcv, chan, OTsPerIteration);
 
 #ifdef OTTiming
@@ -115,10 +113,9 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 		otid += min(lim - otid, OTsPerIteration);
 		Q.Reset();
-		//free(rcvbufptr);
 	}
 
-	//vRcv.delCBitVector();
+	vRcv.delCBitVector();
 	chan->synchronize_end();
 
 	Q.delCBitVector();
@@ -128,7 +125,7 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	for (uint32_t i = 0; i < numsndvals; i++)
 		vSnd[i].delCBitVector();
 	if (numsndvals > 0)
-		free(vSnd);
+		delete vSnd;
 
 	if(m_eSndOTFlav==Snd_GC_OT)
 		freeRndMatrix(rndmat, m_nBaseOTs);
@@ -145,6 +142,8 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 
 	delete chan;
+	delete seedbuf;
+
 	return TRUE;
 }
 

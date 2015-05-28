@@ -376,7 +376,7 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 			{ (void*) address, T_STR, 'a', "IP-address, default: localhost", false, false },
 			{ (void*) &int_port, T_NUM, 'p', "Port, default: 7766", false, false },
 			{ (void*) &int_prot, T_NUM, 'o', "Protocol, 0: IKNP, 1: ALSZ, 2: NNOB, default: IKNP", false, false },
-			{ (void*) &int_snd_flav, T_NUM, 'f', "Sender OT Functionality, 0: OT, 1: C_OT, 2: Snd_R_OT, default: OT", false, false },
+			{ (void*) &int_snd_flav, T_NUM, 'f', "Sender OT Functionality, 0: OT, 1: C_OT, 2: Snd_R_OT, 3: GC_OT, default: OT", false, false },
 			{ (void*) &int_rec_flav, T_NUM, 'v', "Receiver OT Functionality, 0: OT, 1: Rec_R_OT, default: OT", false, false },
 			{ (void*) nthreads, T_NUM, 't', "Number of threads, default 1", false, false },
 			{ (void*) nbaseots, T_NUM, 'e', "Number of baseots for ALSZ, default 190", false, false },

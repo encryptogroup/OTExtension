@@ -237,7 +237,7 @@ void NNOBOTExtRec::ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* che
 	AES_KEY_CTX aesowfkey;
 	MPC_AES_KEY_INIT(&aesowfkey);
 #else
-	uint8_t* hash_buf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes());
+	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
 #endif
 	uint8_t* tmpbuf = (uint8_t*) malloc(bufrowbytelen);
 	uint8_t **ka = (uint8_t**) malloc(2);
@@ -280,7 +280,8 @@ void NNOBOTExtRec::ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* che
 	#ifdef AES_OWF
 			owf(&aesowfkey, rowbytelen, tmpbuf, outhashes);
 	#else
-			m_cCrypt->hash_buf(outptr, OWF_BYTES, tmpbuf, checkbytelen, hash_buf);
+			//m_cCrypt->hash_buf(outptr, OWF_BYTES, tmpbuf, checkbytelen, hash_buf);
+			sha512_hash(outptr, OWF_BYTES, tmpbuf, checkbytelen, hash_buf);
 	#endif
 #ifdef DEBUG_NNOB_CHECKS_OUTPUT
 			cout << "XOR-OWF Output:\t" << (hex);

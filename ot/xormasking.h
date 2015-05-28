@@ -111,8 +111,9 @@ public:
 	void expandMask(CBitVector& out, BYTE* sbp, uint32_t offset, uint32_t processedOTs, uint32_t bitlength, crypto* crypt) {
 
 		if (bitlength <= AES_KEY_BITS) {
-			for (uint32_t i = 0; i < processedOTs; i++, sbp += AES_KEY_BYTES) {
-				out.SetBits(sbp, (uint64_t) (offset + i) * bitlength, (uint64_t) bitlength);
+			uint64_t pos = offset * bitlength;
+			for (uint32_t i = 0; i < processedOTs; i++, sbp += AES_KEY_BYTES, pos+=bitlength) {
+				out.SetBits(sbp, pos, (uint64_t) bitlength);
 			}
 		} else {
 			uint8_t* m_bBuf = (uint8_t*) malloc(AES_BYTES);

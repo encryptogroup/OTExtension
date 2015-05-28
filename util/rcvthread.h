@@ -95,6 +95,7 @@ public:
 			rcv_len = 0;
 			rcv_len += mysock->Receive(&channelid, sizeof(uint8_t));
 			rcv_len += mysock->Receive(&rcvbytelen, sizeof(uint64_t));
+
 			if(rcv_len > 0) {
 #ifdef DEBUG_RECEIVE_THREAD
 				cout << "Received value on channel " << (uint32_t) channelid << " with " << rcvbytelen <<
@@ -104,6 +105,7 @@ public:
 				if(channelid == ADMIN_CHANNEL) {
 					tmprcvbuf = (uint8_t*) malloc(rcvbytelen);
 					mysock->Receive(tmprcvbuf, rcvbytelen);
+
 					//TODO: Right now finish, can be used for other maintenance tasks
 					free(tmprcvbuf);
 					//cout << "Got message on Admin channel, shutting down" << endl;

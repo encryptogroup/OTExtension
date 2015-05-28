@@ -53,6 +53,10 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	CBitVector maskbuf;
 	maskbuf.Create(m_nBitLength * OTwindow);
 
+	//these two values are only required for the min entropy correlation robustness assumption
+	alsz_rcv_check_t check_tmp;
+	CBitVector Ttmp(wd_size_bits * OTsPerIteration);
+
 	//TODO only do when successfull checks
 	if(m_eSndOTFlav == Snd_GC_OT) {
 		initRndMatrix(&rndmat, m_nBitLength, m_nBaseOTs);
@@ -60,7 +64,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0,
-			totalChkTime = 0, totalMaskTime = 0, totalEnqueueTime = 0;
+			totalChkTime = 0, totalMaskTime = 0, totalEnqueueTime = 0, totalOutputSetTime = 0;
 	timeval tempStart, tempEnd;
 #endif
 
@@ -80,7 +84,6 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 		check_buf.push(EnqueueSeed(T.GetArr(), vSnd.GetArr(), otid, processedOTBlocks));
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
 		totalEnqueueTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
@@ -97,34 +100,47 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalSndTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		ReceiveAndFillMatrix(rndmat, mat_chan);
-		ReceiveAndXORCorRobVector(T, OTsPerIteration, mat_chan);
 
-		T.Transpose(wd_size_bits, OTsPerIteration);
+		ReceiveAndFillMatrix(rndmat, mat_chan);
+		if(!m_bUseMinEntCorRob) {
+			T.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-
-		HashValues(T, seedbuf, maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
+			HashValues(T, seedbuf, maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		if(check_chan->data_available()) {
-			ComputeOWF(&check_buf, check_chan);
 		}
-		//if(ot_chan->data_available()) {
-		//	ReceiveAndUnMask(ot_chan);
-		//}
+		if(check_chan->data_available()) {
+			if(m_bUseMinEntCorRob) {
+				check_tmp = check_buf.front();
+				Ttmp.Copy(check_tmp.T0, 0, check_tmp.numblocks * m_nBlockSizeBytes);
+			}
+			ComputeOWF(&check_buf, check_chan);
+			if(m_bUseMinEntCorRob) {
+				ReceiveAndXORCorRobVector(Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
+				Ttmp.Transpose(wd_size_bits, OTsPerIteration);
+				HashValues(Ttmp, seedbuf, maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
+			}
+
+#ifdef OTTiming
+			gettimeofday(&tempEnd, NULL);
+			totalChkTime += getMillies(tempStart, tempEnd);
+			gettimeofday(&tempStart, NULL);
+#endif
+		}
+
 		SetOutput(maskbuf, otid, OTsPerIteration, &mask_queue, ot_chan);
 
 		otid += min(lim - otid, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
-		totalRcvTime += getMillies(tempStart, tempEnd);
+		totalOutputSetTime += getMillies(tempStart, tempEnd);
 #endif
 
 		vSnd.Reset();
@@ -133,23 +149,52 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	while(!check_buf.empty()) {
 		if(check_chan->data_available()) {
+			if(m_bUseMinEntCorRob) {
+				check_tmp = check_buf.front();
+				Ttmp.Copy(check_tmp.T0, 0, check_tmp.numblocks * m_nBlockSizeBytes);
+			}
+#ifdef OTTiming
+			gettimeofday(&tempStart, NULL);
+#endif
 			ComputeOWF(&check_buf, check_chan);
+#ifdef OTTiming
+			gettimeofday(&tempEnd, NULL);
+			totalChkTime += getMillies(tempStart, tempEnd);
+#endif
+			if(m_bUseMinEntCorRob) {
+				ReceiveAndXORCorRobVector(Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
+				Ttmp.Transpose(wd_size_bits, OTsPerIteration);
+				HashValues(Ttmp, seedbuf, maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
+			}
 		}
 	}
 
 
 	if(m_eSndOTFlav != Snd_R_OT) {
 		//finevent->Wait();
-		while(ot_chan->is_alive())
+		while(ot_chan->is_alive()) {
+#ifdef OTTiming
+			gettimeofday(&tempStart, NULL);
+#endif
 			ReceiveAndUnMask(ot_chan, &mask_queue);
+#ifdef OTTiming
+		gettimeofday(&tempEnd, NULL);
+		totalOutputSetTime += getMillies(tempStart, tempEnd);
+#endif
+		}
 	}
+
 	ot_chan->synchronize_end();
 	check_chan->synchronize_end();
+
+
+
 
 	T.delCBitVector();
 	vSnd.delCBitVector();
 	seedbuf.delCBitVector();
 	maskbuf.delCBitVector();
+	Ttmp.delCBitVector();
 
 	if(use_mat_chan) {
 		mat_chan->synchronize_end();
@@ -169,6 +214,8 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << endl;
 	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
 	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
+	cout << "\t Checking OWF:  \t" << totalChkTime << " ms" << endl;
+	cout << "\t Setting Output:\t" << totalOutputSetTime << " ms" << endl;
 #endif
 
 	return TRUE;
@@ -231,19 +278,33 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 	uint32_t outhashbytelen = m_nChecks * OWF_BYTES * receiver_hashes;
 	uint8_t* outhashes = (uint8_t*) malloc(outhashbytelen);
 
+#ifdef OTTiming_PRECISE
+	timeval tstart, tend;
+	double total_xortime = 0, total_hashtime = 0;
+#endif
+
 #ifdef AES_OWF
 	AES_KEY_CTX aesowfkey;
 	MPC_AES_KEY_INIT(&aesowfkey);
 #else
-	uint8_t* hash_buf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes());
+	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
 #endif
-	uint8_t* tmpbuf = (uint8_t*) malloc(bufrowbytelen);
+	//uint8_t* tmpbuf = (uint8_t**) malloc(bufrowbytelen);
+	uint8_t** tmpbuf = (uint8_t**) malloc(receiver_hashes * sizeof(uint8_t*));
+	for(i = 0; i < receiver_hashes; i++) {
+		tmpbuf[i] = (uint8_t*) malloc(bufrowbytelen);
+	}
+
 	uint8_t **ka = (uint8_t**) malloc(2);
 	uint8_t **kb = (uint8_t**) malloc(2);
 	uint8_t  *kaptr, *kbptr;
 	uint8_t* outptr = outhashes;
 	uint32_t ida, idb;
+	uint32_t iters = bufrowbytelen / sizeof(uint64_t);
 
+	SHA512_CTX sha, shatmp;
+	SHA512_Init(&sha);
+	SHA512_Init(&shatmp);
 	//Compute all hashes for the permutations given Ta and Tb
 	for(i = 0; i < m_nChecks; i++) {
 		ka[0] = T0 + perm[i].ida * bufrowbytelen;
@@ -257,11 +318,46 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 #ifdef DEBUG_ALSZ_CHECKS
 		cout << i << "-th check: between " << perm[i].ida << ", and " << perm[i].idb << ": " << endl;
 #endif
-		for(j = 0; j < receiver_hashes; j++, outptr+=OWF_BYTES) {
+
+		for(k = 0; k < iters; k++) {
+			((uint64_t*) tmpbuf[0])[k] = ((uint64_t*) ka[0])[k] ^ ((uint64_t*) kb[0])[k];
+			((uint64_t*) tmpbuf[1])[k] = ((uint64_t*) ka[0])[k] ^ ((uint64_t*) kb[1])[k];
+			((uint64_t*) tmpbuf[2])[k] = ((uint64_t*) ka[1])[k] ^ ((uint64_t*) kb[0])[k];
+			((uint64_t*) tmpbuf[3])[k] = ((uint64_t*) ka[1])[k] ^ ((uint64_t*) kb[1])[k];
+		}
+		sha = shatmp;
+		//sha512_hash(outptr, OWF_BYTES, tmpbuf[0], bufrowbytelen, hash_buf);
+		SHA512_Update(&sha, tmpbuf[0], bufrowbytelen);
+		SHA512_Final(hash_buf, &sha);
+		memcpy(outptr, hash_buf, OWF_BYTES);
+		outptr+=OWF_BYTES;
+		//sha512_hash(outptr, OWF_BYTES, tmpbuf[1], bufrowbytelen, hash_buf);
+		sha = shatmp;
+		SHA512_Update(&sha, tmpbuf[1], bufrowbytelen);
+		SHA512_Final(hash_buf, &sha);
+		memcpy(outptr, hash_buf, OWF_BYTES);
+		outptr+=OWF_BYTES;
+		//sha512_hash(outptr, OWF_BYTES, tmpbuf[2], bufrowbytelen, hash_buf);
+		sha = shatmp;
+		SHA512_Update(&sha, tmpbuf[2], bufrowbytelen);
+		SHA512_Final(hash_buf, &sha);
+		memcpy(outptr, hash_buf, OWF_BYTES);
+		outptr+=OWF_BYTES;
+		//sha512_hash(outptr, OWF_BYTES, tmpbuf[3], bufrowbytelen, hash_buf);
+		sha = shatmp;
+		SHA512_Update(&sha, tmpbuf[3], bufrowbytelen);
+		SHA512_Final(hash_buf, &sha);
+		memcpy(outptr, hash_buf, OWF_BYTES);
+		outptr+=OWF_BYTES;
+
+/*		for(j = 0; j < receiver_hashes; j++, outptr+=OWF_BYTES) {
+#ifdef OTTiming_PRECISE
+			gettimeofday(&tstart, NULL);
+#endif
 			kaptr = ka[j>>1];
 			kbptr = kb[j&0x01];
 
-			for(k = 0; k < bufrowbytelen / sizeof(uint64_t); k++) {
+			for(k = 0; k < iters; k++) {
 				((uint64_t*) tmpbuf)[k] = ((uint64_t*) kaptr)[k] ^ ((uint64_t*) kbptr)[k];
 			}
 #ifdef DEBUG_ALSZ_CHECKS_INPUT
@@ -271,10 +367,22 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 			}
 			cout << (dec) << endl;
 #endif
+
 #ifdef AES_OWF
 			owf(&aesowfkey, rowbytelen, tmpbuf, outptr);
 #else
-			m_cCrypt->hash_buf(outptr, OWF_BYTES, tmpbuf, bufrowbytelen, hash_buf);//owf(hash_buf, rowbytelen, tmpbuf, outptr);
+	#ifdef OTTiming_PRECISE
+			gettimeofday(&tend, NULL);
+			total_xortime += getMillies(tstart, tend);
+			gettimeofday(&tstart, NULL);
+	#endif
+			sha512_hash(outptr, OWF_BYTES, tmpbuf, bufrowbytelen, hash_buf);
+
+			//m_cCrypt->hash_buf(outptr, OWF_BYTES, tmpbuf, bufrowbytelen, hash_buf);
+	#ifdef OTTiming_PRECISE
+			gettimeofday(&tend, NULL);
+			total_hashtime += getMillies(tstart, tend);
+	#endif
 #endif
 #ifdef DEBUG_ALSZ_CHECKS_OUTPUT
 			cout << (hex) << "\t";
@@ -283,12 +391,18 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 			}
 			cout << (dec) << endl;
 #endif
-		}
+		}*/
 	}
 
 	check_chan->send_id_len(outhashes, outhashbytelen, check_buf.otid, check_buf.numblocks);
+#ifdef OTTiming_PRECISE
+	cout << "Total XOR Time:\t" << total_xortime << " ms"<< endl;
+	cout << "Total Hash Time:\t" << total_hashtime << " ms"<< endl;
+#endif
 
 	free(rcv_buf);
+	for(uint32_t i = 0; i < receiver_hashes; i++)
+		free(tmpbuf[i]);
 	free(tmpbuf);
 	free(ka);
 	free(kb);

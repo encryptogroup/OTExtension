@@ -111,7 +111,10 @@ public:
 				channelid = task->channelid;
 				mysock->Send(&channelid, sizeof(uint8_t));
 				mysock->Send(&task->bytelen, sizeof(uint64_t));
-				mysock->Send(task->snd_buf, task->bytelen);
+				if(task->bytelen > 0) {
+					mysock->Send(task->snd_buf, task->bytelen);
+				}
+
 #ifdef DEBUG_SEND_THREAD
 				cout << "Sending on channel " <<  (uint32_t) channelid << " a message of " << task->bytelen << " bytes length" << endl;
 #endif

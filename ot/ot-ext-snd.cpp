@@ -25,9 +25,9 @@ BOOL OTExtSnd::start_send(uint32_t numThreads) {
 	if (m_nOTs == 0)
 		return true;
 
-	if(numThreads * m_nBlockSizeBits > m_nOTs) {
-		cerr << "Decreasing nthreads from " << numThreads << " to " << m_nOTs / m_nBlockSizeBits << " to fit window size" << endl;
-		numThreads = m_nOTs / m_nBlockSizeBits;
+	if(numThreads * m_nBlockSizeBits > m_nOTs && numThreads > 1) {
+		cerr << "Decreasing nthreads from " << numThreads << " to " << max(m_nOTs / m_nBlockSizeBits, (uint64_t) 1) << " to fit window size" << endl;
+		numThreads = max(m_nOTs / m_nBlockSizeBits, (uint64_t) 1);
 	}
 
 	//The total number of OTs that is performed has to be a multiple of numThreads*Z_REGISTER_BITS
@@ -68,7 +68,6 @@ void OTExtSnd::BuildQMatrix(CBitVector& T, uint64_t OT_ptr, uint64_t numblocks) 
 	uint64_t rowbytelen = wd_size_bytes * numblocks;
 
 	AES_KEY_CTX* seedptr = m_vBaseOTKeys;
-	uint32_t otid = (*counter) - m_nCounter;
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
 
 	uint64_t iters = rowbytelen / AES_BYTES;
@@ -125,10 +124,19 @@ void OTExtSnd::ReceiveMasks(CBitVector& vRcv, channel* chan, uint64_t processedO
 
 	if(m_eRecOTFlav == Rec_R_OT) {
 		startpos = 1;
+#ifdef GENERATE_T_EXPLICITELY
+		vRcv.SetBytesToZero(0, 2* bits_in_bytes(processedOTs));
+#else
 		vRcv.SetBytesToZero(0, bits_in_bytes(processedOTs));
+#endif
 	}
 #ifdef GENERATE_T_EXPLICITELY
-	vRcv.SetBytes(rcvbuftmpptr, 0, 2 * bits_in_bytes(m_nBaseOTs * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+	if(m_eRecOTFlav == Rec_R_OT) {
+		vRcv.SetBytes(rcvbuftmpptr, bits_in_bytes(processedOTs), bits_in_bytes((m_nBaseOTs -startpos) * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+		vRcv.SetBytes(rcvbuftmpptr + bits_in_bytes((m_nBaseOTs -startpos) * processedOTs), bits_in_bytes(m_nBaseOTs * processedOTs), bits_in_bytes((m_nBaseOTs -startpos) * processedOTs));
+	} else {
+		vRcv.SetBytes(rcvbuftmpptr, 0, 2 * bits_in_bytes(m_nBaseOTs* processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+	}
 #else
 	vRcv.SetBytes(rcvbuftmpptr, bits_in_bytes(startpos * processedOTs), bits_in_bytes((m_nBaseOTs - startpos) * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
 #endif
@@ -155,19 +163,19 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 	uint32_t u;
 	uint32_t aes_key_bytes = m_cCrypt->get_aes_key_bytes();
 
-	uint8_t* resbuf= (uint8_t*) calloc(m_cCrypt->get_hash_bytes(), 1);
-	uint8_t* inbuf= (uint8_t*) calloc(hashinbytelen, 1);
 
 	uint64_t* Qptr = (uint64_t*) Q.GetArr();
 	uint64_t* Uptr = (uint64_t*) m_vU.GetArr();
 
 	uint8_t** sbp = (uint8_t**) malloc(sizeof(uint8_t*) * m_nSndVals);
+	uint8_t* inbuf = (uint8_t*) calloc(hashinbytelen, 1);
+	uint8_t* resbuf = (uint8_t*) calloc(m_cCrypt->get_hash_bytes(), 1);
 	uint8_t* hash_buf = (uint8_t*) calloc(m_cCrypt->get_hash_bytes(), 1);
-
-	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
 
 	uint64_t* tmpbuf = (uint64_t*) calloc(PadToMultiple(bits_in_bytes(m_nBitLength), sizeof(uint64_t)), 1);
 	uint8_t* tmpbufb = (uint8_t*) calloc(bits_in_bytes(m_nBitLength), 1);
+
+	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
 
 	for (u = 0; u < m_nSndVals; u++)
 		sbp[u] = seedbuf[u].GetArr();

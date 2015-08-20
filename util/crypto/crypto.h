@@ -125,7 +125,7 @@ void gen_rnd_bytes(prf_state_ctx* prf_state, uint8_t* resbuf, uint32_t nbytes);
 
 seclvl get_sec_lvl(uint32_t symsecbits); //TODO pick a more elegant name (see crypto->get_seclvl())
 
-static const uint32_t m_nCodeWordBits = 256;
-static const uint32_t m_nCodeWordBytes = m_nCodeWordBits / 8;
+//static const uint32_t m_nCodeWordBits = 256;
+//static const uint32_t m_nCodeWordBytes = m_nCodeWordBits / 8;
 
 #endif /* CRYPTO_H_ */

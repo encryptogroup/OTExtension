@@ -10,6 +10,8 @@
 #include "../ot/alsz-ot-ext-rec.h"
 #include "../ot/nnob-ot-ext-snd.h"
 #include "../ot/nnob-ot-ext-rec.h"
+#include "../ot/kk-ot-ext-snd.h"
+#include "../ot/kk-ot-ext-rec.h"
 #include "../util/cbitvector.h"
 #include "../ot/xormasking.h"
 #include "../util/rcvthread.h"

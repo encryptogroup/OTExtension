@@ -154,6 +154,7 @@ void InitOTSender(const char* address, int port, crypto* crypt)
 		case ALSZ: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 		case IKNP: sender = new IKNPOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
 		case NNOB: sender = new NNOBOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
+		case KK: sender = new KKOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
 		default: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 
@@ -185,6 +186,7 @@ void InitOTReceiver(const char* address, int port, crypto* crypt)
 		case ALSZ: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 		case IKNP: receiver = new IKNPOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
 		case NNOB: receiver = new NNOBOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
+		case KK: receiver = new KKOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
 		default: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 
@@ -353,8 +355,6 @@ int main(int argc, char** argv)
 		}
 	}
 
-
-
 	//Cleanup();
 	delete crypt;
 
@@ -375,7 +375,7 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 			{ (void*) secparam, T_NUM, 's', "Symmetric Security Bits, default: 128", false, false },
 			{ (void*) address, T_STR, 'a', "IP-address, default: localhost", false, false },
 			{ (void*) &int_port, T_NUM, 'p', "Port, default: 7766", false, false },
-			{ (void*) &int_prot, T_NUM, 'o', "Protocol, 0: IKNP, 1: ALSZ, 2: NNOB, default: IKNP", false, false },
+			{ (void*) &int_prot, T_NUM, 'o', "Protocol, 0: IKNP, 1: ALSZ, 2: NNOB, 3: KK, default: IKNP", false, false },
 			{ (void*) &int_snd_flav, T_NUM, 'f', "Sender OT Functionality, 0: OT, 1: C_OT, 2: Snd_R_OT, 3: GC_OT, default: OT", false, false },
 			{ (void*) &int_rec_flav, T_NUM, 'v', "Receiver OT Functionality, 0: OT, 1: Rec_R_OT, default: OT", false, false },
 			{ (void*) nthreads, T_NUM, 't', "Number of threads, default 1", false, false },

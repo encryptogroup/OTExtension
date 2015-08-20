@@ -15,7 +15,7 @@
 #define BATCH
 //#define FIXED_KEY_AES_HASHING
 //#define AES_OWF
-//#define VERIFY_OT
+#define VERIFY_OT
 //#define SIMPLE_TRANSPOSE //activate the simple transpose, only required for benchmarking, not recommended
 //#define GENERATE_T_EXPLICITELY //send two instead of only one message, only required for benchmarking, not recommended
 //#define DEBUG_OT_HASH_IN
@@ -55,7 +55,7 @@ static const seclvl LT = { 40, 128, 3072, 256, 283 };
 static const seclvl XLT = { 40, 192, 7680, 384, 409 };
 static const seclvl XXLT = { 40, 256, 15360, 512, 571 };
 
-enum ot_ext_prot {IKNP, ALSZ, NNOB, PROT_LAST};
+enum ot_ext_prot {IKNP, ALSZ, NNOB, KK, PROT_LAST};
 
 enum snd_ot_flavor { Snd_OT, Snd_C_OT, Snd_R_OT, Snd_GC_OT, Snd_OT_LAST };
 enum rec_ot_flavor { Rec_OT, Rec_R_OT, Rec_OT_LAST };

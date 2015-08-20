@@ -36,7 +36,7 @@ protected:
 	virtual BOOL receiver_routine(uint32_t threadid, uint64_t numOTs) = 0;
 
 	void InitRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
-		Init(nSndVals, crypt, rcvthread, sndthread, nbaseOTs, nSndVals * nbaseOTs);
+		Init(nSndVals, crypt, rcvthread, sndthread, nbaseOTs, 2*nbaseOTs);
 	}
 	;
 

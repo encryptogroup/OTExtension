@@ -50,6 +50,8 @@ public:
 private:
 	void GenerateChoiceCodes(CBitVector& choicecodes, CBitVector& vSnd, uint32_t startpos, uint32_t len);
 	void KKSetOutput(CBitVector& maskbuf, uint64_t otid, uint64_t otlen, queue<mask_block>* mask_queue, channel* chan);
+	void KKHashValues(CBitVector& T, CBitVector& seedbuf, CBitVector& maskbuf, uint64_t OT_ptr, uint64_t OT_len, uint64_t** mat_mul);
+	void KKMaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t numblocks);
 	void KKReceiveAndUnMask(channel* chan, queue<mask_block>* mask_queue);
 
 	uint64_t** m_vCodeWords;

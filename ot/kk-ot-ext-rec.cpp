@@ -46,7 +46,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	queue<mask_block> mask_queue;
 
 	CBitVector maskbuf;
-	maskbuf.Create(m_nBitLength * OTwindow);
+	maskbuf.Create(m_nBitLength * OTwindow * choicecodebitlen);
 
 	//Choice bits corresponding to the codeword
 	CBitVector choicecodes(m_nCodeWordBits * m_nCodeWordBits);
@@ -87,7 +87,8 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalMtxTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		MaskBaseOTs(T, vSnd, otid, processedOTBlocks);
+		//MaskBaseOTs(T, vSnd, otid, processedOTBlocks);
+		KKMaskBaseOTs(T, vSnd, processedOTBlocks);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMaskTime += getMillies(tempStart, tempEnd);
@@ -99,7 +100,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(T, seedbuf, maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
+		KKHashValues(T, seedbuf, maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -112,8 +113,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		gettimeofday(&tempStart, NULL);
 #endif
 		//SetOutput(maskbuf, otid, OTsPerIteration, &mask_queue, chan);//ReceiveAndUnMask(chan);
-		//TODO: replace by own method
-		KKSetOutput(maskbuf, otid, OTsPerIteration, &mask_queue, chan);
+		KKSetOutput(maskbuf, otid, min(lim - otid, OTsPerIteration), &mask_queue, chan);
 		//counter += min(lim - OT_ptr, OTsPerIteration);
 		otid += min(lim - otid, OTsPerIteration);
 #ifdef OTTiming
@@ -158,18 +158,23 @@ void KKOTExtRec::GenerateChoiceCodes(CBitVector& choicecodes, CBitVector& vSnd, 
 	uint32_t otid = startpos;
 	uint32_t ncolumnsbyte = ceil_divide(len, m_nCodeWordBits) * m_nCodeWordBytes;
 	uint32_t choicecodebitlen = ceil_log2(m_nSndVals);
+
+	cout << "vSnd In: ";
+	vSnd.PrintHex(0, ncolumnsbyte);
 	for(uint32_t pos = 0; pos < len; pos+=m_nCodeWordBits) {
 
 		//build blocks of 256x256 code bits
 		choicecodes.Reset();
 		for(uint32_t j = 0; j < min(len - pos, m_nCodeWordBits); j++, otid++) {
 			tmpchoice = m_vChoices.Get<uint32_t>(otid * choicecodebitlen, choicecodebitlen);
-			//cout << "otid = " << otid << ", choice = " << tmpchoice << endl;
+			cout << "otid = " << otid << ", choice = " << tmpchoice << endl;
 #ifdef ZDEBUG
 		cout << "my choice : " << tmpchoice << endl;
 #endif
 			choicecodes.SetBytes((uint8_t*) m_vCodeWords[tmpchoice], j*m_nCodeWordBytes, m_nCodeWordBytes);
 		}
+		cout << "Using codeword " << (hex) << m_vCodeWords[tmpchoice][0] << m_vCodeWords[tmpchoice][1] << (hex) <<
+				m_vCodeWords[tmpchoice][2] << m_vCodeWords[tmpchoice][3] << (dec) << endl;
 
 		//transpose these 256x256 code bits to match the order of the T matrix
 		choicecodes.EklundhBitTranspose(m_nCodeWordBits, m_nCodeWordBits);
@@ -179,22 +184,95 @@ void KKOTExtRec::GenerateChoiceCodes(CBitVector& choicecodes, CBitVector& vSnd, 
 			vSnd.XORBytes(choicecodes.GetArr() + j * m_nCodeWordBytes, (pos >> 3) + j * ncolumnsbyte, m_nCodeWordBytes);
 		}
 	}
+	cout << "vSnd Out: ";
+	vSnd.PrintHex(0, ncolumnsbyte);
 }
+
+void KKOTExtRec::KKHashValues(CBitVector& T, CBitVector& seedbuf, CBitVector& maskbuf, uint64_t OT_ptr, uint64_t OT_len, uint64_t** mat_mul) {
+	//uint32_t wd_size_bytes = m_nBlockSizeBytes;//(1 << ((ceil_log2(m_nBaseOTs)) - 3));
+	uint32_t rowbytelen = bits_in_bytes(m_nBaseOTs);
+	uint32_t hashinbytelen = rowbytelen + sizeof(uint64_t);
+	uint32_t aes_key_bytes = m_cCrypt->get_aes_key_bytes();
+
+	uint8_t* Tptr = T.GetArr();
+	uint8_t* bufptr = seedbuf.GetArr();
+
+	uint8_t* inbuf = (uint8_t*) calloc(hashinbytelen, 1);
+	uint8_t* resbuf = (uint8_t*) calloc(m_cCrypt->get_hash_bytes(), 1);
+	uint8_t* hash_buf = (uint8_t*) calloc(m_cCrypt->get_hash_bytes(), 1);
+
+	uint64_t* tmpbuf = (uint64_t*) calloc(PadToMultiple(bits_in_bytes(m_nBitLength), sizeof(uint64_t)), 1);
+	uint8_t* tmpbufb = (uint8_t*) calloc(bits_in_bytes(m_nBitLength), 1);
+
+	uint32_t choicecodebitlen = ceil_log2(m_nSndVals);
+
+	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
+
+	cout << "T = ";
+	T.PrintHex(0, rowbytelen);
+	if(m_eSndOTFlav != Snd_GC_OT) {
+		for (uint64_t i = 0; i < OT_len; i++, Tptr += m_nBlockSizeBytes, bufptr += aes_key_bytes, global_OT_ptr++) {
+#ifdef DEBUG_OT_HASH_IN
+			cout << "Hash-In for i = " << global_OT_ptr << ": " << (hex);
+			for(uint32_t p = 0; p < rowbytelen; p++)
+				cout << setw(2) << setfill('0') << (uint32_t) Tptr[p];
+				cout << (dec) << endl;
+#endif
+
+#ifdef FIXED_KEY_AES_HASHING
+			FixedKeyHashing(m_kCRFKey, bufptr, Tptr, hash_buf, i, ceil_divide(m_nBaseOTs, 8), m_cCrypt);
+#else
+			memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
+			memcpy(inbuf+sizeof(uint64_t), Tptr, rowbytelen);
+			m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
+			memcpy(bufptr, resbuf, aes_key_bytes);
+#endif
+
+
+#ifdef DEBUG_OT_HASH_OUT
+			cout << "Hash-Out for i = " << global_OT_ptr << ": " << (hex);
+			for(uint32_t p = 0; p < aes_key_bytes; p++)
+				cout << setw(2) << setfill('0') << (uint32_t) bufptr[p];
+			cout << (dec) << endl;
+#endif
+		}
+		//TODO: difference is in here!! (could be solved by giving the bit-length as parameter in the function call)
+		//m_fMaskFct->expandMask(m_vTempOTMasks, seedbuf.GetArr(), OT_ptr, OT_len, m_nBitLength, m_cCrypt);
+		m_fMaskFct->expandMask(maskbuf, seedbuf.GetArr(), 0, OT_len, m_nBitLength * choicecodebitlen, m_cCrypt);
+
+	} else {
+		for(uint64_t i = 0; i < OT_len; i++, Tptr += m_nBlockSizeBytes) {
+			BitMatrixMultiplication(tmpbufb, bits_in_bytes(m_nBitLength), Tptr, m_nBaseOTs, mat_mul, tmpbuf);
+			//m_vTempOTMasks.SetBits(tmpbufb, (uint64_t) (OT_ptr + i) * m_nBitLength, m_nBitLength);
+			maskbuf.SetBits(tmpbufb, i * m_nBitLength, m_nBitLength);
+		}
+	}
+
+	free(tmpbuf);
+	free(tmpbufb);
+	free(resbuf);
+	free(inbuf);
+	free(hash_buf);
+}
+
+
+
 
 void KKOTExtRec::KKSetOutput(CBitVector& maskbuf, uint64_t otid, uint64_t otlen, queue<mask_block>* mask_queue,
 		channel* chan) {
-	uint32_t remots = min(otlen, m_nOTs - otid);
-
 	mask_block tmpblock;
 	tmpblock.startotid = otid;
-	tmpblock.otlen = remots;
+	tmpblock.otlen = otlen;
 	tmpblock.buf.Copy(maskbuf);
+
+	cout << "OTptr = " << otid << ", OT_len = " << otlen << endl;
 
 	mask_queue->push(tmpblock);
 	if(chan->data_available()) {
 		KKReceiveAndUnMask(chan, mask_queue);
 	}
 }
+
 
 void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block>* mask_queue) {
 	uint64_t startotid, otlen, bufsize, valsize;
@@ -205,6 +283,9 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block>* mask_queue
 	uint32_t tmpchoice;
 	uint32_t choicecodebits = ceil_log2(m_nSndVals);
 	uint32_t tmpmask;
+	uint8_t* tmpmaskbuf;
+
+	tmpmaskbuf = (uint8_t*) malloc(bits_in_bytes(choicecodebits * m_nBitLength));
 
 	while(chan->data_available() && !(mask_queue->empty())) {
 		tmpblock = mask_queue->front();
@@ -216,28 +297,55 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block>* mask_queue
 		assert(otlen == tmpblock.otlen);
 
 		valsize = bits_in_bytes(otlen * m_nBitLength * choicecodebits);
-		bufsize = bufsize * m_nSndVals;
+		bufsize = valsize * m_nSndVals;
 
 		vRcv.AttachBuf(tmpbuf, bufsize);
 
 		uint32_t remots = min(otlen, m_nOTs - startotid);
 		m_vRet.Copy(tmpblock.buf, bits_in_bytes(startotid * m_nBitLength), valsize);
+		cout << "Base: ";
+		m_vRet.PrintHex(0, valsize);
 
+		cout << "Received: ";
+		vRcv.PrintHex(0, bufsize);
 		for(uint32_t i = 0; i < otlen; i++) {
 			tmpchoice = m_vChoices.Get<uint32_t>((startotid + i) * choicecodebits, choicecodebits);
-			tmpmask = vRcv.Get<uint32_t>(tmpchoice * valsize * 8 + i * choicecodebits, choicecodebits);
+			cout << "choice in " <<i << "-th 1-out-of-" << m_nSndVals << " OT: " << tmpchoice << endl;
+			if(tmpchoice != 0 || tmpchoice != m_nSndVals -1) {
+				//tmpmask = vRcv.Get<uint32_t>((tmpchoice-1) * valsize * 8 + i * choicecodebits*m_nBitLength, choicecodebits*m_nBitLength);
+				vRcv.GetBits(tmpmaskbuf, (tmpchoice-1) * valsize * 8 + i * choicecodebits*m_nBitLength, choicecodebits*m_nBitLength);
+				cout << "Accessing bit-address " << (tmpchoice-1) * valsize * 8 + i * choicecodebits*m_nBitLength << " with bit-length " << choicecodebits*m_nBitLength << endl;
+			}
+			else
+				tmpmask = 0;
+			cout << "Mask " << tmpchoice << ": "<< (hex);
+			for(uint32_t j = 0; j < bits_in_bytes(choicecodebits * m_nBitLength); j++)
+				cout << (uint32_t) tmpmaskbuf[j];
+			cout << (dec) << endl;
 			//tmpmask ^= tmpblock.Get<uint32_t>(i * choicecodebits, choicecodebits);
-			m_vRet.XOR(tmpmask, (startotid + i), choicecodebits);
+			//m_vRet.XOR(tmpmask, (startotid + i), choicecodebits);
+			cout << "startotid = " << startotid << ", start = " << (startotid + i) * choicecodebits * m_nBitLength << ", len = " <<  choicecodebits * m_nBitLength << endl;
+			m_vRet.XORBytes(tmpmaskbuf, (startotid + i) * choicecodebits * m_nBitLength, bits_in_bytes(choicecodebits * m_nBitLength));
+
 		}
+		cout << endl << "Xc: ";
+		m_vRet.PrintHex(0, valsize);
 		mask_queue->pop();
 		tmpblock.buf.delCBitVector();
 		free(buf);
 	}
+	free(tmpmaskbuf);
+}
+
+void KKOTExtRec::KKMaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t numblocks) {
+	uint64_t rowbytelen = m_nBlockSizeBytes * numblocks;
+	SndBuf.XORBytes(T.GetArr(), 0, rowbytelen * m_nBaseOTs);
 }
 
 
 void KKOTExtRec::ComputeBaseOTs(field_type ftype) {
 	m_cBaseOT = new NaorPinkas(m_cCrypt, ftype);
 	ComputePKBaseOTs();
+	m_nSndVals = 16; //TODO hack!
 	delete m_cBaseOT;
 }

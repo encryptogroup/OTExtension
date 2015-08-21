@@ -36,7 +36,7 @@ public:
 	void ComputeBaseOTs(field_type ftype);
 
 private:
-	void KKHashValues(CBitVector& Q, CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len, uint64_t** mat_mul);
+	void KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len, uint64_t** mat_mul);
 	void KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len, channel* chan);
 	uint64_t** m_vCodeWords;
 };

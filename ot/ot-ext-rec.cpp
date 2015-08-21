@@ -193,6 +193,8 @@ void OTExtRec::SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64
 		bufptr = Sndbuf.GetArr() + ceil_divide(processedOTs, 8);
 	}
 #endif
+	cout << "Receiver sending: ";
+	Sndbuf.PrintHex(0, 32);
 	chan->send_id_len(bufptr, nSize, OTid, processedOTs);
 }
 
@@ -323,7 +325,9 @@ void OTExtRec::ReceiveAndXORCorRobVector(CBitVector& T, uint64_t OT_len, channel
 
 BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	cout << "Verifying OT" << endl;
-	CBitVector* vRcvX = new CBitVector[2];//(CBitVector*) malloc(sizeof(CBitVector)*m_nSndVals);
+	uint32_t nsndvals = 2;
+
+	CBitVector* vRcvX = new CBitVector[nsndvals];//(CBitVector*) malloc(sizeof(CBitVector)*m_nSndVals);
 	vRcvX[0].Create(NUMOTBLOCKS * AES_BITS * m_nBitLength);
 	vRcvX[1].Create(NUMOTBLOCKS * AES_BITS * m_nBitLength);
 	CBitVector *Xc, *Xn;
@@ -332,14 +336,14 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	uint8_t* tempXc = (uint8_t*) malloc(bytelen);
 	uint8_t* tempXn = (uint8_t*) malloc(bytelen);
 	uint8_t* tempRet = (uint8_t*) malloc(bytelen);
-	uint8_t** buf = (uint8_t**) malloc(sizeof(uint8_t*) * m_nSndVals);
+	uint8_t** buf = (uint8_t**) malloc(sizeof(uint8_t*) * nsndvals);
 	channel* chan = new channel(0, m_cRcvThread, m_cSndThread);
 	uint8_t *tmpbuf;
 	BYTE resp;
 
 
 	for (uint64_t i = 0; i < NumOTs;) {
-		for(uint64_t j = 0; j < m_nSndVals; j++) {
+		for(uint64_t j = 0; j < nsndvals; j++) {
 			buf[j] = chan->blocking_receive_id_len(&tmpbuf, &otstart, &otlen);
 			vRcvX[j].AttachBuf(tmpbuf, bits_in_bytes(otlen * m_nBitLength));
 		}
@@ -372,7 +376,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 		resp = 0x01;
 		chan->send(&resp, (uint64_t) 1);
 
-		for(uint64_t j = 0; j < m_nSndVals; j++) {
+		for(uint64_t j = 0; j < nsndvals; j++) {
 			free(buf[j]);
 		}
 	}

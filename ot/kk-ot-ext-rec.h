@@ -27,7 +27,6 @@ public:
 	KKOTExtRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread) {
 		uint32_t numbaseots = max((uint64_t) 2*crypt->get_seclvl().symbits, pad_to_power_of_two(nSndVals));
 
-		cout << "Using KK OT extension receiver" << endl;
 		assert(pad_to_power_of_two(nSndVals) == nSndVals); //TODO right now only supports power of two nSndVals
 		assert(numbaseots == 256); //TODO: right now only 256 base OTs work due to the size of the code
 		InitRec(nSndVals, crypt, rcvthread, sndthread, 2*crypt->get_seclvl().symbits);

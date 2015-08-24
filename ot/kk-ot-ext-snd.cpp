@@ -9,7 +9,8 @@
 
 BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint32_t choicecodebitlen = ceil_log2(m_nSndVals);
-	uint64_t myStartPos = ceil_divide(id * myNumOTs, choicecodebitlen);
+	uint64_t myStartPos = id * myNumOTs;
+	uint64_t myStartPos1ooN = ceil_divide(myStartPos, choicecodebitlen);
 
 	uint64_t wd_size_bits = m_nBlockSizeBits;
 	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
@@ -20,7 +21,13 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t processedOTs;
 
 	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
-	uint64_t lim = ceil_divide(myStartPos + myNumOTs, choicecodebitlen);
+	//TODO some re-formating of myNumOTs due to 1ooN OT
+	uint64_t lim = myStartPos1ooN + ceil_divide(myNumOTs, choicecodebitlen);
+
+	if(myStartPos1ooN * choicecodebitlen> m_nOTs) {
+		cerr << "Thread " << id << " not doing any work to align to window size " << endl;
+		return true;
+	}
 
 	// The vector with the received bits
 #ifdef GENERATE_T_EXPLICITELY
@@ -46,7 +53,7 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	// Contains the parts of the V matrix
 	CBitVector Q(wd_size_bits * OTsPerIteration);
 
-	uint64_t otid = myStartPos;
+	uint64_t otid = myStartPos1ooN;
 
 	uint8_t *rcvbuftmpptr, *rcvbufptr;
 

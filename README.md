@@ -1,6 +1,8 @@
 ###DESCRIPTION
 Implementation of the passive secure OT extension protocol of [1] and the active secure OT extension protocols of [2] and [3]. Implements the general OT (G_OT), correlated OT (C_OT), global correlated OT (GC_OT), sender random OT (SR_OT), and receiver random OT (RR_OT) (Definitions of the functionalities will follow). Implements the base-OTs by Naor-Pinkas [4], Peikert-Vaikuntanathan-Waters [5], and Chou-Orlandi [6]. The code is based on the OT extension implementation of [7] and uses the MIRACL libary [8] for elliptic curve arithmetic. 
 
+Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10]. Currently only works for OTs with random sender input.
+
 ###COMPILE
 ####Linux: 
 Required compiler: g++
@@ -37,8 +39,9 @@ Different compilation flags can be set in `util/constants.h`.
 The current version is in a prototypical state. Next steps: 
 
 1. Better documentation. Clean interfaces and source code
-2. Integration into the ABY framework [9] and Miracl [8] as external GIT project
+2. Integration into the ABY framework [10] and Miracl [8] as external GIT project
 3. Test and enable support under Windows
+4. Implement all functionalities for 1-out-of-N OT extension of [9]
 
 
 ###REFERENCES
@@ -50,4 +53,5 @@ The current version is in a prototypical state. Next steps:
 * [6] T. Chou, C. Orlandi: The Simplest Protocol for Oblivious Transfer. Online at: http://eprint.iacr.org/2015/267. 
 * [7] S.G. Choi, K.W. Hwang, J.Katz, T. Malkin, D. Rubenstein: Secure multi-party computation of Boolean circuits with applications to privacy in on-line market-places. In CT-RSA’12. LNCS, vol. 7178, pp. 416–432. 
 * [8] CertiVox, Multiprecision Integer and Rational Arithmetic Cryptographic Library (MIRACL) https://github.com/CertiVox/MIRACL
-* [9] D. Demmler, T. Schneider, M. Zohner: ABY - A Framework for Efficient Mixed-Protocol Secure Two-Party Computation. NDSS 2015.
+* [9] V. Kolesnikov, R. Kumaresan: Improved OT Extension for Transferring Short Secrets. In CRYPTO'13 (2).
+* [10] D. Demmler, T. Schneider, M. Zohner: ABY - A Framework for Efficient Mixed-Protocol Secure Two-Party Computation. NDSS 2015.

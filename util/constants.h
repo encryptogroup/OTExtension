@@ -18,8 +18,8 @@
 #define VERIFY_OT
 //#define SIMPLE_TRANSPOSE //activate the simple transpose, only required for benchmarking, not recommended
 //#define GENERATE_T_EXPLICITELY //send two instead of only one message, only required for benchmarking, not recommended
-#define DEBUG_OT_HASH_IN
-#define DEBUG_OT_HASH_OUT
+//#define DEBUG_OT_HASH_IN
+//#define DEBUG_OT_HASH_OUT
 //#define DEBUG_OT_SEED_EXPANSION
 //#define DEBUG_BASE_OT_HASH_RET
 //#define DEBUG_RECEIVE_THREAD
@@ -31,6 +31,7 @@
 //#define DEBUG_NNOB_CHECKS
 //#define DEBUG_NNOB_CHECKS_INPUT
 //#define DEBUG_NNOB_CHECKS_OUTPUT
+//#define DEBUG_KK_OTBREAKDOWN
 
 
 
@@ -40,7 +41,7 @@
 #define AES_BYTES				16
 #define LOG2_AES_BITS			ceil_log2(AES_BITS)
 
-#define NUMOTBLOCKS 4096
+#define NUMOTBLOCKS 256
 #define MAX_NUM_COMM_CHANNELS 256
 #define ADMIN_CHANNEL MAX_NUM_COMM_CHANNELS-1
 #define OT_ADMIN_CHANNEL ADMIN_CHANNEL-1

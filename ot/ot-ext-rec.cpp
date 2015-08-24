@@ -193,8 +193,6 @@ void OTExtRec::SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64
 		bufptr = Sndbuf.GetArr() + ceil_divide(processedOTs, 8);
 	}
 #endif
-	cout << "Receiver sending: ";
-	Sndbuf.PrintHex(0, 32);
 	chan->send_id_len(bufptr, nSize, OTid, processedOTs);
 }
 

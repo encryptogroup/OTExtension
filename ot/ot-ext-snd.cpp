@@ -7,7 +7,7 @@
 
 #include "ot-ext-snd.h"
 
-BOOL OTExtSnd::send(uint32_t numOTs, uint32_t bitlength, CBitVector& x0, CBitVector& x1, snd_ot_flavor stype,
+BOOL OTExtSnd::send(uint32_t numOTs, uint32_t bitlength, CBitVector* x0, CBitVector* x1, snd_ot_flavor stype,
 		rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct) {
 	m_nOTs = numOTs;
 	m_nBitLength = bitlength;
@@ -236,7 +236,7 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 	if(m_eSndOTFlav != Snd_GC_OT) {
 	//Two calls to expandMask, both writing into snd_buf
 		for (uint32_t u = 0; u < m_nSndVals; u++)
-			m_fMaskFct->expandMask(snd_buf[u], seedbuf[u].GetArr(), 0, OT_len, m_nBitLength, m_cCrypt);
+			m_fMaskFct->expandMask(&(snd_buf[u]), seedbuf[u].GetArr(), 0, OT_len, m_nBitLength, m_cCrypt);
 	}
 #endif
 
@@ -285,12 +285,11 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 		OTsPerIteration = min(processedOTBlocks * AES_BITS, NumOTs - i);
 		nSnd = ceil_divide(OTsPerIteration * m_nBitLength, 8);
 
-		chan->send_id_len(m_vValues[0].GetArr() + bits_in_bytes(i * m_nBitLength), nSnd, i, OTsPerIteration);
-		chan->send_id_len(m_vValues[1].GetArr() + bits_in_bytes(i * m_nBitLength), nSnd, i, OTsPerIteration);
+		chan->send_id_len(m_vValues[0]->GetArr() + bits_in_bytes(i * m_nBitLength), nSnd, i, OTsPerIteration);
+		chan->send_id_len(m_vValues[1]->GetArr() + bits_in_bytes(i * m_nBitLength), nSnd, i, OTsPerIteration);
 		//sndthread->add_snd_task_start_len(0, nSnd, m_vValues[0].GetArr() + bits_in_bytes(i * m_nBitLength), i, OTsPerIteration);
 		//sndthread->add_snd_task_start_len(0, nSnd, m_vValues[1].GetArr() + bits_in_bytes(i * m_nBitLength), i, OTsPerIteration);
 
-		//cout << "Waiting for reply" << endl;
 		resp = chan->blocking_receive();
 		//rcvev->Wait();
 		//resp = *rcvqueue->front();
@@ -309,6 +308,8 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 
 	cout << "OT Verification successful" << flush << endl;
 	chan->synchronize_end();
+
+	delete chan;
 
 	return true;
 }

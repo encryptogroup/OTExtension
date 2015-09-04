@@ -157,6 +157,10 @@ void crypto::seed_aes_key(AES_KEY_CTX* aeskey, uint8_t* seed, bc_mode mode, cons
 	seed_aes_key(aeskey, secparam.symbits, seed, mode, iv, encrypt);
 }
 
+void crypto::clean_aes_key(AES_KEY_CTX* aeskey) {
+	EVP_CIPHER_CTX_cleanup(aeskey);
+}
+
 void crypto::seed_aes_key(AES_KEY_CTX* aeskey, uint32_t symbits, uint8_t* seed, bc_mode mode, const uint8_t* iv, bool encrypt) {
 	EVP_CIPHER_CTX_init(aeskey);
 	int (*initfct)(EVP_CIPHER_CTX*, const EVP_CIPHER*, ENGINE*, const unsigned char*, const unsigned char*);

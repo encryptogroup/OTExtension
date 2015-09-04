@@ -49,7 +49,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t otid = myStartPos;
 	queue<alsz_rcv_check_t> check_buf;
 
-	queue<mask_block> mask_queue;
+	queue<mask_block*> mask_queue;
 	CBitVector maskbuf;
 	maskbuf.Create(m_nBitLength * OTwindow);
 
@@ -109,7 +109,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-			HashValues(T, seedbuf, maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
+			HashValues(&T, &seedbuf, &maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -125,7 +125,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 			if(m_bUseMinEntCorRob) {
 				ReceiveAndXORCorRobVector(Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
 				Ttmp.Transpose(wd_size_bits, OTsPerIteration);
-				HashValues(Ttmp, seedbuf, maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
+				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
 			}
 
 #ifdef OTTiming
@@ -135,7 +135,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 		}
 
-		SetOutput(maskbuf, otid, OTsPerIteration, &mask_queue, ot_chan);
+		SetOutput(&maskbuf, otid, OTsPerIteration, &mask_queue, ot_chan);
 
 		otid += min(lim - otid, OTsPerIteration);
 #ifdef OTTiming
@@ -164,7 +164,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 			if(m_bUseMinEntCorRob) {
 				ReceiveAndXORCorRobVector(Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
 				Ttmp.Transpose(wd_size_bits, OTsPerIteration);
-				HashValues(Ttmp, seedbuf, maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
+				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
 			}
 		}
 	}
@@ -172,7 +172,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(m_eSndOTFlav != Snd_R_OT) {
 		//finevent->Wait();
-		while(ot_chan->is_alive()) {
+		while(ot_chan->is_alive() && !(mask_queue.empty())) {
 #ifdef OTTiming
 			gettimeofday(&tempStart, NULL);
 #endif
@@ -421,4 +421,5 @@ void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
 	} else {
 		//recursive call
 	}
+	//if(m_nBaseOTs * NUMOTBLOCKS)
 }

@@ -89,10 +89,12 @@ public:
 		m_nByteSize = 0;
 	}
 
-	//~CBitVector(){ if(m_pBits) free(m_pBits); }
+	//~CBitVector(){ delCBitVector(); };
+
 	void delCBitVector() {
-		if (m_nByteSize > 0)
+		if (m_nByteSize > 0) {
 			free(m_pBits);
+		}
 		m_nByteSize = 0;
 		m_pBits = NULL;
 	}

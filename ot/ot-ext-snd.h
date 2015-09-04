@@ -22,10 +22,14 @@ class OTExtSnd : public OTExt {
 public:
 	OTExtSnd() {};
 
-	BOOL send(uint32_t numOTs, uint32_t bitlength, CBitVector& s0, CBitVector& s1, snd_ot_flavor stype,
+	BOOL send(uint32_t numOTs, uint32_t bitlength, CBitVector* s0, CBitVector* s1, snd_ot_flavor stype,
 			rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct);
 
 	virtual void ComputeBaseOTs(field_type ftype) = 0;
+	void CleanupSender() {
+		m_vU.delCBitVector();
+		free(m_vValues);
+	}
 protected:
 	void InitSnd(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
 		Init(nSndVals, crypt, rcvthread, sndthread, nbaseOTs, nbaseOTs);
@@ -35,7 +39,7 @@ protected:
 		for (uint32_t i = nbaseOTs; i < PadToMultiple(nbaseOTs, 8); i++)
 			m_vU.SetBit(i, 0);
 
-		m_vValues = (CBitVector*) malloc(sizeof(CBitVector) * nSndVals);
+		m_vValues = (CBitVector**) malloc(sizeof(CBitVector*) * nSndVals);
 	}
 	;
 
@@ -56,13 +60,9 @@ protected:
 	void ComputePKBaseOTs();
 
 	CBitVector m_vU;
-	CBitVector* m_vValues;
+	CBitVector** m_vValues;
 
 	BYTE* m_vSeed;
-
-#ifdef FIXED_KEY_AES_HASHING
-	AES_KEY_CTX* m_kCRFKey;
-#endif
 
 	class OTSenderThread: public CThread {
 	public:

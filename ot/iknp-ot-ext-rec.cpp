@@ -40,7 +40,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	uint64_t otid = myStartPos;
 
-	queue<mask_block> mask_queue;
+	queue<mask_block*> mask_queue;
 
 	CBitVector maskbuf;
 	maskbuf.Create(m_nBitLength * OTwindow);
@@ -61,6 +61,12 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - otid, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 		//nSize = bits_in_bytes(m_nBaseOTs * OTsPerIteration);
+
+#ifdef ZDEBUG
+		cout << "Receiver thread " << id << " processing block " << otid <<
+				" with length: " << OTsPerIteration << ", and limit: " << lim << endl;
+#endif
+
 
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
@@ -83,7 +89,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(T, seedbuf, maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
+		HashValues(&T, &seedbuf, &maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -95,7 +101,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalSndTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		SetOutput(maskbuf, otid, OTsPerIteration, &mask_queue, chan);//ReceiveAndUnMask(chan);
+		SetOutput(&maskbuf, otid, OTsPerIteration, &mask_queue, chan);//ReceiveAndUnMask(chan);
 
 		//counter += min(lim - OT_ptr, OTsPerIteration);
 		otid += min(lim - otid, OTsPerIteration);
@@ -111,9 +117,14 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(m_eSndOTFlav != Snd_R_OT && m_eSndOTFlav != Snd_GC_OT) {
 		//finevent->Wait();
-		while(chan->is_alive())
+		while(chan->is_alive() && !(mask_queue.empty()))
 			ReceiveAndUnMask(chan, &mask_queue);
 	}
+
+#ifdef ZDEBUG
+	cout << "Receiver thread " << id << " finished " << endl;
+#endif
+
 
 	chan->synchronize_end();
 

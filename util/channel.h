@@ -93,7 +93,10 @@ public:
 		if(m_bSndAlive)
 			signal_end();
 		if(m_bRcvAlive)
+			m_cRcver->flush_queue(m_bChannelID);
+		if(m_bRcvAlive)
 			wait_for_fin();
+
 	}
 
 private:

@@ -69,7 +69,7 @@ void CBitVector::ResizeinBytes(int newSizeBytes) {
 	int tSize = m_nByteSize;
 
 	m_nByteSize = newSizeBytes;
-	m_pBits = new BYTE[m_nByteSize];
+	m_pBits = (BYTE*) calloc(m_nByteSize, sizeof(BYTE));
 
 	memcpy(m_pBits, tBits, tSize);
 

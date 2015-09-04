@@ -7,7 +7,7 @@ rec_ot_flavor test_rflavor[] = {Rec_OT, Rec_R_OT};
 uint64_t test_numots[] = {128, 3215, 100000};
 uint64_t test_bitlen[] = {1, 3, 8, 191};
 uint32_t test_nthreads[] = {1, 4};
-bool test_usemecr[] = {true, false};
+bool test_usemecr[] = {false, true};
 
 BOOL Init()
 {
@@ -295,10 +295,10 @@ int main(int argc, char** argv)
 				lastfield = tests[i].ftype;
 			}
 
-			cout << "Test " << i << ": " << getProt(tests[i].prot) << " Sender performing " << tests[i].numots << " " <<
-					getSndFlavor(tests[i].sflavor) << " / " << getRecFlavor(tests[i].rflavor) << " extensions on " <<
-					tests[i].bitlen << " bit elements with " <<	tests[i].nthreads << " threads, " <<
-					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " min-ent-corr-robustness"<< endl;
+			cout << "Test " << i << ": " << getProt(tests[i].prot) << " Sender " << tests[i].numots << " " <<
+					getSndFlavor(tests[i].sflavor) << " / " << getRecFlavor(tests[i].rflavor) << " on " <<
+					tests[i].bitlen << " bits with " <<	tests[i].nthreads << " threads, " <<
+					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " MECR"<< endl;
 
 			run_test_sender(tests[i].numots, tests[i].bitlen, tests[i].sflavor, tests[i].rflavor, tests[i].nthreads, crypt, sender);
 		}
@@ -317,10 +317,10 @@ int main(int argc, char** argv)
 				lastfield = tests[i].ftype;
 			}
 
-			cout << "Test " << i << ": " << getProt(tests[i].prot) << " Receiver performing " << tests[i].numots << " " <<
-					getSndFlavor(tests[i].sflavor) << " / " << getRecFlavor(tests[i].rflavor) << " extensions on " <<
-					tests[i].bitlen << " bit elements with " <<	tests[i].nthreads << " threads, " <<
-					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " min-ent-corr-robustness"<< endl;
+			cout << "Test " << i << ": " << getProt(tests[i].prot) << " Receiver " << tests[i].numots << " " <<
+					getSndFlavor(tests[i].sflavor) << " / " << getRecFlavor(tests[i].rflavor) << " on " <<
+					tests[i].bitlen << " bits with " <<	tests[i].nthreads << " threads, " <<
+					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " MECR"<< endl;
 
 			run_test_receiver(tests[i].numots, tests[i].bitlen, tests[i].sflavor, tests[i].rflavor, tests[i].nthreads, crypt, receiver);
 		}
@@ -349,7 +349,15 @@ void run_test_sender(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype, r
 	X1.Create(numots, bitlength, crypt);
 	X2.Create(numots, bitlength, crypt);
 
-	sender->send(numots, bitlength, X1, X2, stype, rtype, numthreads, m_fMaskFct);
+	sender->send(numots, bitlength, &X1, &X2, stype, rtype, numthreads, m_fMaskFct);
+
+	//X1.PrintHex();
+	//X2.PrintHex();
+
+	X1.delCBitVector();
+	X2.delCBitVector();
+	delta.delCBitVector();
+	delete m_fMaskFct;
 }
 
 
@@ -372,5 +380,8 @@ void run_test_receiver(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype,
 	 * variable that has to match the version of the sender.
 	*/
 
-	receiver->receive(numots, bitlength, choices, response, stype, rtype, numthreads, m_fMaskFct);
+	receiver->receive(numots, bitlength, &choices, &response, stype, rtype, numthreads, m_fMaskFct);
+	delete m_fMaskFct;
+	choices.delCBitVector();
+	response.delCBitVector();
 }

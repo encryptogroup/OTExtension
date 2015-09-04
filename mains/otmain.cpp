@@ -210,7 +210,7 @@ BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength,
 	
 	gettimeofday(&ot_begin, NULL);
 	// Execute OT sender routine 	
-	success = sender->send((uint32_t) numOTs, (uint32_t) bitlength, X1, X2, stype, rtype, m_nNumOTThreads, m_fMaskFct);
+	success = sender->send((uint32_t) numOTs, (uint32_t) bitlength, &X1, &X2, stype, rtype, m_nNumOTThreads, m_fMaskFct);
 	gettimeofday(&ot_end, NULL);
 
 #ifndef BATCH
@@ -237,7 +237,7 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 	timeval ot_begin, ot_end;
 	gettimeofday(&ot_begin, NULL);
 	// Execute OT receiver routine 	
-	success = receiver->receive(numOTs, bitlength, choices, ret, stype, rtype, m_nNumOTThreads, m_fMaskFct);
+	success = receiver->receive(numOTs, bitlength, &choices, &ret, stype, rtype, m_nNumOTThreads, m_fMaskFct);
 	gettimeofday(&ot_end, NULL);
 
 #ifndef BATCH

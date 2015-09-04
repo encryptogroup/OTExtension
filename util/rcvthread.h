@@ -42,11 +42,20 @@ public:
 	}
 	;
 
+	void flush_queue(uint8_t channelid) {
+		while(!listeners[channelid].rcv_buf->empty()) {
+			uint8_t* tmp = listeners[channelid].rcv_buf->front();
+			free(tmp);
+			listeners[channelid].rcv_buf->pop();
+		}
+	}
+
 	void remove_listener(uint8_t channelid) {
 		rcvlock->Lock();
 		if(listeners[channelid].inuse) {
 			listeners[channelid].fin_event->Set();
 			listeners[channelid].inuse = false;
+
 #ifdef DEBUG_RECEIVE_THREAD
 			cout << "Unsetting channel " << (uint32_t) channelid << endl;
 #endif
@@ -72,6 +81,7 @@ public:
 		listeners[channelid].rcv_event = rcv_event;
 		listeners[channelid].fin_event = fin_event;
 		listeners[channelid].inuse = true;
+//		assert(listeners[channelid].rcv_buf->empty());
 
 		//cout << "Successfully registered on channel " << (uint32_t) channelid << endl;
 

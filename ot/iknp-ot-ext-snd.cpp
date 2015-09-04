@@ -69,7 +69,8 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 
 #ifdef ZDEBUG
-		cout << "Processing block " << nProgress << " with length: " << OTsPerIteration << ", and limit: " << lim << endl;
+		cout << "Sender thread " << id << " processing block " << otid <<
+				" with length: " << OTsPerIteration << ", and limit: " << lim << endl;
 #endif
 
 #ifdef OTTiming
@@ -115,12 +116,17 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		Q.Reset();
 	}
 
+#ifdef ZDEBUG
+	cout << "Sender thread " << id << " finished " << endl;
+#endif
+
 	vRcv.delCBitVector();
 	chan->synchronize_end();
 
 	Q.delCBitVector();
 	for (uint32_t u = 0; u < m_nSndVals; u++)
 		seedbuf[u].delCBitVector();
+	delete seedbuf;
 
 	for (uint32_t i = 0; i < numsndvals; i++)
 		vSnd[i].delCBitVector();
@@ -142,7 +148,6 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 
 	delete chan;
-	delete seedbuf;
 
 	return TRUE;
 }

@@ -41,7 +41,7 @@ struct ot_block {
 struct mask_block {
 	uint64_t startotid;
 	uint64_t otlen;
-	CBitVector buf;
+	CBitVector* buf;
 };
 
 typedef struct {
@@ -63,6 +63,7 @@ class OTExt {
 
 public:
 	OTExt(){};
+	//virtual ~OTExt() = 0;
 	virtual void ComputeBaseOTs(field_type ftype) = 0;
 
 	void EnableMinEntCorrRobustness() {
@@ -96,6 +97,9 @@ protected:
 
 	void Cleanup() {
 		free(m_vBaseOTKeys);
+#ifdef FIXED_KEY_AES_HASHING
+		free(m_kCRFKey);
+#endif
 	}
 
 

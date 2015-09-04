@@ -58,7 +58,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	uint8_t *rcvbuftmpptr, *rcvbufptr;
 
-	queue<nnob_snd_check_t> check_queue;
+	queue<nnob_snd_check_t*> check_queue;
 	queue<mask_buf_t> mask_queue;
 
 	uint32_t startpos = 0;
@@ -142,10 +142,13 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		mask_queue.push(tmpmaskbuf);
 
 		if(check_chan->data_available()) {
-			assert(CheckConsistency(&check_queue, check_chan));//TODO assert
+			assert(CheckConsistency(&check_queue, check_chan));
 			tmpmaskbuf = mask_queue.front();
 			mask_queue.pop();
 			MaskAndSend(tmpmaskbuf.maskbuf, tmpmaskbuf.otid, tmpmaskbuf.otlen, ot_chan);
+			for(uint32_t i = 0; i < numsndvals; i++)
+				tmpmaskbuf.maskbuf[i].delCBitVector();
+			delete tmpmaskbuf.maskbuf;
 		}
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
@@ -163,21 +166,26 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 			tmpmaskbuf = mask_queue.front();
 			mask_queue.pop();
 			MaskAndSend(tmpmaskbuf.maskbuf, tmpmaskbuf.otid, tmpmaskbuf.otlen, ot_chan);
+			for(uint32_t i = 0; i < numsndvals; i++)
+				tmpmaskbuf.maskbuf[i].delCBitVector();
+			delete tmpmaskbuf.maskbuf;
 		}
 	}
 
-	//vRcv.delCBitVector();
 	ot_chan->synchronize_end();
 	check_chan->synchronize_end();
 
 	Q.delCBitVector();
+	vRcv.delCBitVector();
+
 	for (uint32_t u = 0; u < m_nSndVals; u++)
 		seedbuf[u].delCBitVector();
+	delete seedbuf;
 
 	for (uint32_t i = 0; i < numsndvals; i++)
 		vSnd[i].delCBitVector();
 	if (numsndvals > 0)
-		free(vSnd);
+		delete vSnd;
 
 	if(use_mat_chan) {
 		mat_chan->synchronize_end();
@@ -217,18 +225,18 @@ void NNOBOTExtSnd::FillAndSendRandomMatrix(uint64_t **rndmat, channel* mat_chan)
 
 
 
-nnob_snd_check_t NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* tocheckrcv, uint64_t otid, uint64_t numblocks, channel* check_chan) {
+nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* tocheckrcv, uint64_t otid, uint64_t numblocks, channel* check_chan) {
 	uint64_t rowbytelen = m_nBlockSizeBytes * numblocks;
 	uint64_t checkbytelen = min(rowbytelen, bits_in_bytes(m_nOTs - otid));
 
 	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
 	uint8_t* tmpbuf = (uint8_t*) malloc(rowbytelen);
 	uint8_t *idaptr, *idbptr;
-	nnob_snd_check_t check_buf;
+	nnob_snd_check_t* check_buf = (nnob_snd_check_t*) malloc(sizeof(nnob_snd_check_t));
 	//check_buf.rcv_chk_buf = (uint8_t*) malloc(m_nChecks * OWF_BYTES);
-	check_buf.chk_buf = (uint8_t*) malloc(m_nChecks * OWF_BYTES);
+	check_buf->chk_buf = (uint8_t*) malloc(m_nChecks * OWF_BYTES);
 
-	uint8_t *chk_buf_ptr = check_buf.chk_buf;
+	uint8_t *chk_buf_ptr = check_buf->chk_buf;
 	uint8_t *idatmpbuf = (BYTE*) malloc(sizeof(BYTE) * rowbytelen);
 	uint8_t *idbtmpbuf = (BYTE*) malloc(sizeof(BYTE) * rowbytelen);
 	uint8_t *seedptr, *rcvptr;
@@ -236,15 +244,15 @@ nnob_snd_check_t NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* toc
 	//uint32_t blockoffset = ceil_divide(otid, NUMOTBLOCKS * m_nBlockSizeBits);
 	uint32_t blockid = 0; //TODO bring in as soon as 3-step OT is implemented
 
-	check_buf.otid = otid;
-	check_buf.numblocks = numblocks;
-	check_buf.perm = (linking_t*) malloc(sizeof(linking_t*) * m_nChecks);
-	check_buf.permchoicebits = (BYTE*) malloc(sizeof(uint8_t) * m_nChecks);
+	check_buf->otid = otid;
+	check_buf->numblocks = numblocks;
+	check_buf->perm = (linking_t*) malloc(sizeof(linking_t*) * m_nChecks);
+	check_buf->permchoicebits = (BYTE*) malloc(sizeof(uint8_t) * m_nChecks);
 
-	genRandomMapping(check_buf.perm, m_nBaseOTs);
+	genRandomMapping(check_buf->perm, m_nBaseOTs);
 
 	for(uint32_t i = 0; i < m_nChecks; i++) {
-		check_buf.permchoicebits[i] = m_vU.GetBit(blockid * m_nBaseOTs + check_buf.perm[i].ida) ^ m_vU.GetBit(blockid * m_nBaseOTs + check_buf.perm[i].idb);
+		check_buf->permchoicebits[i] = m_vU.GetBit(blockid * m_nBaseOTs + check_buf->perm[i].ida) ^ m_vU.GetBit(blockid * m_nBaseOTs + check_buf->perm[i].idb);
 	}
 
 	//right now the checkbytelen needs to be a multiple of AES_BYTES
@@ -255,21 +263,21 @@ nnob_snd_check_t NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* toc
 
 	for(uint64_t i = 0; i < m_nChecks; i++, chk_buf_ptr+=OWF_BYTES) {
 
-		if(m_vU.GetBit(blockid * m_nBaseOTs + check_buf.perm[i].ida) == 0) {
-			memcpy(idatmpbuf, tocheckseed + check_buf.perm[i].ida * rowbytelen, rowbytelen);
+		if(m_vU.GetBit(blockid * m_nBaseOTs + check_buf->perm[i].ida) == 0) {
+			memcpy(idatmpbuf, tocheckseed + check_buf->perm[i].ida * rowbytelen, rowbytelen);
 		} else {
-			seedptr = tocheckseed + check_buf.perm[i].ida * rowbytelen;
-			rcvptr = tocheckrcv + check_buf.perm[i].ida * rowbytelen;
+			seedptr = tocheckseed + check_buf->perm[i].ida * rowbytelen;
+			rcvptr = tocheckrcv + check_buf->perm[i].ida * rowbytelen;
 			for(int j = 0; j < rowbytelen/sizeof(uint64_t); j++) {
 				((uint64_t*) idatmpbuf)[j] = ((uint64_t*) seedptr)[j] ^ ((uint64_t*) rcvptr)[j];
 			}
 		}
 
-		if(m_vU.GetBit(blockid * m_nBaseOTs + check_buf.perm[i].idb) == 0) {
-			memcpy(idbtmpbuf, tocheckseed + check_buf.perm[i].idb * rowbytelen, rowbytelen);
+		if(m_vU.GetBit(blockid * m_nBaseOTs + check_buf->perm[i].idb) == 0) {
+			memcpy(idbtmpbuf, tocheckseed + check_buf->perm[i].idb * rowbytelen, rowbytelen);
 		} else {
-			seedptr = tocheckseed + check_buf.perm[i].idb * rowbytelen;
-			rcvptr = tocheckrcv + check_buf.perm[i].idb * rowbytelen;
+			seedptr = tocheckseed + check_buf->perm[i].idb * rowbytelen;
+			rcvptr = tocheckrcv + check_buf->perm[i].idb * rowbytelen;
 			for(int j = 0; j < rowbytelen/sizeof(uint64_t); j++) {
 				((uint64_t*) idbtmpbuf)[j] = ((uint64_t*) seedptr)[j] ^ ((uint64_t*) rcvptr)[j];
 			}
@@ -329,8 +337,8 @@ nnob_snd_check_t NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* toc
 	free(idbtmpbuf);
 
 	//Send the permutation and the XORed bits over to the receiver
-	check_chan->send_id_len((uint8_t*) check_buf.perm, sizeof(linking_t) * m_nChecks, otid, numblocks);
-	check_chan->send(check_buf.permchoicebits, m_nChecks);
+	check_chan->send_id_len((uint8_t*) check_buf->perm, sizeof(linking_t) * m_nChecks, otid, numblocks);
+	check_chan->send(check_buf->permchoicebits, m_nChecks);
 
 	return check_buf;
 }
@@ -365,24 +373,24 @@ void NNOBOTExtSnd::XORandOWF(uint8_t* idaptr, uint8_t* idbptr, uint64_t rowbytel
 #endif
 }
 
-BOOL NNOBOTExtSnd::CheckConsistency(queue<nnob_snd_check_t>* check_buf_q, channel* check_chan) {
+BOOL NNOBOTExtSnd::CheckConsistency(queue<nnob_snd_check_t*>* check_buf_q, channel* check_chan) {
 	uint8_t *rcvhashbufptr, *rcvhashbuf;
 	uint64_t tmpid, tmpnblocks;
 
 	uint8_t* rcvbuf = check_chan->blocking_receive_id_len(&rcvhashbuf, &tmpid, &tmpnblocks);
 
-	nnob_snd_check_t check_buf = check_buf_q->front();
+	nnob_snd_check_t* check_buf = check_buf_q->front();
 	check_buf_q->pop();
 
 	//Should be fine since the blocks are handled sequentially - but recheck anyway
-	assert(check_buf.otid == tmpid);
-	assert(check_buf.numblocks == tmpnblocks);
+	assert(check_buf->otid == tmpid);
+	assert(check_buf->numblocks == tmpnblocks);
 
 	rcvhashbufptr = rcvhashbuf;
 
 	//Very simple : just go over both arrays and check equality
 	uint64_t* rcvbufptr = (uint64_t*) rcvhashbuf;
-	uint64_t* chkbufptr = (uint64_t*) check_buf.chk_buf;
+	uint64_t* chkbufptr = (uint64_t*) check_buf->chk_buf;
 	for(uint32_t i = 0; i < m_nChecks; i++) {
 		for(uint32_t j = 0; j < OWF_BYTES / sizeof(uint64_t); j++, rcvbufptr++, chkbufptr++) {
 			if(*rcvbufptr != *chkbufptr) {
@@ -397,9 +405,10 @@ BOOL NNOBOTExtSnd::CheckConsistency(queue<nnob_snd_check_t>* check_buf_q, channe
 
 	//free the receive buffer
 	free(rcvbuf);
-	free(check_buf.perm);
-	free(check_buf.chk_buf);
-	free(check_buf.permchoicebits);
+	free(check_buf->perm);
+	free(check_buf->chk_buf);
+	free(check_buf->permchoicebits);
+	free(check_buf);
 
 	return TRUE;
 }

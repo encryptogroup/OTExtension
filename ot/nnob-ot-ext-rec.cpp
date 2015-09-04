@@ -49,7 +49,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t otid = myStartPos;
 	queue<nnob_rcv_check_t> check_buf;
 
-	queue<mask_block> mask_queue;
+	queue<mask_block*> mask_queue;
 	CBitVector maskbuf;
 	maskbuf.Create(m_nBitLength * OTwindow);
 
@@ -107,7 +107,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		gettimeofday(&tempStart, NULL);
 #endif
 
-		HashValues(T, seedbuf, maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
+		HashValues(&T, &seedbuf, &maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -119,7 +119,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		//if(ot_chan->data_available()) {
 		//	ReceiveAndUnMask(ot_chan);
 		//}
-		SetOutput(maskbuf, otid, OTsPerIteration, &mask_queue, ot_chan);
+		SetOutput(&maskbuf, otid, OTsPerIteration, &mask_queue, ot_chan);
 
 		otid += min(lim - otid, OTsPerIteration);
 #ifdef OTTiming
@@ -140,7 +140,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(m_eSndOTFlav != Snd_R_OT) {
 		//finevent->Wait();
-		while(ot_chan->is_alive())
+		while(ot_chan->is_alive() && !(mask_queue.empty()))
 			ReceiveAndUnMask(ot_chan, &mask_queue);
 	}
 	ot_chan->synchronize_end();
@@ -247,7 +247,7 @@ void NNOBOTExtRec::ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* che
 	uint32_t ida, idb;
 
 
-	uint8_t* receiver_choicebits = m_vChoices.GetArr() + ceil_divide(check_buf.otid, 8);
+	uint8_t* receiver_choicebits = m_vChoices->GetArr() + ceil_divide(check_buf.otid, 8);
 	CBitVector tmp;
 	tmp.AttachBuf(tmpbuf, bufrowbytelen*8);
 

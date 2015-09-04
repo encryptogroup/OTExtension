@@ -137,7 +137,8 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		freeRndMatrix(rndmat, m_nBaseOTs);
 
 #ifdef OTTiming
-	cout << "Sender time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
+	cout << "Sender time benchmark for performing " << myNumOTs << " OTs (" << lim-myStartPos1ooN <<
+			" 1ooN) on " << m_nBitLength << " bit strings" << endl;
 	cout << "Time needed for: " << endl;
 	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
 	cout << "\t Unmasking values:\t" << totalUnMaskTime << " ms" << endl;
@@ -236,7 +237,7 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 
 	//TODO: difference is in here!! (could be solved by giving the bit-length as parameter in the function call)
 	for (uint32_t u = 0; u < m_nSndVals; u++) {
-		m_fMaskFct->expandMask(snd_buf[u], seedbuf[u].GetArr(), 0, OT_len, m_nBitLength * choicebitlen, m_cCrypt);
+		m_fMaskFct->expandMask(&snd_buf[u], seedbuf[u].GetArr(), 0, OT_len, m_nBitLength * choicebitlen, m_cCrypt);
 		//cout << "Mask " << u << ": ";
 		//snd_buf[u].PrintHex();
 	}
@@ -265,8 +266,8 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 	CBitVector* snd_buf_ptr;
 
 	//Define the X0 values as the output of 0 and the X1 values as output of m_nSndVals-1 (only 1 values)
-	m_vValues[0].SetBytes(snd_buf[0].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
-	m_vValues[1].SetBytes(snd_buf[m_nSndVals-1].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
+	m_vValues[0]->SetBytes(snd_buf[0].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
+	m_vValues[1]->SetBytes(snd_buf[m_nSndVals-1].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
 
 #ifdef DEBUG_KK_OTBREAKDOWN
 	cout << endl << "X0: ";
@@ -275,13 +276,12 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 	m_vValues[1].PrintHex(0, valsize);
 #endif
 
-	//TODO: optimize using masks
 	uint8_t* tmpbuf = (uint8_t*) malloc(bits_in_bytes(m_nBitLength));
 	for(uint32_t i = 1; i < m_nSndVals-1; i++) {
 		tmpmask.Reset();
 		for(uint32_t j = 0; j < choicecodebits; j++) {
 			//write the value of snd_buf[0] or snd_buf[1] in every choicecodebits position
-			snd_buf_ptr = m_vValues+((i>>j) & 0x01);
+			snd_buf_ptr = m_vValues[((i>>j) & 0x01)];
 			for(uint32_t o = 0; o < OT_len; o++) {
 					memset(tmpbuf, 0, bits_in_bytes(m_nBitLength));
 					snd_buf_ptr->GetBits(tmpbuf, (OT_ptr+o)*choicecodebits*m_nBitLength+j*m_nBitLength, m_nBitLength);

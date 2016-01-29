@@ -7,7 +7,7 @@ Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10]. Curr
 ####Linux: 
 Required compiler: g++
 
-Required libraries: OpenSSL (e.g., on Ubuntu run `sudo apt-get install libssl-dev`)
+Required libraries: OpenSSL and GMP (e.g., on Ubuntu run `sudo apt-get install libssl-dev libgmp-dev`) 
 
 1. Compile Miracl in util/Miracl either using "bash linux" or "bash linux64" (see `util/Miracl/first.txt` for more information)
 2. Compile OT extension by executing make

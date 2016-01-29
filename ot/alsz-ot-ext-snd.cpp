@@ -61,7 +61,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	queue<alsz_snd_check_t> check_queue;
 	queue<mask_buf_t> mask_queue;
 
-	AES_KEY_CTX* tmp_base_keys;
+	OT_AES_KEY_CTX* tmp_base_keys;
 	CBitVector* tmp_base_choices;
 
 	uint64_t base_ot_block_ctr = OT_ptr / (myNumOTs);
@@ -471,7 +471,7 @@ void ALSZOTExtSnd::ComputeBaseOTs(field_type ftype) {
 		rec->receive(numots, m_cCrypt->get_seclvl().symbits, &U, &resp, Snd_R_OT, Rec_R_OT, 1, m_fMaskFct);
 
 		CBitVector* tmp_choices;
-		AES_KEY_CTX* tmp_keys;
+		OT_AES_KEY_CTX* tmp_keys;
 		//assign keys to base OT queue
 		for(uint32_t i = 0; i < BUFFER_OT_KEYS; i++) {
 			tmp_choices = new CBitVector();
@@ -481,7 +481,7 @@ void ALSZOTExtSnd::ComputeBaseOTs(field_type ftype) {
 			m_tBaseOTChoices.push_back(tmp_choices);
 
 			//tmp->choices->SetBits(U.GetArr(), (uint64_t) i * m_nBaseOTs, (uint64_t) m_nBaseOTs);
-			tmp_keys = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs);
+			tmp_keys = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs);
 
 			InitAESKey(tmp_keys, resp.GetArr()+i*m_nBaseOTs*secparambytes, m_nBaseOTs, m_cCrypt);
 			m_tBaseOTKeys.push_back(tmp_keys);

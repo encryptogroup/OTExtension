@@ -22,8 +22,14 @@
 #include "pvwddh.h"
 #include "simpleot.h"
 
+#ifdef USE_PIPELINED_AES_NI
+	typedef ROUND_KEYS OT_AES_KEY_CTX;
+#else
+	typedef AES_KEY_CTX OT_AES_KEY_CTX;
+#endif
 
-static void InitAESKey(AES_KEY_CTX* ctx, uint8_t* keybytes, uint32_t numkeys, crypto* crypt) {
+
+static void InitAESKey(OT_AES_KEY_CTX* ctx, uint8_t* keybytes, uint32_t numkeys, crypto* crypt) {
 	BYTE* pBufIdx = keybytes;
 	uint32_t aes_key_bytes = crypt->get_aes_key_bytes();
 	for (uint32_t i = 0; i < numkeys; i++) {
@@ -105,7 +111,8 @@ protected:
 		//m_vBaseOTKeys = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * nbasekeys);
 	}
 
-	void InitPRFKeys(AES_KEY_CTX* base_ot_keys, uint8_t* keybytes, uint32_t nbasekeys) {
+
+	void InitPRFKeys(OT_AES_KEY_CTX* base_ot_keys, uint8_t* keybytes, uint32_t nbasekeys) {
 		InitAESKey(base_ot_keys, keybytes, nbasekeys, m_cCrypt);
 
 #ifdef FIXED_KEY_AES_HASHING
@@ -134,7 +141,7 @@ protected:
 	SndThread* m_cSndThread;
 	RcvThread* m_cRcvThread;
 
-	vector<AES_KEY_CTX*> m_tBaseOTKeys;
+	vector<OT_AES_KEY_CTX*> m_tBaseOTKeys;
 
 	MaskingFunction* m_fMaskFct;
 

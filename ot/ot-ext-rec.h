@@ -42,7 +42,7 @@ protected:
 	;
 
 	//void ReceiveAndProcess(uint32_t numThreads);
-	void BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t ctr, uint64_t numblocks, AES_KEY_CTX* seedkeyptr);
+	void BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t ctr, uint64_t numblocks, OT_AES_KEY_CTX* seedkeyptr);
 	void MaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t OTid, uint64_t numblocks);
 	void SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs, uint64_t rem_row = 1);
 	void HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbuf, uint64_t ctr, uint64_t lim, uint64_t** mat);

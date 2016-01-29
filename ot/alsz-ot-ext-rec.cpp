@@ -57,7 +57,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	alsz_rcv_check_t check_tmp;
 	CBitVector Ttmp(wd_size_bits * OTsPerIteration);
 
-	AES_KEY_CTX* tmp_base_keys;
+	OT_AES_KEY_CTX* tmp_base_keys;
 
 	uint64_t base_ot_block_ctr = otid / (myNumOTs);
 
@@ -457,10 +457,10 @@ void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
 		//assign keys to base OT queue
 		buf = (uint8_t*) malloc(secparambytes * nsndvals * m_nBaseOTs);
 
-		AES_KEY_CTX* tmp_keys;
+		OT_AES_KEY_CTX* tmp_keys;
 		for(uint32_t i = 0; i < BUFFER_OT_KEYS; i++) {
 			//base_ots_snd_t* tmp = (base_ots_snd_t*) malloc(sizeof(base_ots_snd_t));
-			tmp_keys = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs * nsndvals);
+			tmp_keys = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs * nsndvals);
 			for(uint32_t j = 0; j < m_nBaseOTs; j++) {
 				memcpy(buf + j * nsndvals * secparambytes, X0.GetArr() + (i * m_nBaseOTs + j) * secparambytes, secparambytes);
 				memcpy(buf + (j * nsndvals + 1) * secparambytes, X1.GetArr() + (i * m_nBaseOTs + j) * secparambytes, secparambytes);

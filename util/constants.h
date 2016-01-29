@@ -16,6 +16,7 @@
 //#define FIXED_KEY_AES_HASHING
 //#define AES_OWF
 #define VERIFY_OT
+//#define USE_PIPELINED_AES_NI
 //#define SIMPLE_TRANSPOSE //activate the simple transpose, only required for benchmarking, not recommended
 //#define GENERATE_T_EXPLICITELY //send two instead of only one message, only required for benchmarking, not recommended
 //#define DEBUG_OT_HASH_IN
@@ -32,6 +33,7 @@
 //#define DEBUG_NNOB_CHECKS_INPUT
 //#define DEBUG_NNOB_CHECKS_OUTPUT
 //#define DEBUG_KK_OTBREAKDOWN
+
 
 
 

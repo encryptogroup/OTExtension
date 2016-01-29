@@ -58,7 +58,7 @@ BOOL OTExtSnd::start_send(uint32_t numThreads) {
 }
 
 
-void OTExtSnd::BuildQMatrix(CBitVector* T, uint64_t OT_ptr, uint64_t numblocks, AES_KEY_CTX* seedkeyptr) {
+void OTExtSnd::BuildQMatrix(CBitVector* T, uint64_t OT_ptr, uint64_t numblocks, OT_AES_KEY_CTX* seedkeyptr) {
 	BYTE* Tptr = T->GetArr();
 	uint8_t* ctr_buf = (uint8_t*) calloc (AES_BYTES, sizeof(uint8_t));
 
@@ -330,7 +330,7 @@ void OTExtSnd::ComputePKBaseOTs() {
 	//fill zero into the remaining positions - is needed if nbaseots is not a multiple of 8
 	for (uint32_t i = m_nBaseOTs; i < PadToMultiple(m_nBaseOTs, 8); i++)
 		U->SetBit(i, 0);
-	AES_KEY_CTX* tmpkeybuf = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs);
+	OT_AES_KEY_CTX* tmpkeybuf = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs);
 
 	gettimeofday(&np_begin, NULL);
 	m_cBaseOT->Receiver(m_nSndVals, m_nBaseOTs, U, chan, pBuf);

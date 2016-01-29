@@ -48,7 +48,7 @@ protected:
 
 	BOOL OTSenderRoutine(uint32_t id, uint32_t myNumOTs);
 
-	void BuildQMatrix(CBitVector* T, uint64_t ctr, uint64_t blocksize, AES_KEY_CTX* seedkeyptr);
+	void BuildQMatrix(CBitVector* T, uint64_t ctr, uint64_t blocksize, OT_AES_KEY_CTX* seedkeyptr);
 	void UnMaskBaseOTs(CBitVector* T, CBitVector* RcvBuf, CBitVector* U, uint64_t numblocks);
 	void MaskAndSend(CBitVector* snd_buf, uint64_t progress, uint64_t processedOTs, channel* chan);
 	//void SendBlocks(uint32_t numThreads);

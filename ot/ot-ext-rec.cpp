@@ -73,7 +73,7 @@ BOOL OTExtRec::start_receive(uint32_t numThreads) {
 
 
 void OTExtRec::BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t OT_ptr, uint64_t numblocks,
-		AES_KEY_CTX* seedkeyptr) {
+		OT_AES_KEY_CTX* seedkeyptr) {
 	uint8_t* ctr_buf = (uint8_t*) calloc (AES_BYTES, sizeof(uint8_t));
 	uint64_t* counter = (uint64_t*) ctr_buf;
 
@@ -413,7 +413,7 @@ void OTExtRec::ComputePKBaseOTs() {
 	uint8_t* pBuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes() * m_nBaseOTs * m_nSndVals);
 	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs * m_nSndVals);
 
-	AES_KEY_CTX* tmpkeybuf = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs * m_nSndVals);
+	OT_AES_KEY_CTX* tmpkeybuf = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs * m_nSndVals);
 
 	timeval np_begin, np_end;
 	gettimeofday(&np_begin, NULL);

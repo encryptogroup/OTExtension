@@ -1,13 +1,14 @@
 #include "test.h"
 
-ot_ext_prot test_prots[] = {IKNP, ALSZ, NNOB};
-field_type test_ftype[] = {P_FIELD, ECC_FIELD};
+ot_ext_prot test_prots[] = {IKNP, KK, ALSZ, NNOB};
+//ot_ext_prot test_prots[] = {IKNP};
 snd_ot_flavor test_sflavor[] = {Snd_OT, Snd_C_OT, Snd_GC_OT, Snd_R_OT};
 rec_ot_flavor test_rflavor[] = {Rec_OT, Rec_R_OT};
 uint64_t test_numots[] = {128, 3215, 100000};
 uint64_t test_bitlen[] = {1, 3, 8, 191};
 uint32_t test_nthreads[] = {1, 4};
-bool test_usemecr[] = {false, true};
+field_type test_ftype[] = {P_FIELD, ECC_FIELD};
+bool test_usemecr[] = {false};
 
 BOOL Init()
 {
@@ -18,13 +19,14 @@ BOOL Init()
 	//uint32_t* ctr = (uint32_t) calloc(nparams, sizeof(uint32_t));
 
 	ntestparams[0] = sizeof(test_prots)/sizeof(ot_ext_prot);
-	ntestparams[1] = sizeof(test_ftype)/sizeof(field_type);
-	ntestparams[2] = sizeof(test_sflavor)/sizeof(snd_ot_flavor);
-	ntestparams[3] = sizeof(test_rflavor)/sizeof(rec_ot_flavor);
-	ntestparams[4] = sizeof(test_numots)/sizeof(uint64_t);
-	ntestparams[5] = sizeof(test_bitlen)/sizeof(uint64_t);
-	ntestparams[6] = sizeof(test_nthreads)/sizeof(uint32_t);
-	ntestparams[7] = sizeof(test_usemecr)/sizeof(bool);
+	ntestparams[1] = sizeof(test_sflavor)/sizeof(snd_ot_flavor);
+	ntestparams[2] = sizeof(test_rflavor)/sizeof(rec_ot_flavor);
+	ntestparams[3] = sizeof(test_numots)/sizeof(uint64_t);
+	ntestparams[4] = sizeof(test_bitlen)/sizeof(uint64_t);
+	ntestparams[5] = sizeof(test_nthreads)/sizeof(uint32_t);
+	ntestparams[6] = sizeof(test_usemecr)/sizeof(bool);
+	ntestparams[7] = sizeof(test_ftype)/sizeof(field_type);
+
 
 	m_nTests = 1;
 	gen_tests = 0;
@@ -57,15 +59,18 @@ void recursive_assign_test_params(uint32_t* max, uint32_t depth, test_options** 
 }
 
 void assign_param(uint32_t ctr, uint32_t depth, test_options* tops) {
+	//tops->ftype = test_ftype[ctr % 2];
+	//tops->usemecr = test_ftype[ctr % (sizeof(test_usemecr)/sizeof(bool))];
 	switch(depth) {
 	case 0: tops->prot = test_prots[ctr]; break;
-	case 1: tops->ftype = test_ftype[ctr]; break;
-	case 2: tops->sflavor = test_sflavor[ctr]; break;
-	case 3: tops->rflavor = test_rflavor[ctr]; break;
-	case 4: tops->numots = test_numots[ctr]; break;
-	case 5: tops->bitlen = test_bitlen[ctr]; break;
-	case 6: tops->nthreads = test_nthreads[ctr]; break;
-	case 7: tops->usemecr = test_usemecr[ctr]; break;
+	case 1: tops->sflavor = test_sflavor[ctr]; break;
+	case 2: tops->rflavor = test_rflavor[ctr]; break;
+	case 3: tops->numots = test_numots[ctr]; break;
+	case 4: tops->bitlen = test_bitlen[ctr]; break;
+	case 5: tops->nthreads = test_nthreads[ctr]; break;
+	case 6: tops->usemecr = test_usemecr[ctr]; break;
+	case 7: tops->ftype = test_ftype[ctr]; break;
+
 	default: cerr << "Test case not recognized, abort" << endl; exit(0);
 	}
 }
@@ -278,22 +283,13 @@ int main(int argc, char** argv)
 	uint32_t m_nBaseOTs = 190;
 	uint32_t m_nChecks = 380;
 
-	ot_ext_prot lastprot = PROT_LAST;
-	field_type lastfield = FIELD_LAST;
-
-
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
 		InitSender(addr, port);
 
 		OTExtSnd* sender = NULL;
 		for(uint32_t i = 0; i < m_nTests; i++) {
-			if(lastprot != tests[i].prot || lastfield != tests[i].ftype) {
-				//if(sender) delete sender;
-				sender = InitOTExtSnd(tests[i].prot, m_nBaseOTs, m_nChecks, tests[i].usemecr, tests[i].ftype, crypt);
-				lastprot = tests[i].prot;
-				lastfield = tests[i].ftype;
-			}
+			sender = InitOTExtSnd(tests[i].prot, m_nBaseOTs, m_nChecks, tests[i].usemecr, tests[i].ftype, crypt);
 
 			cout << "Test " << i << ": " << getProt(tests[i].prot) << " Sender " << tests[i].numots << " " <<
 					getSndFlavor(tests[i].sflavor) << " / " << getRecFlavor(tests[i].rflavor) << " on " <<
@@ -301,8 +297,9 @@ int main(int argc, char** argv)
 					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " MECR"<< endl;
 
 			run_test_sender(tests[i].numots, tests[i].bitlen, tests[i].sflavor, tests[i].rflavor, tests[i].nthreads, crypt, sender);
+
+			delete sender;
 		}
-		delete sender;
 	}
 	else //Play as OT receiver
 	{
@@ -310,12 +307,7 @@ int main(int argc, char** argv)
 
 		OTExtRec* receiver = NULL;
 		for(uint32_t i = 0; i < m_nTests; i++) {
-			if(lastprot != tests[i].prot || lastfield != tests[i].ftype) {
-				//if(receiver) delete receiver;
-				receiver = InitOTExtRec(tests[i].prot, m_nBaseOTs, m_nChecks, tests[i].usemecr, tests[i].ftype, crypt);
-				lastprot = tests[i].prot;
-				lastfield = tests[i].ftype;
-			}
+			receiver = InitOTExtRec(tests[i].prot, m_nBaseOTs, m_nChecks, tests[i].usemecr, tests[i].ftype, crypt);
 
 			cout << "Test " << i << ": " << getProt(tests[i].prot) << " Receiver " << tests[i].numots << " " <<
 					getSndFlavor(tests[i].sflavor) << " / " << getRecFlavor(tests[i].rflavor) << " on " <<
@@ -323,8 +315,9 @@ int main(int argc, char** argv)
 					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " MECR"<< endl;
 
 			run_test_receiver(tests[i].numots, tests[i].bitlen, tests[i].sflavor, tests[i].rflavor, tests[i].nthreads, crypt, receiver);
+
+			delete receiver;
 		}
-		delete receiver;
 
 	}
 

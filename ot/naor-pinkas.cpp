@@ -7,15 +7,16 @@
 
 #include "naor-pinkas.h"
 
-void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, channel* chan, uint8_t* ret) {
+void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* ret) {
 
 	fe* PK0 = m_cPKCrypto->get_fe();
 	fe** PK_sigma = (fe**) malloc(sizeof(fe*) * nOTs);
 	fe** pDec = (fe**) malloc(sizeof(fe*) * nOTs);
+	num** pK = (num**) malloc(sizeof(num*) * nOTs);
+
 	fe** pC = (fe**) malloc(sizeof(fe*) * nSndVals);
 	fe* g = m_cPKCrypto->get_generator();
 
-	num** pK = (num**) malloc(sizeof(num*) * nOTs);
 
 	uint8_t* retPtr;
 	uint32_t u, k, choice, hash_bytes, fe_bytes;
@@ -54,7 +55,7 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 	pBuf = (uint8_t*) malloc(nOTs * fe_bytes);
 	pBufIdx = pBuf;
 	for (k = 0; k < nOTs; k++) {
-		choice = choices.GetBit((int32_t) k);
+		choice = choices->GetBit((int32_t) k);
 		if (choice != 0) {
 			PK0->set_div(pC[choice], PK_sigma[k]);
 		} else {
@@ -85,11 +86,23 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices,
 	delete bg;
 
 	free(pBuf);
-	//TODO delete all field elements and numbers
+	for(uint32_t i = 0; i < nOTs; i++) {
+		delete PK_sigma[i];
+		delete pDec[i];
+		delete pK[i];
+	}
 	free(PK_sigma);
 	free(pDec);
-	free(pC);
 	free(pK);
+
+	for(uint32_t i = 0; i < nSndVals; i++) {
+		delete pC[i];
+	}
+	free(pC);
+
+	delete PK0;
+	delete g;
+
 }
 
 void NaorPinkas::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* ret) {
@@ -120,6 +133,7 @@ void NaorPinkas::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t
 		pC[u] = m_cPKCrypto->get_fe();
 		tmp = m_cPKCrypto->get_rnd_num();
 		pC[u]->set_pow(g, tmp);
+		delete tmp;
 	}
 
 	//====================================================
@@ -185,6 +199,24 @@ void NaorPinkas::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t
 	}
 
 	free(pBuf);
+
+	for(uint32_t i = 0; i < nSndVals; i++) {
+		delete pC[i];
+		if(i > 0)
+			delete pCr[i];
+	}
 	free(pCr);
 	free(pC);
+
+	for(uint32_t i = 0; i < nOTs; i++) {
+		delete pPK0[i];
+	}
+	free(pPK0);
+
+
+	delete alpha;
+	delete PKr;
+	delete fetmp;
+	delete PK0r;
+	delete g;
 }

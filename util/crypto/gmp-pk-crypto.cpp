@@ -83,14 +83,18 @@ num* prime_field::get_rnd_num(uint32_t bitlen) {
 		bitlen = secparam.ifcbits;
 	mpz_init(val);
 	mpz_urandomm(val, rnd_state, q);
-	return new gmp_num(this, val);
+	num* ret = new gmp_num(this, val);
+	mpz_clear(val);
+	return ret;
 }
 
 fe* prime_field::get_rnd_fe(uint32_t bitlen) {
 	mpz_t val;
 	mpz_init(val);
 	mpz_urandomm(val, rnd_state, q);
-	return new gmp_fe(this, val);
+	fe* ret = new gmp_fe(this, val);
+	mpz_clear(val);
+	return ret;
 }
 
 gmp_fe::gmp_fe(prime_field* fld) {
@@ -164,17 +168,24 @@ mpz_t* prime_field::get_p() {
 fe* prime_field::get_generator() {
 	return new gmp_fe(this, g);
 }
+num* prime_field::get_order() {
+	num* val = get_num();
+	val->set(order);
+	return val;
+}
 
 fe* prime_field::get_rnd_generator() {
 	mpz_t tmp;
 	mpz_init(tmp);
-	//sample random hi -- sample random element x in Zp, and then compute x^{(p-1)/q} mod p
+	//sample random element x in Zp, and then compute x^{(p-1)/q} mod p
 	do {
 		mpz_urandomb(tmp, rnd_state, secparam.ifcbits);
 		mpz_mod(tmp, tmp, p);
 		mpz_powm(tmp, tmp, q, p);
 	} while (!(mpz_cmp_ui(tmp, (uint32_t ) 1)));
-	return new gmp_fe(this, tmp);
+	fe* ret = new gmp_fe(this, tmp);
+	mpz_clear(tmp);
+	return ret;
 }
 
 brickexp* prime_field::get_brick(fe* gen) {
@@ -220,6 +231,8 @@ void prime_field::init(seclvl sp, uint8_t* seed) {
 	gmp_randinit_default(rnd_state);
 	gmp_randseed(rnd_state, rnd_seed);
 	fe_bytelen = ceil_divide(secparam.ifcbits, 8);
+
+	mpz_clear(rnd_seed);
 }
 
 prime_field::~prime_field() {
@@ -227,6 +240,8 @@ prime_field::~prime_field() {
 	mpz_clear(p);
 	mpz_clear(g);
 	mpz_clear(q);
+	delete order;
+
 }
 
 gmp_brickexp::~gmp_brickexp() {

@@ -107,6 +107,7 @@ ecc_field::~ecc_field() {
 	delete fparams->BA;
 	delete fparams->BB;
 	delete fparams->BP;
+	delete order;
 
 	free(fparams);
 
@@ -115,6 +116,12 @@ ecc_field::~ecc_field() {
 
 num* ecc_field::get_num() {
 	return new ecc_num(this);
+}
+
+num* ecc_field::get_order() {
+	num* val = get_num();
+	val->set(order);
+	return val;
 }
 
 num* ecc_field::get_rnd_num(uint32_t bitlen) {

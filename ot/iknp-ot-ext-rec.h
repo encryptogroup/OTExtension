@@ -37,11 +37,7 @@ public:
 	;
 
 
-	~IKNPOTExtRec() {
-		//TODO
-		//free(m_vKeySeedMtx);
-	}
-	;
+	~IKNPOTExtRec() {}	;
 
 	BOOL receiver_routine(uint32_t threadid, uint64_t numOTs);
 	void ComputeBaseOTs(field_type ftype);

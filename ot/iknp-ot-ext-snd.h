@@ -19,16 +19,7 @@ public:
 	;
 
 
-	~IKNPOTExtSnd() {
-		CleanupIKNP();
-		CleanupSender();
-		Cleanup();
-	}
-	;
-
-	void CleanupIKNP() {
-		//TODO
-	}
+	~IKNPOTExtSnd() {	};
 
 	BOOL sender_routine(uint32_t threadid, uint64_t numOTs);
 	void ComputeBaseOTs(field_type ftype);

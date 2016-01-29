@@ -17,7 +17,7 @@ class NaorPinkasNoRO : public BaseOT
 	NaorPinkasNoRO(crypto* crypt, field_type ftype) :
 		BaseOT(crypt, ftype) {
 }
-	void Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, channel* chan, BYTE* ret);
+	void Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, BYTE* ret);
 	void Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, BYTE* ret);
 
 

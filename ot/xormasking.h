@@ -36,10 +36,10 @@ public:
 			snd_buf[0].XORBytes(values[0]->GetArr() + ceil_divide(progress * m_nBitLength, 8), 0, ceil_divide(processedOTs * m_nBitLength, 8));
 			snd_buf[1].XORBytes(values[1]->GetArr() + ceil_divide(progress * m_nBitLength, 8), 0, ceil_divide(processedOTs * m_nBitLength, 8));
 		} else if (protocol == Snd_C_OT) {
-			values[0]->SetBytes(snd_buf[0].GetArr(), ceil_divide(progress * m_nBitLength, 8), ceil_divide(processedOTs * m_nBitLength, 8)); //.SetBits(hash_buf, i*m_nBitLength, m_nBitLength);
-			int bitPos = progress * m_nBitLength;
-			int length = processedOTs * m_nBitLength;
-			int bytePos = ceil_divide(bitPos, 8);
+			uint64_t bitPos = progress * m_nBitLength;
+			uint64_t length = processedOTs * m_nBitLength;
+			uint64_t bytePos = ceil_divide(bitPos, 8);
+			values[0]->SetBytes(snd_buf[0].GetArr(), bytePos, ceil_divide(length, 8)); //.SetBits(hash_buf, i*m_nBitLength, m_nBitLength);
 
 			values[1]->SetBits(values[0]->GetArr() + bytePos, bitPos, length);
 			values[1]->XORBits(m_vDelta->GetArr() + bytePos, bitPos, length);
@@ -49,9 +49,6 @@ public:
 			values[0]->SetBytes(snd_buf[0].GetArr(), ceil_divide(progress * m_nBitLength, 8), ceil_divide(processedOTs * m_nBitLength, 8));
 			values[1]->SetBytes(snd_buf[1].GetArr(), ceil_divide(progress * m_nBitLength, 8), ceil_divide(processedOTs * m_nBitLength, 8));
 		}
-		//else if (protocol == Snd_GC_OT) {
-			//TODO
-		//}
 	}
 	;
 

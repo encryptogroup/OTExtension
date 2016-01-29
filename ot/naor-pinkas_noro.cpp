@@ -225,7 +225,7 @@ BOOL NaorPinkasNoRO::SenderIFC(int nSndVals, int nOTs, CSocket& socket, BYTE* re
 #endif*/
 
 
-void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, channel* chan, BYTE* ret)
+void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, BYTE* ret)
 {
 	/*num *a, **b, *btmp; //Big a, b[nOTs], btmp, xtmp, ytmp;
 	fe *g, *x, *y, *w, *z0, *z1, *tmp; //EC2 g, x, y, w, z0, z1;

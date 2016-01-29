@@ -282,7 +282,6 @@ static void readCodeWords(uint64_t** codewords) {
 	}
 }
 
-
 static void InitAndReadCodeWord(uint64_t*** codewords) {
 	uint32_t ncodewords = m_nCodeWordBits;
 	uint32_t ncwintlen = 8;

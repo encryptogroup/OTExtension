@@ -22,23 +22,23 @@ class OTExtSnd : public OTExt {
 public:
 	OTExtSnd() {};
 
+	virtual ~OTExtSnd() {
+		//for(uint32_t i = 0; i < m_tBaseOTChoices.size(); i++)
+		//	m_tBaseOTChoices[i]->delCBitVector();
+		m_tBaseOTChoices.clear();
+
+		free(m_vValues);
+	};
+
 	BOOL send(uint32_t numOTs, uint32_t bitlength, CBitVector* s0, CBitVector* s1, snd_ot_flavor stype,
 			rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct);
 
 	virtual void ComputeBaseOTs(field_type ftype) = 0;
-	void CleanupSender() {
-		m_vU.delCBitVector();
-		free(m_vValues);
-	}
 protected:
 	void InitSnd(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
 		Init(nSndVals, crypt, rcvthread, sndthread, nbaseOTs, nbaseOTs);
-		m_vU.Create(nbaseOTs, crypt);
-		//m_vU.Copy(U.GetArr(), 0, bits_in_bytes(nbaseOTs));
-		//fill zero into the remaining positions - is needed if nbaseots is not a multiple of 8
-		for (uint32_t i = nbaseOTs; i < PadToMultiple(nbaseOTs, 8); i++)
-			m_vU.SetBit(i, 0);
 
+		m_tBaseOTChoices.resize(0);
 		m_vValues = (CBitVector**) malloc(sizeof(CBitVector*) * nSndVals);
 	}
 	;
@@ -48,21 +48,24 @@ protected:
 
 	BOOL OTSenderRoutine(uint32_t id, uint32_t myNumOTs);
 
-	void BuildQMatrix(CBitVector& T, uint64_t ctr, uint64_t blocksize);
-	void UnMaskBaseOTs(CBitVector& T, CBitVector& RcvBuf, uint64_t numblocks);
+	void BuildQMatrix(CBitVector* T, uint64_t ctr, uint64_t blocksize, AES_KEY_CTX* seedkeyptr);
+	void UnMaskBaseOTs(CBitVector* T, CBitVector* RcvBuf, CBitVector* U, uint64_t numblocks);
 	void MaskAndSend(CBitVector* snd_buf, uint64_t progress, uint64_t processedOTs, channel* chan);
 	//void SendBlocks(uint32_t numThreads);
-	void ReceiveMasks(CBitVector& vRcv, channel* chan, uint64_t processedOTs);
-	void GenerateSendAndXORCorRobVector(CBitVector& Q, uint64_t OT_len, channel* chan);
-	void HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint64_t ctr, uint64_t processedOTs, uint64_t** mat);
+	void ReceiveMasks(CBitVector* vRcv, channel* chan, uint64_t processedOTs, uint64_t rec_r_ot_startpos=1);
+	void GenerateSendAndXORCorRobVector(CBitVector* Q, uint64_t OT_len, channel* chan);
+	void HashValues(CBitVector* Q, CBitVector* seedbuf, CBitVector* snd_buf, CBitVector* Uptr, uint64_t ctr, uint64_t processedOTs,  uint64_t** mat);
 	BOOL verifyOT(uint64_t myNumOTs);
 
 	void ComputePKBaseOTs();
 
-	CBitVector m_vU;
+	//CBitVector m_vU;
 	CBitVector** m_vValues;
 
 	BYTE* m_vSeed;
+
+	vector<CBitVector*> m_tBaseOTChoices;
+
 
 	class OTSenderThread: public CThread {
 	public:

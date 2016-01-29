@@ -72,7 +72,8 @@ BOOL OTExtRec::start_receive(uint32_t numThreads) {
 
 
 
-void OTExtRec::BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t OT_ptr, uint64_t numblocks) {
+void OTExtRec::BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t OT_ptr, uint64_t numblocks,
+		AES_KEY_CTX* seedkeyptr) {
 	uint8_t* ctr_buf = (uint8_t*) calloc (AES_BYTES, sizeof(uint8_t));
 	uint64_t* counter = (uint64_t*) ctr_buf;
 
@@ -84,17 +85,17 @@ void OTExtRec::BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t OT_ptr,
 	uint8_t* sndbufptr = SndBuf.GetArr();
 	uint8_t* choiceptr;
 
-	AES_KEY_CTX* seedptr = m_vBaseOTKeys;
+	//AES_KEY_CTX* seedptr = m_vBaseOTKeys;
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
 
 	for (uint32_t k = 0; k < m_nBaseOTs; k++) {
 		*counter = global_OT_ptr;
 
 		for (uint32_t b = 0; b < iters; b++, (*counter)++) {
-			m_cCrypt->encrypt(seedptr + 2 * k, Tptr, ctr_buf, AES_BYTES);
+			m_cCrypt->encrypt(seedkeyptr + 2 * k, Tptr, ctr_buf, AES_BYTES);
 			Tptr += AES_BYTES;
 
-			m_cCrypt->encrypt(seedptr + (2 * k) + 1, sndbufptr, ctr_buf, AES_BYTES);
+			m_cCrypt->encrypt(seedkeyptr + (2 * k) + 1, sndbufptr, ctr_buf, AES_BYTES);
 			sndbufptr += AES_BYTES;
 		}
 #ifdef DEBUG_OT_SEED_EXPANSION
@@ -179,7 +180,7 @@ void OTExtRec::MaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t OTid, uin
 }
 
 
-void OTExtRec::SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs) {
+void OTExtRec::SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs, uint64_t rec_r_ot_startpos) {
 	uint8_t* bufptr = Sndbuf.GetArr();
 #ifdef GENERATE_T_EXPLICITELY
 	uint64_t nSize = 2 * bits_in_bytes(m_nBaseOTs * processedOTs);
@@ -189,8 +190,8 @@ void OTExtRec::SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64
 #else
 	uint64_t nSize = bits_in_bytes(m_nBaseOTs * processedOTs);
 	if(m_eRecOTFlav == Rec_R_OT) {
-		nSize = bits_in_bytes((m_nBaseOTs-1) * processedOTs);
-		bufptr = Sndbuf.GetArr() + ceil_divide(processedOTs, 8);
+		nSize = bits_in_bytes((m_nBaseOTs-rec_r_ot_startpos) * processedOTs);
+		bufptr = Sndbuf.GetArr() + rec_r_ot_startpos * ceil_divide(processedOTs, 8);
 	}
 #endif
 	chan->send_id_len(bufptr, nSize, OTid, processedOTs);
@@ -218,7 +219,8 @@ void OTExtRec::HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbu
 			cout << "Hash-In for i = " << global_OT_ptr << ": " << (hex);
 			for(uint32_t p = 0; p < rowbytelen; p++)
 				cout << setw(2) << setfill('0') << (uint32_t) Tptr[p];
-				cout << (dec) << endl;
+			cout << (dec) << " (" << (uint32_t) m_vChoices->GetBitNoMask(OT_ptr+i) << ")" << endl;
+
 #endif
 
 #ifdef FIXED_KEY_AES_HASHING
@@ -235,7 +237,7 @@ void OTExtRec::HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbu
 			cout << "Hash-Out for i = " << global_OT_ptr << ": " << (hex);
 			for(uint32_t p = 0; p < aes_key_bytes; p++)
 				cout << setw(2) << setfill('0') << (uint32_t) bufptr[p];
-			cout << (dec) << endl;
+			cout << (dec) << " (" << (uint32_t) m_vChoices->GetBitNoMask(OT_ptr+i) << ")" << endl;
 #endif
 		}
 #ifndef HIGH_SPEED_ROT_LT
@@ -411,6 +413,8 @@ void OTExtRec::ComputePKBaseOTs() {
 	uint8_t* pBuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes() * m_nBaseOTs * m_nSndVals);
 	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs * m_nSndVals);
 
+	AES_KEY_CTX* tmpkeybuf = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs * m_nSndVals);
+
 	timeval np_begin, np_end;
 	gettimeofday(&np_begin, NULL);
 	m_cBaseOT->Sender(m_nSndVals, m_nBaseOTs, chan, pBuf);
@@ -422,8 +426,6 @@ void OTExtRec::ComputePKBaseOTs() {
 	cout << getMillies(np_begin, np_end) << "\t";
 #endif
 
-
-
 	//Key expansion
 	uint8_t* pBufIdx = pBuf;
 	for(int i=0; i<m_nBaseOTs * m_nSndVals; i++ )
@@ -434,7 +436,8 @@ void OTExtRec::ComputePKBaseOTs() {
 
 	free(pBuf);
 
-	InitPRFKeys(keyBuf, m_nBaseOTs * m_nSndVals);
+	InitPRFKeys(tmpkeybuf, keyBuf, m_nBaseOTs * m_nSndVals);
+	m_tBaseOTKeys.push_back(tmpkeybuf);
 
 	free(keyBuf);
 	chan->synchronize_end();

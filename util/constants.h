@@ -41,7 +41,8 @@
 #define AES_BYTES				16
 #define LOG2_AES_BITS			ceil_log2(AES_BITS)
 
-#define NUMOTBLOCKS 256
+#define NUMOTBLOCKS 128
+#define BUFFER_OT_KEYS 8
 #define MAX_NUM_COMM_CHANNELS 256
 #define ADMIN_CHANNEL MAX_NUM_COMM_CHANNELS-1
 #define OT_ADMIN_CHANNEL ADMIN_CHANNEL-1
@@ -90,6 +91,7 @@ static const char* getProt(ot_ext_prot prot) {
 	case IKNP: return "IKNP";
 	case ALSZ: return "ALSZ";
 	case NNOB: return "NNOB";
+	case KK: return "KK";
 	default: return "unknown protocol";
 	}
 }

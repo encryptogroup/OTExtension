@@ -71,7 +71,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildMatrices(T, vSnd, otid, processedOTBlocks);
+		BuildMatrices(T, vSnd, otid, processedOTBlocks, m_tBaseOTKeys.front());
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);

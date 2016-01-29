@@ -27,8 +27,8 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		mat_chan = new channel(nchans*id+2, m_cRcvThread, m_cSndThread);
 	}
 
-	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
-	uint64_t lim = myStartPos + myNumOTs;
+	uint64_t internal_numOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
+	uint64_t lim = myStartPos + internal_numOTs;
 	uint64_t** rndmat;
 
 	// The vector with the received bits
@@ -61,6 +61,11 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	queue<alsz_snd_check_t> check_queue;
 	queue<mask_buf_t> mask_queue;
 
+	AES_KEY_CTX* tmp_base_keys;
+	CBitVector* tmp_base_choices;
+
+	uint64_t base_ot_block_ctr = OT_ptr / (myNumOTs);
+
 	uint32_t startpos = 0;
 	if(m_eRecOTFlav==Rec_R_OT) {
 		startpos = 1;
@@ -92,20 +97,25 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		//vRcv.AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
 		vRcv.SetBytes(rcvbuftmpptr, bits_in_bytes(OTsPerIteration*startpos), bits_in_bytes((m_nBaseOTs-startpos)*OTsPerIteration));
 		free(rcvbufptr);
+
+		tmp_base_keys = m_tBaseOTKeys[base_ot_block_ctr];
+		tmp_base_choices = m_tBaseOTChoices[base_ot_block_ctr];
+
+		//m_tBaseOTQ.pop();
 		//vRcv.PrintHex();
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalRcvTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildQMatrix(Q, OT_ptr, processedOTBlocks);
+		BuildQMatrix(&Q, OT_ptr, processedOTBlocks, tmp_base_keys);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		check_queue.push(UpdateCheckBuf(Q.GetArr(), vRcv.GetArr(), OT_ptr, processedOTBlocks, check_chan));
-		GenerateSendAndXORCorRobVector(Q, OTsPerIteration, mat_chan);
+		check_queue.push(UpdateCheckBuf(Q.GetArr(), vRcv.GetArr(), OT_ptr, processedOTBlocks, tmp_base_choices, check_chan));
+		GenerateSendAndXORCorRobVector(&Q, OTsPerIteration, mat_chan);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalChkCompTime += getMillies(tempStart, tempEnd);
@@ -113,7 +123,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 		FillAndSendRandomMatrix(rndmat, mat_chan);
 
-		UnMaskBaseOTs(Q, vRcv, processedOTBlocks);
+		UnMaskBaseOTs(&Q, &vRcv, tmp_base_choices, processedOTBlocks);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalUnMaskTime += getMillies(tempStart, tempEnd);
@@ -125,7 +135,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(Q, seedbuf, vSnd, OT_ptr, min(lim - OT_ptr, OTsPerIteration), rndmat);
+		HashValues(&Q, seedbuf, vSnd, tmp_base_choices, OT_ptr, min(lim - OT_ptr, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -142,6 +152,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 		if(check_chan->data_available()) {
 			assert(CheckConsistency(&check_queue, check_chan));
+			//CheckConsistency(&check_queue, check_chan)
 			tmpmaskbuf = mask_queue.front();
 			mask_queue.pop();
 			MaskAndSend(tmpmaskbuf.maskbuf, tmpmaskbuf.otid, tmpmaskbuf.otlen, ot_chan);
@@ -156,6 +167,11 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalSndTime += getMillies(tempStart, tempEnd);
 #endif
 		OT_ptr += min(lim - OT_ptr, OTsPerIteration);
+		base_ot_block_ctr++;
+
+		//free(tmp_base_keys);
+		//tmp_base_choices->delCBitVector();
+
 		Q.Reset();
 	}
 
@@ -164,7 +180,12 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-			assert(CheckConsistency(&check_queue, check_chan));
+			if(!CheckConsistency(&check_queue, check_chan)) {
+				cerr << "OT extension consistency check failed. Aborting program" << endl;
+				exit(0);
+			}
+			//assert(CheckConsistency(&check_queue, check_chan));
+			//CheckConsistency(&check_queue, check_chan);
 #ifdef OTTiming
 			gettimeofday(&tempEnd, NULL);
 			totalHashCheckTime += getMillies(tempStart, tempEnd);
@@ -202,7 +223,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		freeRndMatrix(rndmat, m_nBaseOTs);
 	}
 #ifdef OTTiming
-	cout << "Sender time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
+	cout << "Sender time benchmark for performing " << internal_numOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
 	cout << "Time needed for: " << endl;
 	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
 	cout << "\t BaseOT Unmasking:\t" << totalUnMaskTime << " ms" << endl;
@@ -233,7 +254,8 @@ void ALSZOTExtSnd::FillAndSendRandomMatrix(uint64_t **rndmat, channel* mat_chan)
 
 
 
-alsz_snd_check_t ALSZOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* tocheckrcv, uint64_t otid, uint64_t numblocks, channel* check_chan) {
+alsz_snd_check_t ALSZOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* tocheckrcv, uint64_t otid,
+		uint64_t numblocks, CBitVector* choices, channel* check_chan) {
 	uint64_t rowbytelen = m_nBlockSizeBytes * numblocks;
 	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
 	//uint8_t* tmpbuf = (uint8_t*) malloc(rowbytelen);
@@ -250,13 +272,14 @@ alsz_snd_check_t ALSZOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* toc
 	check_buf.otid = otid;
 	check_buf.numblocks = numblocks;
 	check_buf.perm = (linking_t*) malloc(sizeof(linking_t*) * m_nChecks);
+	check_buf.choices = choices;
 	genRandomPermutation(check_buf.perm, m_nBaseOTs, m_nChecks);
 
 	//right now the rowbytelen needs to be a multiple of AES_BYTES
 	assert(ceil_divide(rowbytelen, OWF_BYTES) * OWF_BYTES == rowbytelen);
 #ifdef DEBUG_ALSZ_CHECKS
 	cout << "rowbytelen = " << rowbytelen << endl;
-	m_vU.PrintHex();
+	choices->PrintHex();
 #endif
 	uint8_t *pas, *pbs, *par, *pbr;
 	for(uint64_t i = 0; i < m_nChecks; i++, seedcheckbufptr+=OWF_BYTES, rcvcheckbufptr+=OWF_BYTES) {
@@ -354,8 +377,10 @@ BOOL ALSZOTExtSnd::CheckConsistency(queue<alsz_snd_check_t>* check_buf_q, channe
 		idb = check_buf.perm[i].idb;
 		assert(ida < m_nBaseOTs && idb < m_nBaseOTs);
 
-		ca = m_vU.GetBit(ida + offset);
-		cb = m_vU.GetBit(idb + offset);
+		//ca = m_vU.GetBit(ida + offset);
+		//cb = m_vU.GetBit(idb + offset);
+		ca = check_buf.choices->GetBit(ida + offset);
+		cb = check_buf.choices->GetBit(idb + offset);
 
 		//check that ida+idb == seedbufcheck and (!ida) + (!idb) == rcvbufcheck
 		for(j = 0; j < ceil_divide(OWF_BYTES,sizeof(uint64_t)); j++, seedbufsrvptr+=sizeof(uint64_t), rcvbufsrvptr+=sizeof(uint64_t)) {
@@ -383,6 +408,7 @@ BOOL ALSZOTExtSnd::CheckConsistency(queue<alsz_snd_check_t>* check_buf_q, channe
 	free(check_buf.perm);
 	free(check_buf.rcv_chk_buf);
 	free(check_buf.seed_chk_buf);
+	delete(check_buf.choices);
 
 	return TRUE;
 }
@@ -414,13 +440,104 @@ void ALSZOTExtSnd::genRandomPermutation(linking_t* outperm, uint32_t nids, uint3
 	rndstring.delCBitVector();
 }
 
-
+//Do a 3-step OT extension
 void ALSZOTExtSnd::ComputeBaseOTs(field_type ftype) {
-	if(m_bDoBaseOTs) {
+	if(m_bDoBaseOTs) { //use public-key crypto routines (simple OT)
 		m_cBaseOT = new SimpleOT(m_cCrypt, ftype);
 		ComputePKBaseOTs();
 		delete m_cBaseOT;
+
+		/*CBitVector* tmp_choices = new CBitVector();
+		tmp_choices->Create(m_nBaseOTs);
+		for (uint32_t i = 0; i < PadToMultiple(m_nBaseOTs, 8); i++)
+			tmp_choices->SetBit(i, m_vU.GetBit(i));
+
+		//tmp->choices->SetBits(m_vU.GetArr(), (uint64_t) 0, m_nBaseOTs);
+		tmp->base_ot_key_ptr = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs );
+		memcpy(tmp->base_ot_key_ptr, m_vBaseOTKeys, sizeof(AES_KEY_CTX) * m_nBaseOTs);
+		m_tBaseOTQ.push_back(tmp);*/
 	} else {
-		//recursive call
+		ALSZOTExtRec* rec = new ALSZOTExtRec(m_nSndVals, m_cCrypt, m_cRcvThread, m_cSndThread, m_nBaseOTs, m_nChecks);
+		uint32_t numots = BUFFER_OT_KEYS * m_nBaseOTs;
+		XORMasking* m_fMaskFct = new XORMasking(m_cCrypt->get_seclvl().symbits);
+		CBitVector U, resp;
+		uint32_t secparambytes = bits_in_bytes(m_cCrypt->get_seclvl().symbits);
+		U.Create(numots, m_cCrypt);
+		resp.Create(m_cCrypt->get_seclvl().symbits * numots);
+
+		rec->computePKBaseOTs();
+		rec->ComputeBaseOTs(ftype);
+
+		rec->receive(numots, m_cCrypt->get_seclvl().symbits, &U, &resp, Snd_R_OT, Rec_R_OT, 1, m_fMaskFct);
+
+		CBitVector* tmp_choices;
+		AES_KEY_CTX* tmp_keys;
+		//assign keys to base OT queue
+		for(uint32_t i = 0; i < BUFFER_OT_KEYS; i++) {
+			tmp_choices = new CBitVector();
+			tmp_choices->Create(m_nBaseOTs);
+			for (uint32_t j = 0; j < m_nBaseOTs; j++)
+				tmp_choices->SetBit(j, U.GetBitNoMask(i * m_nBaseOTs + j));
+			m_tBaseOTChoices.push_back(tmp_choices);
+
+			//tmp->choices->SetBits(U.GetArr(), (uint64_t) i * m_nBaseOTs, (uint64_t) m_nBaseOTs);
+			tmp_keys = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs);
+
+			InitAESKey(tmp_keys, resp.GetArr()+i*m_nBaseOTs*secparambytes, m_nBaseOTs, m_cCrypt);
+			m_tBaseOTKeys.push_back(tmp_keys);
+
+		}
+
+		U.delCBitVector();
+		resp.delCBitVector();
+		delete m_fMaskFct;
+		delete rec;
 	}
+
+
+	//if(m_tBaseOTQ.size() == 0) {
+
+
+	/*base_ots_t* baseOTs = (base_ots_t*) malloc(sizeof(base_ots_t));
+	baseOTs->base_ot_key_ptr = m_vBaseOTKeys;
+	//m_tBaseOTQ.push(baseOTs);
+	//}
+
+	//Extend OTs further and pack into m_tBaseOTQ
+	uint32_t numkeys = BUFFER_OT_KEYS;
+	base_ots_t** extended_keys;// = (base_ots_t**) malloc(sizeof(base_ots_t*) * numkeys);
+	for(uint32_t i = 0; i < numkeys; i++) {
+		keys[i] = m_tBaseOTQ.front();
+		m_tBaseOTQ.pop();
+	}
+	uint32_t numkeys = rec->ExtendBaseKeys(0, 0, &extended_keys)
+	//uint32_t nkeys = ExtendBaseKeys(0, 0, &keys);
+	for(uint32_t i = 0; i < nkeys; i++) {
+		m_tBaseOTQ.push(keys[i]);
+	}
+	if(nkeys > 0)
+		free(keys);*/
+
 }
+
+/*uint32_t ALSZOTExtSnd::ExtendBaseKeys(uint32_t id, uint64_t nbasekeys, base_ots_t*** out_keys) {
+	assert(m_tBaseOTQ.size() > 0);
+	//+1 to have some offset for future OTs
+	uint32_t req_key_sets = ceil_divide(nbasekeys, NUMOTBLOCKS) + BUFFER_OT_KEYS;
+	if(req_key_sets > m_tBaseOTQ.size()*NUMOTBLOCKS) {
+		uint32_t numkeys = req_key_sets - m_tBaseOTQ.size();
+		base_ots_t** keys = (base_ots_t**) malloc(sizeof(base_ots_t*) * numkeys);
+		for(uint32_t i = 0; i < numkeys; i++) {
+			keys[i] = m_tBaseOTQ.front();
+			m_tBaseOTQ.pop();
+		}
+		OTExtRec* rec = new ALSZOTExtRec(m_nSndVals, m_cCrypt, m_cRcvThread, m_cSndThread, m_nBaseOTs, m_nChecks, keys);
+		rec->ExtendBaseKeys(id, req_key_sets, out_keys);
+		//TODO Assign keys
+		//InitPRFKeys(keyBuf, m_nBaseOTs);
+		return req_key_sets;
+	} else {
+		//else do nothing since sufficient keys are left
+		return 0;
+	}
+}*/

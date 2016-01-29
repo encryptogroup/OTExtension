@@ -1,6 +1,6 @@
 #include "simpleot.h"
 
-void SimpleOT::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, channel* chan, uint8_t* retbuf) {
+void SimpleOT::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* retbuf) {
 
 	fe *g, **B, *A, *AB;
 	num **b, *order, *tmp;
@@ -37,7 +37,7 @@ void SimpleOT::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, c
 		b[i]->mod(order);
 		B[i] = m_cPKCrypto->get_fe();
 
-		if(choices.GetBit(i) == 0) {
+		if(choices->GetBit(i) == 0) {
 			bg->pow(B[i] , b[i]);
 			B[i]->export_to_bytes(sndbufptr);
 		} else {
@@ -64,10 +64,20 @@ void SimpleOT::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, c
 
 	free(tmpbuf);
 	free(rcvbuf);
+	for(uint32_t i = 0; i < nOTs; i++) {
+		delete b[i];
+		delete B[i];
+	}
 	free(b);
 	free(B);
 
 	delete bg;
+
+	delete g;
+	delete A;
+	delete AB;
+	delete order;
+	delete tmp;
 }
 
 
@@ -136,9 +146,19 @@ void SimpleOT::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* 
 		tmp->export_to_bytes(tmpbuf),
 		hashReturn(retbufptr, hash_bytes, tmpbuf, fe_bytes, i);
 		retbufptr+=hash_bytes;
+
+		delete B;
+		delete tmp;
 	}
 
 	free(tmpbuf);
 	free(rcvbuf);
 	delete bg;
+
+	delete g;
+	delete A;
+	delete Asqr;
+	delete AB;
+	delete a;
+	delete asqr;
 }

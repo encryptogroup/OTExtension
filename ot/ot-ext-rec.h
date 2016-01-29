@@ -25,6 +25,7 @@ class OTExtRec : public OTExt {
 public:
 
 	OTExtRec(){};
+	virtual ~OTExtRec(){};
 	BOOL receive(uint64_t numOTs, uint64_t bitlength, CBitVector* choices, CBitVector* ret,
 			snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct);
 
@@ -41,16 +42,16 @@ protected:
 	;
 
 	//void ReceiveAndProcess(uint32_t numThreads);
-	void BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t ctr, uint64_t numblocks);
+	void BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t ctr, uint64_t numblocks, AES_KEY_CTX* seedkeyptr);
 	void MaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t OTid, uint64_t numblocks);
-	void SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs);
+	void SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs, uint64_t rem_row = 1);
 	void HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbuf, uint64_t ctr, uint64_t lim, uint64_t** mat);
 	void SetOutput(CBitVector* maskbuf, uint64_t otid, uint64_t otlen, queue<mask_block*>* mask_queue, channel* chan);
 	void ReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queue);
 	void ReceiveAndXORCorRobVector(CBitVector& T, uint64_t OT_len, channel* chan);
 	BOOL verifyOT(uint64_t myNumOTs);
 
-	void Cleanup() {};//TODO check if necessary and implement
+	//void CleanupReceiver() { Cleanup();  };//TODO check if necessary and implement
 
 	CBitVector* m_vChoices;
 	CBitVector* m_vRet;

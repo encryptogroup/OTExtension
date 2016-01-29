@@ -58,8 +58,8 @@ BOOL OTExtSnd::start_send(uint32_t numThreads) {
 }
 
 
-void OTExtSnd::BuildQMatrix(CBitVector& T, uint64_t OT_ptr, uint64_t numblocks) {
-	BYTE* Tptr = T.GetArr();
+void OTExtSnd::BuildQMatrix(CBitVector* T, uint64_t OT_ptr, uint64_t numblocks, AES_KEY_CTX* seedkeyptr) {
+	BYTE* Tptr = T->GetArr();
 	uint8_t* ctr_buf = (uint8_t*) calloc (AES_BYTES, sizeof(uint8_t));
 
 	uint32_t dummy;
@@ -67,14 +67,15 @@ void OTExtSnd::BuildQMatrix(CBitVector& T, uint64_t OT_ptr, uint64_t numblocks) 
 	uint64_t wd_size_bytes = m_nBlockSizeBytes;//pad_to_power_of_two(m_nBaseOTs/8);//1 << (ceil_log2(m_nBaseOTs) - 3);
 	uint64_t rowbytelen = wd_size_bytes * numblocks;
 
-	AES_KEY_CTX* seedptr = m_vBaseOTKeys;
+	//AES_KEY_CTX* seedptr = m_vBaseOTKeys;
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
 
 	uint64_t iters = rowbytelen / AES_BYTES;
+
 	for (uint64_t k = 0, b; k < m_nBaseOTs; k++) {
 		*counter = global_OT_ptr;
 		for (b = 0; b < iters; b++, (*counter)++, Tptr += AES_BYTES) {
-			m_cCrypt->encrypt(seedptr + k, Tptr, ctr_buf, AES_BYTES);
+			m_cCrypt->encrypt(seedkeyptr + k, Tptr, ctr_buf, AES_BYTES);
 #ifdef DEBUG_MALICIOUS
 			cout << "k = " << k << ": "<< (hex) << ((uint64_t*) Tptr)[0] << ((uint64_t*) Tptr)[1] << (hex) << endl;
 #endif
@@ -91,30 +92,30 @@ void OTExtSnd::BuildQMatrix(CBitVector& T, uint64_t OT_ptr, uint64_t numblocks) 
 }
 
 //XOR m_nU on top
-void OTExtSnd::UnMaskBaseOTs(CBitVector& T, CBitVector& RcvBuf, uint64_t numblocks) {
+void OTExtSnd::UnMaskBaseOTs(CBitVector* T, CBitVector* RcvBuf, CBitVector* U, uint64_t numblocks) {
 	uint64_t rowbytelen = m_nBlockSizeBytes * numblocks;
-	uint8_t* rcvbufptr = RcvBuf.GetArr();
+	uint8_t* rcvbufptr = RcvBuf->GetArr();
 #ifdef GENERATE_T_EXPLICITELY
 	uint64_t blocksizebytes = m_nBaseOTs * rowbytelen;
 #endif
 
 	for (uint64_t k = 0; k < m_nBaseOTs; k++, rcvbufptr += rowbytelen) {
 #ifdef GENERATE_T_EXPLICITELY
-		if (m_vU.GetBit(k) == 0) {
+		if (Uptr->.GetBit(k) == 0) {
 			T.XORBytes(rcvbufptr, k * rowbytelen, rowbytelen);
 		} else {
 			T.XORBytes(rcvbufptr + blocksizebytes, k * rowbytelen, rowbytelen);
 		}
 #else
-		if (m_vU.GetBit(k)) {
-			T.XORBytes(rcvbufptr, k * rowbytelen, rowbytelen);
+		if (U->GetBit(k)) {
+			T->XORBytes(rcvbufptr, k * rowbytelen, rowbytelen);
 		}
 #endif
 
 	}
 }
 
-void OTExtSnd::ReceiveMasks(CBitVector& vRcv, channel* chan, uint64_t processedOTs) {
+void OTExtSnd::ReceiveMasks(CBitVector* vRcv, channel* chan, uint64_t processedOTs, uint64_t rec_r_ot_startpos) {
 	//uint64_t nSize = bits_in_bytes(m_nBaseOTs * processedOTs);
 	uint64_t tmpctr, tmpotlen;
 	uint32_t startpos = 0;
@@ -123,11 +124,11 @@ void OTExtSnd::ReceiveMasks(CBitVector& vRcv, channel* chan, uint64_t processedO
 	rcvbufptr = chan->blocking_receive_id_len(&rcvbuftmpptr, &tmpctr, &tmpotlen);
 
 	if(m_eRecOTFlav == Rec_R_OT) {
-		startpos = 1;
+		startpos = rec_r_ot_startpos;
 #ifdef GENERATE_T_EXPLICITELY
 		vRcv.SetBytesToZero(0, 2* bits_in_bytes(processedOTs));
 #else
-		vRcv.SetBytesToZero(0, bits_in_bytes(processedOTs));
+		vRcv->SetBytesToZero(0, bits_in_bytes(processedOTs));
 #endif
 	}
 #ifdef GENERATE_T_EXPLICITELY
@@ -138,24 +139,25 @@ void OTExtSnd::ReceiveMasks(CBitVector& vRcv, channel* chan, uint64_t processedO
 		vRcv.SetBytes(rcvbuftmpptr, 0, 2 * bits_in_bytes(m_nBaseOTs* processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
 	}
 #else
-	vRcv.SetBytes(rcvbuftmpptr, bits_in_bytes(startpos * processedOTs), bits_in_bytes((m_nBaseOTs - startpos) * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+	vRcv->SetBytes(rcvbuftmpptr, bits_in_bytes(startpos * processedOTs), bits_in_bytes((m_nBaseOTs - startpos) * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
 #endif
 	free(rcvbufptr);
 }
 
-void OTExtSnd::GenerateSendAndXORCorRobVector(CBitVector& Q, uint64_t OT_len, channel* chan) {
+void OTExtSnd::GenerateSendAndXORCorRobVector(CBitVector* Q, uint64_t OT_len, channel* chan) {
 	if(m_bUseMinEntCorRob) {
 		uint64_t len = bits_in_bytes(m_nBaseOTs * OT_len);
 		uint8_t* rndvec = (uint8_t*) malloc(len);
 		m_cCrypt->gen_rnd(rndvec, len);
-		Q.XORBytes(rndvec, len);
+		Q->XORBytes(rndvec, len);
 		chan->send(rndvec, len);
 		free(rndvec);
 	}
 }
 
 
-void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len, uint64_t** mat_mul) {
+void OTExtSnd::HashValues(CBitVector* Q, CBitVector* seedbuf, CBitVector* snd_buf, CBitVector* U,
+		uint64_t OT_ptr, uint64_t OT_len, uint64_t** mat_mul) {
 	uint64_t numhashiters = ceil_divide(m_nBitLength, m_cCrypt->get_hash_bytes());
 	uint32_t rowbytelen = bits_in_bytes(m_nBaseOTs);
 	uint32_t hashinbytelen = rowbytelen + sizeof(uint64_t);
@@ -164,8 +166,8 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 	uint32_t aes_key_bytes = m_cCrypt->get_aes_key_bytes();
 
 
-	uint64_t* Qptr = (uint64_t*) Q.GetArr();
-	uint64_t* Uptr = (uint64_t*) m_vU.GetArr();
+	uint64_t* Qptr = (uint64_t*) Q->GetArr();
+	uint64_t* Uptr = (uint64_t*) U->GetArr();
 
 	uint8_t** sbp = (uint8_t**) malloc(sizeof(uint8_t*) * m_nSndVals);
 	uint8_t* inbuf = (uint8_t*) calloc(hashinbytelen, 1);
@@ -190,7 +192,7 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 			}
 #else
 			if (u == 1)
-				Q.XORBytes((uint8_t*) Uptr, i * wd_size_bytes, rowbytelen);
+				Q->XORBytes((uint8_t*) Uptr, i * wd_size_bytes, rowbytelen);
 #endif
 
 #ifdef DEBUG_OT_HASH_IN
@@ -205,13 +207,13 @@ void OTExtSnd::HashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_bu
 				FixedKeyHashing(m_kCRFKey, sbp[u], (BYTE*) Qptr, hash_buf, i, hashinbytelen, m_cCrypt);
 #else
 				memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
-				memcpy(inbuf+sizeof(uint64_t), Q.GetArr() + i * wd_size_bytes, rowbytelen);
+				memcpy(inbuf+sizeof(uint64_t), Q->GetArr() + i * wd_size_bytes, rowbytelen);
 				m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
 				memcpy(sbp[u], resbuf, aes_key_bytes);
 
 			} else {
 
-				BitMatrixMultiplication(tmpbufb, bits_in_bytes(m_nBitLength), Q.GetArr() + i * wd_size_bytes, m_nBaseOTs, mat_mul, tmpbuf);
+				BitMatrixMultiplication(tmpbufb, bits_in_bytes(m_nBitLength), Q->GetArr() + i * wd_size_bytes, m_nBaseOTs, mat_mul, tmpbuf);
 				//m_vValues[u].SetBits(tmpbufb, (OT_ptr + i)* m_nBitLength, m_nBitLength);
 				snd_buf[u].SetBits(tmpbufb, i * m_nBitLength, m_nBitLength);
 					//m_vTempOTMasks.SetBytes(tmpbufb, (uint64_t) (OT_ptr + i) * aes_key_bytes, (uint64_t) aes_key_bytes);
@@ -321,8 +323,17 @@ void OTExtSnd::ComputePKBaseOTs() {
 	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs);
 
 	timeval np_begin, np_end;
+
+	CBitVector* U = new CBitVector();
+	U->Create(m_nBaseOTs, m_cCrypt);
+	//m_vU.Copy(U.GetArr(), 0, bits_in_bytes(nbaseOTs));
+	//fill zero into the remaining positions - is needed if nbaseots is not a multiple of 8
+	for (uint32_t i = m_nBaseOTs; i < PadToMultiple(m_nBaseOTs, 8); i++)
+		U->SetBit(i, 0);
+	AES_KEY_CTX* tmpkeybuf = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs);
+
 	gettimeofday(&np_begin, NULL);
-	m_cBaseOT->Receiver(m_nSndVals, m_nBaseOTs, m_vU, chan, pBuf);
+	m_cBaseOT->Receiver(m_nSndVals, m_nBaseOTs, U, chan, pBuf);
 	gettimeofday(&np_end, NULL);
 
 #ifndef BATCH
@@ -339,10 +350,14 @@ void OTExtSnd::ComputePKBaseOTs() {
 		pBufIdx+=m_cCrypt->get_hash_bytes();
 	}
 
-
  	free(pBuf);
 
- 	InitPRFKeys(keyBuf, m_nBaseOTs);
+ 	InitPRFKeys(tmpkeybuf, keyBuf, m_nBaseOTs);
+
+
+ 	m_tBaseOTKeys.push_back(tmpkeybuf);
+	m_tBaseOTChoices.push_back(U);
+
 
  	free(keyBuf);
 	chan->synchronize_end();

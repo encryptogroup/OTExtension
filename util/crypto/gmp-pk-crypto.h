@@ -34,6 +34,7 @@ public:
 	fe* get_rnd_fe(uint32_t bitlen);
 	fe* get_generator();
 	fe* get_rnd_generator();
+	num* get_order();
 
 	mpz_t* get_p();
 	uint32_t get_size();

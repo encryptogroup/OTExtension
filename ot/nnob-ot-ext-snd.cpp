@@ -98,7 +98,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalRcvTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildQMatrix(Q, OT_ptr, processedOTBlocks);
+		BuildQMatrix(&Q, OT_ptr, processedOTBlocks, m_tBaseOTKeys.front());
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
@@ -111,9 +111,9 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalHashCheckTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		UnMaskBaseOTs(Q, vRcv, processedOTBlocks);
+		UnMaskBaseOTs(&Q, &vRcv, m_tBaseOTChoices.front(), processedOTBlocks);
 
-		GenerateSendAndXORCorRobVector(Q, OTsPerIteration, mat_chan);
+		GenerateSendAndXORCorRobVector(&Q, OTsPerIteration, mat_chan);
 
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
@@ -126,7 +126,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(Q, seedbuf, vSnd, OT_ptr, min(lim - OT_ptr, OTsPerIteration), rndmat);
+		HashValues(&Q, seedbuf, vSnd, m_tBaseOTChoices.front(), OT_ptr, min(lim - OT_ptr, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -252,7 +252,8 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 	genRandomMapping(check_buf->perm, m_nBaseOTs);
 
 	for(uint32_t i = 0; i < m_nChecks; i++) {
-		check_buf->permchoicebits[i] = m_vU.GetBit(blockid * m_nBaseOTs + check_buf->perm[i].ida) ^ m_vU.GetBit(blockid * m_nBaseOTs + check_buf->perm[i].idb);
+		check_buf->permchoicebits[i] = m_tBaseOTChoices.front()->GetBit(blockid * m_nBaseOTs + check_buf->perm[i].ida) ^
+				m_tBaseOTChoices.front()->GetBit(blockid * m_nBaseOTs + check_buf->perm[i].idb);
 	}
 
 	//right now the checkbytelen needs to be a multiple of AES_BYTES
@@ -263,7 +264,7 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 
 	for(uint64_t i = 0; i < m_nChecks; i++, chk_buf_ptr+=OWF_BYTES) {
 
-		if(m_vU.GetBit(blockid * m_nBaseOTs + check_buf->perm[i].ida) == 0) {
+		if(m_tBaseOTChoices.front()->GetBit(blockid * m_nBaseOTs + check_buf->perm[i].ida) == 0) {
 			memcpy(idatmpbuf, tocheckseed + check_buf->perm[i].ida * rowbytelen, rowbytelen);
 		} else {
 			seedptr = tocheckseed + check_buf->perm[i].ida * rowbytelen;
@@ -273,7 +274,7 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 			}
 		}
 
-		if(m_vU.GetBit(blockid * m_nBaseOTs + check_buf->perm[i].idb) == 0) {
+		if(m_tBaseOTChoices.front()->GetBit(blockid * m_nBaseOTs + check_buf->perm[i].idb) == 0) {
 			memcpy(idbtmpbuf, tocheckseed + check_buf->perm[i].idb * rowbytelen, rowbytelen);
 		} else {
 			seedptr = tocheckseed + check_buf->perm[i].idb * rowbytelen;

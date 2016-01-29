@@ -59,11 +59,20 @@ typedef struct mask_buf_ctx {
 
 
 
+
 class OTExt {
 
 public:
 	OTExt(){};
-	//virtual ~OTExt() = 0;
+	virtual ~OTExt() {
+		for(uint32_t i = 0; i < m_tBaseOTKeys.size(); i++)
+			free(m_tBaseOTKeys[i]);
+		m_tBaseOTKeys.clear();
+#ifdef FIXED_KEY_AES_HASHING
+		free(m_kCRFKey);
+#endif
+	};
+
 	virtual void ComputeBaseOTs(field_type ftype) = 0;
 
 	void EnableMinEntCorrRobustness() {
@@ -83,6 +92,7 @@ protected:
 		m_nBlockSizeBytes = pad_to_power_of_two(m_nBaseOTs/8);
 		m_nCounter = 0;
 		m_bUseMinEntCorRob = false;
+		m_tBaseOTKeys.resize(0);
 
 		//sndthread = new SndThread(sock);
 		//rcvthread = new RcvThread(sock);
@@ -92,19 +102,11 @@ protected:
 		m_cSndThread = sndthread;
 		m_cRcvThread = rcvthread;;
 
-		m_vBaseOTKeys = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * nbasekeys);
+		//m_vBaseOTKeys = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * nbasekeys);
 	}
 
-	void Cleanup() {
-		free(m_vBaseOTKeys);
-#ifdef FIXED_KEY_AES_HASHING
-		free(m_kCRFKey);
-#endif
-	}
-
-
-	void InitPRFKeys(uint8_t* keybytes, uint32_t nbasekeys) {
-		InitAESKey(m_vBaseOTKeys, keybytes, nbasekeys, m_cCrypt);
+	void InitPRFKeys(AES_KEY_CTX* base_ot_keys, uint8_t* keybytes, uint32_t nbasekeys) {
+		InitAESKey(base_ot_keys, keybytes, nbasekeys, m_cCrypt);
 
 #ifdef FIXED_KEY_AES_HASHING
 		m_kCRFKey = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX));
@@ -132,7 +134,7 @@ protected:
 	SndThread* m_cSndThread;
 	RcvThread* m_cRcvThread;
 
-	AES_KEY_CTX* m_vBaseOTKeys;
+	vector<AES_KEY_CTX*> m_tBaseOTKeys;
 
 	MaskingFunction* m_fMaskFct;
 

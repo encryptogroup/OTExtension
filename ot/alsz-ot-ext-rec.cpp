@@ -13,10 +13,10 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t wd_size_bits = m_nBlockSizeBits;
 
-	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
-	uint64_t lim = myStartPos + myNumOTs;
+	uint64_t internal_numOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
+	uint64_t lim = myStartPos + internal_numOTs;
 
-	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
+	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(internal_numOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	uint64_t OTwindow = NUMOTBLOCKS * wd_size_bits;
 	uint64_t** rndmat;
@@ -34,7 +34,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	}
 
 	//counter variables
-	uint64_t numblocks = ceil_divide(myNumOTs, OTsPerIteration);
+	uint64_t numblocks = ceil_divide(internal_numOTs, OTsPerIteration);
 
 	// A temporary part of the T matrix
 	CBitVector T(wd_size_bits * OTsPerIteration);
@@ -57,6 +57,10 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	alsz_rcv_check_t check_tmp;
 	CBitVector Ttmp(wd_size_bits * OTsPerIteration);
 
+	AES_KEY_CTX* tmp_base_keys;
+
+	uint64_t base_ot_block_ctr = otid / (myNumOTs);
+
 	//TODO only do when successfull checks
 	if(m_eSndOTFlav == Snd_GC_OT) {
 		initRndMatrix(&rndmat, m_nBitLength, m_nBaseOTs);
@@ -73,10 +77,13 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 		//nSize = bits_in_bytes(m_nBaseOTs * OTsPerIteration);
 
+		tmp_base_keys = m_tBaseOTKeys[base_ot_block_ctr];
+		//m_tBaseOTQ.pop();
+
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildMatrices(T, vSnd, otid, processedOTBlocks);
+		BuildMatrices(T, vSnd, otid, processedOTBlocks, tmp_base_keys);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
@@ -138,10 +145,14 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		SetOutput(&maskbuf, otid, OTsPerIteration, &mask_queue, ot_chan);
 
 		otid += min(lim - otid, OTsPerIteration);
+		base_ot_block_ctr++;
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalOutputSetTime += getMillies(tempStart, tempEnd);
 #endif
+
+		//free(tmp_base_keys);
+		//free(tmp_baseots);
 
 		vSnd.Reset();
 		T.Reset();
@@ -188,8 +199,6 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	check_chan->synchronize_end();
 
 
-
-
 	T.delCBitVector();
 	vSnd.delCBitVector();
 	seedbuf.delCBitVector();
@@ -205,7 +214,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	}
 
 #ifdef OTTiming
-	cout << "Receiver time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
+	cout << "Receiver time benchmark for performing " << internal_numOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
 	cout << "Time needed for: " << endl;
 	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
 	cout << "\t Enqueuing Seeds:\t" << totalEnqueueTime << " ms" << endl;
@@ -414,12 +423,58 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 }
 
 void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
-	if(m_bDoBaseOTs) {
+	/*m_cBaseOT = new SimpleOT(m_cCrypt, ftype);
+	ComputePKBaseOTs();
+	delete m_cBaseOT;*/
+	uint32_t nsndvals = 2;
+
+	if(m_bDoBaseOTs) { //use public-key crypto routines (simple OT)
 		m_cBaseOT = new SimpleOT(m_cCrypt, ftype);
 		ComputePKBaseOTs();
 		delete m_cBaseOT;
+
+		/*base_ots_snd_t* tmp = (base_ots_snd_t*) malloc(sizeof(base_ots_snd_t));
+		tmp->base_ot_key_ptr = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs * nsndvals);
+		memcpy(tmp->base_ot_key_ptr, m_vBaseOTKeys, sizeof(AES_KEY_CTX) * m_nBaseOTs * nsndvals);
+		m_tBaseOTQ.push_back(tmp);*/
 	} else {
-		//recursive call
+		ALSZOTExtSnd* snd = new ALSZOTExtSnd(m_nSndVals, m_cCrypt, m_cRcvThread, m_cSndThread, m_nBaseOTs, m_nChecks);
+		uint32_t numots = BUFFER_OT_KEYS * m_nBaseOTs;
+		XORMasking* m_fMaskFct = new XORMasking(m_cCrypt->get_seclvl().symbits);
+		CBitVector X0, X1;
+		uint32_t secparambytes = bits_in_bytes(m_cCrypt->get_seclvl().symbits);
+		uint8_t* buf;
+
+
+		X0.Create(numots * m_cCrypt->get_seclvl().symbits);
+		X1.Create(numots * m_cCrypt->get_seclvl().symbits);
+
+		snd->computePKBaseOTs();
+		snd->ComputeBaseOTs(ftype);
+
+		snd->send(numots, m_cCrypt->get_seclvl().symbits, &X0, &X1, Snd_R_OT, Rec_R_OT, 1, m_fMaskFct);
+
+		//assign keys to base OT queue
+		buf = (uint8_t*) malloc(secparambytes * nsndvals * m_nBaseOTs);
+
+		AES_KEY_CTX* tmp_keys;
+		for(uint32_t i = 0; i < BUFFER_OT_KEYS; i++) {
+			//base_ots_snd_t* tmp = (base_ots_snd_t*) malloc(sizeof(base_ots_snd_t));
+			tmp_keys = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX) * m_nBaseOTs * nsndvals);
+			for(uint32_t j = 0; j < m_nBaseOTs; j++) {
+				memcpy(buf + j * nsndvals * secparambytes, X0.GetArr() + (i * m_nBaseOTs + j) * secparambytes, secparambytes);
+				memcpy(buf + (j * nsndvals + 1) * secparambytes, X1.GetArr() + (i * m_nBaseOTs + j) * secparambytes, secparambytes);
+			}
+			InitAESKey(tmp_keys, buf, nsndvals * m_nBaseOTs, m_cCrypt);
+			m_tBaseOTKeys.push_back(tmp_keys);
+		}
+
+
+		free(buf);
+		X0.delCBitVector();
+		X1.delCBitVector();
+		delete m_fMaskFct;
+		delete snd;
 	}
-	//if(m_nBaseOTs * NUMOTBLOCKS)
+
 }

@@ -8,6 +8,8 @@
 #include "kk-ot-ext-snd.h"
 
 BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
+	assert(m_eSndOTFlav != Snd_GC_OT); //not working for GC_OT
+
 	uint32_t choicecodebitlen = ceil_log2(m_nSndVals);
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t myStartPos1ooN = ceil_divide(myStartPos, choicecodebitlen);
@@ -84,20 +86,20 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		ReceiveMasks(vRcv, chan, OTsPerIteration);
+		ReceiveMasks(&vRcv, chan, OTsPerIteration, 0);
 
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalRcvTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildQMatrix(Q, otid, processedOTBlocks);
+		BuildQMatrix(&Q, otid, processedOTBlocks, m_tBaseOTKeys.front());
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		UnMaskBaseOTs(Q, vRcv, processedOTBlocks);
+		UnMaskBaseOTs(&Q, &vRcv, m_tBaseOTChoices.front(), processedOTBlocks);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalUnMaskTime += getMillies(tempStart, tempEnd);
@@ -191,7 +193,7 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 
 	for (uint64_t i = 0; i < OT_len; global_OT_ptr++, i++, Qptr += 2) {
 		for (u = 0; u < m_nSndVals; u++) {
-			mask.Copy(m_vU, 0, rowbytelen);
+			mask.Copy(m_tBaseOTChoices.front()->GetArr(), 0, rowbytelen);
 			mask.ANDBytes((uint8_t*) m_vCodeWords[u], 0, rowbytelen);
 			mask.XORBytes(Q.GetArr() + i * rowbytelen, rowbytelen);
 
@@ -259,15 +261,38 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 
 	uint32_t choicecodebits = ceil_log2(m_nSndVals);
 	uint64_t valsize = bits_in_bytes(OT_len * m_nBitLength * choicecodebits);
-	uint64_t bufsize = valsize * (m_nSndVals-2); //For R-OT
+	uint64_t bufsize;
 	uint8_t* buf;
+	uint32_t startval, endval;
+
+	if(m_eSndOTFlav == Snd_OT) {
+		bufsize = valsize * m_nSndVals;
+		startval = 0;
+		endval = m_nSndVals;
+	} else if (m_eSndOTFlav == Snd_C_OT) {
+		bufsize = valsize * (m_nSndVals - 1);
+		startval = 1;
+		endval = m_nSndVals;
+		//hack: extract the delta from the masking function and set m_vValues[0] randomly and m_vValues[1] = m_vValues[0] \oplus Delta
+		// snd_buf[1] is modified and has to be XORed with m_vValues[1] to revert to the original value
+		m_fMaskFct->Mask(OT_ptr*choicecodebits, OT_len*choicecodebits, m_vValues, snd_buf, m_eSndOTFlav);
+		cout << "OT ptr = " << OT_ptr*choicecodebits << ", OT_len = " << OT_len*choicecodebits << endl;
+		snd_buf[1].XORBits(m_vValues[1]->GetArr() + bits_in_bytes(OT_ptr*choicecodebits*m_nBitLength), 0, OT_len*choicecodebits * m_nBitLength);
+	} else if(m_eSndOTFlav == Snd_R_OT) {
+		bufsize = valsize * (m_nSndVals - 2);
+		startval = 1;
+		endval = m_nSndVals - 1;
+		//Define the X0 values as the output of 0 and the X1 values as output of m_nSndVals-1 (only 1 values)
+		m_vValues[0]->SetBytes(snd_buf[0].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
+		m_vValues[1]->SetBytes(snd_buf[m_nSndVals-1].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
+	}
+
 	buf = (uint8_t*) malloc(bufsize);
 	CBitVector tmpmask(valsize * 8);
 	CBitVector* snd_buf_ptr;
 
-	//Define the X0 values as the output of 0 and the X1 values as output of m_nSndVals-1 (only 1 values)
-	m_vValues[0]->SetBytes(snd_buf[0].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
-	m_vValues[1]->SetBytes(snd_buf[m_nSndVals-1].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
+	//m_vValues[0]->SetBytes(snd_buf[0].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
+	//m_vValues[1]->SetBytes(snd_buf[m_nSndVals-1].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
 
 #ifdef DEBUG_KK_OTBREAKDOWN
 	cout << endl << "X0: ";
@@ -277,7 +302,7 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 #endif
 
 	uint8_t* tmpbuf = (uint8_t*) malloc(bits_in_bytes(m_nBitLength));
-	for(uint32_t i = 1; i < m_nSndVals-1; i++) {
+	for(uint32_t i = startval; i < endval; i++) {
 		tmpmask.Reset();
 		for(uint32_t j = 0; j < choicecodebits; j++) {
 			//write the value of snd_buf[0] or snd_buf[1] in every choicecodebits position
@@ -301,7 +326,7 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 		tmpmask.PrintHex(0, valsize);
 #endif
 
-		memcpy(buf + (i-1) * valsize, tmpmask.GetArr(), valsize);
+		memcpy(buf + (i-startval) * valsize, tmpmask.GetArr(), valsize);
 	}
 
 	chan->send_id_len(buf, bufsize, OT_ptr, OT_len);

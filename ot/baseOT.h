@@ -28,13 +28,11 @@ public:
 		m_cPKCrypto = crypt->gen_field(ftype);
 	}
 	;
-	~BaseOT() {
-		delete m_cPKCrypto;
-	}
-	;
+
+	~BaseOT() { delete m_cPKCrypto; };
 
 	virtual void Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* ret) = 0;
-	virtual void Receiver(uint32_t nSndVals, uint32_t uint32_t, CBitVector& choices, channel* chan, uint8_t* ret) = 0;
+	virtual void Receiver(uint32_t nSndVals, uint32_t uint32_t, CBitVector* choices, channel* chan, uint8_t* ret) = 0;
 
 protected:
 

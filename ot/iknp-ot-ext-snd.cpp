@@ -76,20 +76,20 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		ReceiveMasks(vRcv, chan, OTsPerIteration);
+		ReceiveMasks(&vRcv, chan, OTsPerIteration);
 
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalRcvTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildQMatrix(Q, otid, processedOTBlocks);
+		BuildQMatrix(&Q, otid, processedOTBlocks, m_tBaseOTKeys.front());
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		UnMaskBaseOTs(Q, vRcv, processedOTBlocks);
+		UnMaskBaseOTs(&Q, &vRcv, m_tBaseOTChoices.front(), processedOTBlocks);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalUnMaskTime += getMillies(tempStart, tempEnd);
@@ -101,7 +101,7 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(Q, seedbuf, vSnd, otid, min(lim - otid, OTsPerIteration), rndmat);
+		HashValues(&Q, seedbuf, vSnd, m_tBaseOTChoices.front(), otid, min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);

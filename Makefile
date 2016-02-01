@@ -14,7 +14,7 @@ OBJECTS_CRYPTO=util/crypto/*.o
 SOURCES_OT=ot/*.cpp
 OBJECTS_OT=ot/*.o
 OBJECTS_MIRACL= util/Miracl/*.o
-COMPILER_OPTIONS=-O3# -mavx -maes  -mpclmul -DRDTSC -DTEST=AES128
+COMPILER_OPTIONS=-O2# -mavx -maes  -mpclmul -DRDTSC -DTEST=AES128
 DEBUG_OPTIONS=-g3 -ggdb 
 BATCH=
 INCLUDE=-I..

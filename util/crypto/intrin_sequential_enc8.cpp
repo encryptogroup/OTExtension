@@ -88,6 +88,42 @@
 	block8=_mm_aesenclast_si128(block8, (*(__m128i const*)(keyptr[7].KEY+i*16))); \
 }
 
+
+
+
+#define KS1_BLOCK(t, reg, reg2) {globAux=_mm_slli_epi64(reg, 32);\
+								reg=_mm_xor_si128(globAux, reg);\
+								globAux=_mm_shuffle_epi8(reg, con3);\
+								reg=_mm_xor_si128(globAux, reg);\
+								reg=_mm_xor_si128(reg2, reg);\
+								}
+
+#define KS1_round(i) { x2 =_mm_shuffle_epi8(keyA, mask); \
+	keyA_aux=_mm_aesenclast_si128 (x2, con); \
+	KS1_BLOCK(0, keyA, keyA_aux);\
+	con=_mm_slli_epi32(con, 1);\
+	_mm_storeu_si128((__m128i *)(keyptr[0].KEY+i*16), keyA);\
+	}
+
+#define KS1_round_last(i) { x2 =_mm_shuffle_epi8(keyA, mask); \
+	keyA_aux=_mm_aesenclast_si128 (x2, con); \
+	KS1_BLOCK(0, keyA, keyA_aux);\
+	_mm_storeu_si128((__m128i *)(keyptr[0].KEY+i*16), keyA);\
+	}
+
+#define READ_KEYS1(i) {keyA = _mm_loadu_si128((__m128i const*)(keyptr[0].KEY+i*16));\
+	}
+
+#define ENC1_round(i) {block1=_mm_aesenc_si128(block1, (*(__m128i const*)(keyptr[0].KEY+i*16))); \
+}
+
+#define ENC1_round_last(i) {block1=_mm_aesenclast_si128(block1, (*(__m128i const*)(keyptr[0].KEY+i*16))); \
+}
+
+
+
+
+
 //generates nkeys round keys from the bytes stored in key_bytes
 void intrin_sequential_ks4(ROUND_KEYS* ks, unsigned char* key_bytes, int nkeys) {
 	ROUND_KEYS *keyptr=(ROUND_KEYS *)ks;
@@ -98,8 +134,9 @@ void intrin_sequential_ks4(ROUND_KEYS* ks, unsigned char* key_bytes, int nkeys) 
 	int _mask[4]={0x0c0f0e0d,0x0c0f0e0d,0x0c0f0e0d,0x0c0f0e0d};
 	int _con3[4]={0x0ffffffff, 0x0ffffffff, 0x07060504, 0x07060504};
 	__m128i con3=_mm_loadu_si128((__m128i const*)_con3);
+	int lim = (nkeys/4)*4;
 
-	for (i=0;i<nkeys;i+=4){
+	for (i=0;i<lim;i+=4){
 		keyptr[0].nr=10;
 		keyptr[1].nr=10;
 		keyptr[2].nr=10;
@@ -133,6 +170,33 @@ void intrin_sequential_ks4(ROUND_KEYS* ks, unsigned char* key_bytes, int nkeys) 
 
 		keyptr+=4;
 		key_bytes+=64;
+	}
+
+	for(; i<nkeys; i++) {
+		keyptr[0].nr=10;
+
+		keyA = _mm_loadu_si128((__m128i const*)(key_bytes));
+
+		_mm_storeu_si128((__m128i *)keyptr[0].KEY, keyA);
+
+		con = _mm_loadu_si128((__m128i const*)_con1);
+		mask = _mm_loadu_si128((__m128i const*)_mask);
+
+		KS1_round(1)
+		KS1_round(2)
+		KS1_round(3)
+		KS1_round(4)
+		KS1_round(5)
+		KS1_round(6)
+		KS1_round(7)
+		KS1_round(8)
+		con = _mm_loadu_si128((__m128i const*)_con2);
+
+		KS1_round(9)
+		KS1_round_last(10)
+
+		keyptr++;
+		key_bytes+=16;
 	}
 }
 
@@ -211,7 +275,9 @@ void intrin_sequential_gen_rnd8(unsigned char* ctr_buf, const unsigned long long
 
 	register __m128i inblock, block1, block2, block3, block4, block5, block6, block7, block8;
 
-	for (i=0;i<nkeys;i+=8){
+	int lim = (nkeys/8)*8;
+
+	for (i=0;i<lim;i+=8){
 		ctptr=CT + i*ctoffset;
 		(*tmpctr) = ctr;
 		for(j=0;j<n_aesiters; j++) {
@@ -252,6 +318,36 @@ void intrin_sequential_gen_rnd8(unsigned char* ctr_buf, const unsigned long long
 			ctptr+=16;
 		}
 		keyptr+=8;
+	}
+
+
+	for (;i<nkeys;i++){
+		ctptr=CT + i*ctoffset;
+		(*tmpctr) = ctr;
+		for(j=0;j<n_aesiters; j++) {
+			(*tmpctr)++;
+			inblock = _mm_loadu_si128((__m128i const*)(ctr_buf));
+
+			READ_KEYS1(0)
+
+			block1 = _mm_xor_si128(keyA, inblock);
+
+			ENC1_round(1)
+			ENC1_round(2)
+			ENC1_round(3)
+			ENC1_round(4)
+			ENC1_round(5)
+			ENC1_round(6)
+			ENC1_round(7)
+			ENC1_round(8)
+			ENC1_round(9)
+			ENC1_round_last(10)
+
+			_mm_storeu_si128((__m128i *)(ctptr), block1);
+
+			ctptr+=16;
+		}
+		keyptr++;
 	}
 }
 #endif

@@ -87,15 +87,23 @@ void OTExtRec::BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t OT_ptr,
 
 	//AES_KEY_CTX* seedptr = m_vBaseOTKeys;
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
+	uint32_t keyoffset = m_nBaseOTs;
 
+#ifdef USE_PIPELINED_AES_NI
+	//first prg output written to tptr
+	intrin_sequential_gen_rnd8(ctr_buf, global_OT_ptr, Tptr, iters, (int) m_nBaseOTs, seedkeyptr);
+
+	*counter = global_OT_ptr;
+	//second prg output written to snd buffer
+	intrin_sequential_gen_rnd8(ctr_buf, global_OT_ptr, sndbufptr, iters, (int) m_nBaseOTs, seedkeyptr+m_nBaseOTs);
+#else
 	for (uint32_t k = 0; k < m_nBaseOTs; k++) {
 		*counter = global_OT_ptr;
-
 		for (uint32_t b = 0; b < iters; b++, (*counter)++) {
-			m_cCrypt->encrypt(seedkeyptr + 2 * k, Tptr, ctr_buf, AES_BYTES);
+			m_cCrypt->encrypt(seedkeyptr + k, Tptr, ctr_buf, AES_BYTES);
 			Tptr += AES_BYTES;
 
-			m_cCrypt->encrypt(seedkeyptr + (2 * k) + 1, sndbufptr, ctr_buf, AES_BYTES);
+			m_cCrypt->encrypt(seedkeyptr + k + keyoffset, sndbufptr, ctr_buf, AES_BYTES);
 			sndbufptr += AES_BYTES;
 		}
 #ifdef DEBUG_OT_SEED_EXPANSION
@@ -111,6 +119,7 @@ void OTExtRec::BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t OT_ptr,
 		cout << (dec) << " (" << (*counter)-iters << ")" <<endl;
 #endif
 	}
+#endif
 	//m_vChoices.PrintHex();
 	free(ctr_buf);
 }
@@ -428,9 +437,11 @@ void OTExtRec::ComputePKBaseOTs() {
 
 	//Key expansion
 	uint8_t* pBufIdx = pBuf;
-	for(int i=0; i<m_nBaseOTs * m_nSndVals; i++ )
+	for(uint32_t i=0; i<m_nBaseOTs; i++ )
 	{
 		memcpy(keyBuf + i * m_cCrypt->get_aes_key_bytes(), pBufIdx, m_cCrypt->get_aes_key_bytes());
+		pBufIdx += m_cCrypt->get_hash_bytes();
+		memcpy(keyBuf + i * m_cCrypt->get_aes_key_bytes() + m_nBaseOTs * m_cCrypt->get_aes_key_bytes(), pBufIdx, m_cCrypt->get_aes_key_bytes());
 		pBufIdx += m_cCrypt->get_hash_bytes();
 	}
 

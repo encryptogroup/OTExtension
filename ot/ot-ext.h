@@ -24,19 +24,25 @@
 
 #ifdef USE_PIPELINED_AES_NI
 	typedef ROUND_KEYS OT_AES_KEY_CTX;
+
+	static void InitAESKey(OT_AES_KEY_CTX* ctx, uint8_t* keybytes, uint32_t numkeys, crypto* crypt) {
+		intrin_sequential_ks4(ctx, keybytes, numkeys);
+	}
 #else
 	typedef AES_KEY_CTX OT_AES_KEY_CTX;
+
+	static void InitAESKey(OT_AES_KEY_CTX* ctx, uint8_t* keybytes, uint32_t numkeys, crypto* crypt) {
+		BYTE* pBufIdx = keybytes;
+		uint32_t aes_key_bytes = crypt->get_aes_key_bytes();
+		for (uint32_t i = 0; i < numkeys; i++) {
+			crypt->init_aes_key(ctx + i, pBufIdx);
+			pBufIdx += aes_key_bytes;
+		}
+	}
 #endif
 
 
-static void InitAESKey(OT_AES_KEY_CTX* ctx, uint8_t* keybytes, uint32_t numkeys, crypto* crypt) {
-	BYTE* pBufIdx = keybytes;
-	uint32_t aes_key_bytes = crypt->get_aes_key_bytes();
-	for (uint32_t i = 0; i < numkeys; i++) {
-		crypt->init_aes_key(ctx + i, pBufIdx);
-		pBufIdx += aes_key_bytes;
-	}
-}
+
 
 struct ot_block {
 	uint64_t startotid;

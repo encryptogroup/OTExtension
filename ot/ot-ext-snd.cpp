@@ -72,6 +72,10 @@ void OTExtSnd::BuildQMatrix(CBitVector* T, uint64_t OT_ptr, uint64_t numblocks, 
 
 	uint64_t iters = rowbytelen / AES_BYTES;
 
+
+#ifdef USE_PIPELINED_AES_NI
+	intrin_sequential_gen_rnd8(ctr_buf, global_OT_ptr, Tptr, iters, m_nBaseOTs, seedkeyptr);
+#else
 	for (uint64_t k = 0, b; k < m_nBaseOTs; k++) {
 		*counter = global_OT_ptr;
 		for (b = 0; b < iters; b++, (*counter)++, Tptr += AES_BYTES) {
@@ -88,6 +92,7 @@ void OTExtSnd::BuildQMatrix(CBitVector* T, uint64_t OT_ptr, uint64_t numblocks, 
 		cout << (dec) << " (" << (*counter)-iters << ")" <<endl;
 #endif
 	}
+#endif
 	free(ctr_buf);
 }
 

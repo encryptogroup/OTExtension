@@ -134,7 +134,6 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 				Ttmp.Transpose(wd_size_bits, OTsPerIteration);
 				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
 			}
-
 #ifdef OTTiming
 			gettimeofday(&tempEnd, NULL);
 			totalChkTime += getMillies(tempStart, tempEnd);
@@ -461,14 +460,15 @@ void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
 		for(uint32_t i = 0; i < BUFFER_OT_KEYS; i++) {
 			//base_ots_snd_t* tmp = (base_ots_snd_t*) malloc(sizeof(base_ots_snd_t));
 			tmp_keys = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs * nsndvals);
-			for(uint32_t j = 0; j < m_nBaseOTs; j++) {
+			/*for(uint32_t j = 0; j < m_nBaseOTs; j++) {
 				memcpy(buf + j * nsndvals * secparambytes, X0.GetArr() + (i * m_nBaseOTs + j) * secparambytes, secparambytes);
 				memcpy(buf + (j * nsndvals + 1) * secparambytes, X1.GetArr() + (i * m_nBaseOTs + j) * secparambytes, secparambytes);
-			}
+			}*/
+			memcpy(buf, X0.GetArr() + secparambytes * m_nBaseOTs * i, secparambytes * m_nBaseOTs);
+			memcpy(buf + secparambytes * m_nBaseOTs, X1.GetArr() + secparambytes * m_nBaseOTs * i, secparambytes * m_nBaseOTs);
 			InitAESKey(tmp_keys, buf, nsndvals * m_nBaseOTs, m_cCrypt);
 			m_tBaseOTKeys.push_back(tmp_keys);
 		}
-
 
 		free(buf);
 		X0.delCBitVector();

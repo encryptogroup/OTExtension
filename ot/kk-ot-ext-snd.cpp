@@ -12,9 +12,12 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	assert(m_nSndVals <= m_nBaseOTs);
 	set_internal_sndvals(m_nSndVals, m_nBitLength);
 
-	uint32_t choicecodebitlen = ceil_log2(m_nint_sndvals);
+//	uint32_t choicecodebitlen = ceil_log2(m_nint_sndvals);
+	uint32_t int_choicecodebits = ceil_log2(m_nint_sndvals);
+	uint32_t ext_choicecodebits = ceil_log2(m_nSndVals);
+	uint32_t diff_choicecodes = int_choicecodebits / ext_choicecodebits;
 	uint64_t myStartPos = id * myNumOTs;
-	uint64_t myStartPos1ooN = ceil_divide(myStartPos, choicecodebitlen);
+	uint64_t myStartPos1ooN = ceil_divide(myStartPos, diff_choicecodes);
 
 	uint64_t wd_size_bits = m_nBlockSizeBits;
 	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
@@ -26,9 +29,9 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	//TODO some re-formating of myNumOTs due to 1ooN OT
-	uint64_t lim = myStartPos1ooN + ceil_divide(myNumOTs, choicecodebitlen);
+	uint64_t lim = myStartPos1ooN + ceil_divide(myNumOTs, diff_choicecodes);
 
-	if(myStartPos1ooN * choicecodebitlen> m_nOTs) {
+	if(myStartPos1ooN * diff_choicecodes> m_nOTs) {
 		cerr << "Thread " << id << " not doing any work to align to window size " << endl;
 		return true;
 	}
@@ -51,7 +54,7 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 	vSnd = new CBitVector[m_nint_sndvals];
 	for (uint32_t i = 0; i < m_nint_sndvals; i++) {
-		vSnd[i].Create(OTsPerIteration * choicecodebitlen * m_nBitLength);
+		vSnd[i].Create(OTsPerIteration * diff_choicecodes * m_nBitLength);
 	}
 
 	// Contains the parts of the V matrix
@@ -164,7 +167,6 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 void KKOTExtSnd::ComputeBaseOTs(field_type ftype) {
 	m_cBaseOT = new NaorPinkas(m_cCrypt, ftype);
 	ComputePKBaseOTs();
-	//m_nSndVals = 16; //TODO hack!
 	delete m_cBaseOT;
 }
 
@@ -178,7 +180,10 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 	uint64_t wd_size_bytes = m_nBlockSizeBytes;//1 << (ceil_log2(m_nBaseOTs) - 3);
 	uint32_t u;
 	uint32_t aes_key_bytes = m_cCrypt->get_aes_key_bytes();
-	uint32_t choicebitlen = ceil_log2(m_nint_sndvals);
+
+	uint32_t int_choicecodebits = ceil_log2(m_nint_sndvals);
+	uint32_t ext_choicecodebits = ceil_log2(m_nSndVals);
+	uint32_t diff_choicecodes = int_choicecodebits / ext_choicecodebits;
 
 	uint64_t* Qptr = (uint64_t*) Q.GetArr();
 
@@ -276,7 +281,7 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 
 	//TODO: difference is in here!! (could be solved by giving the bit-length as parameter in the function call)
 	for (uint32_t u = 0; u < m_nint_sndvals; u++) {
-		m_fMaskFct->expandMask(&snd_buf[u], seedbuf[u].GetArr(), 0, OT_len, m_nBitLength * choicebitlen, m_cCrypt);
+		m_fMaskFct->expandMask(&snd_buf[u], seedbuf[u].GetArr(), 0, OT_len, m_nBitLength * diff_choicecodes, m_cCrypt);
 		//cout << "Mask " << u << ": ";
 		//snd_buf[u].PrintHex();
 	}
@@ -296,8 +301,10 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len, channel* chan) {
 	//m_fMaskFct->Mask(OT_ptr, OT_len, m_vValues, snd_buf, m_eSndOTFlav);
 
-	uint32_t choicecodebits = ceil_log2(m_nint_sndvals);
-	uint64_t valsize = bits_in_bytes(OT_len * m_nBitLength * choicecodebits);
+	uint32_t int_choicecodebits = ceil_log2(m_nint_sndvals);
+	uint32_t ext_choicecodebits = ceil_log2(m_nSndVals);
+	uint32_t diff_choicecodes = int_choicecodebits / ext_choicecodebits;
+	uint64_t valsize = bits_in_bytes(OT_len * m_nBitLength * diff_choicecodes);
 	uint64_t bufsize;
 	uint8_t* buf;
 	uint32_t startval, endval;
@@ -312,16 +319,17 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 		endval = m_nint_sndvals;
 		//hack: extract the delta from the masking function and set m_vValues[0] randomly and m_vValues[1] = m_vValues[0] \oplus Delta
 		// snd_buf[1] is modified and has to be XORed with m_vValues[1] to revert to the original value
-		m_fMaskFct->Mask(OT_ptr*choicecodebits, OT_len*choicecodebits, m_vValues, snd_buf, m_eSndOTFlav);
-		cout << "OT ptr = " << OT_ptr*choicecodebits << ", OT_len = " << OT_len*choicecodebits << endl;
-		snd_buf[1].XORBits(m_vValues[1]->GetArr() + bits_in_bytes(OT_ptr*choicecodebits*m_nBitLength), 0, OT_len*choicecodebits * m_nBitLength);
+		//TODO: test again due to diff_choicecodes instead of int_choicecodes
+		m_fMaskFct->Mask(OT_ptr*diff_choicecodes, OT_len*diff_choicecodes, m_vValues, snd_buf, m_eSndOTFlav);
+		snd_buf[1].XORBits(m_vValues[1]->GetArr() + bits_in_bytes(OT_ptr*diff_choicecodes*m_nBitLength), 0, OT_len*diff_choicecodes * m_nBitLength);
 	} else if(m_eSndOTFlav == Snd_R_OT) {
 		bufsize = valsize * (m_nint_sndvals - 2);
 		startval = 1;
 		endval = m_nint_sndvals - 1;
 		//Define the X0 values as the output of 0 and the X(m_nSndVals-1) values as output of m_nint_sndvals-1 (only 1 values)
-		m_vValues[0]->SetBytes(snd_buf[0].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
-		m_vValues[m_nSndVals - 1]->SetBytes(snd_buf[m_nint_sndvals-1].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
+		//TODO: test again due to diff_choicecodes instead of int_choicecodes
+		m_vValues[0]->SetBytes(snd_buf[0].GetArr(), bits_in_bytes(OT_ptr * diff_choicecodes * m_nBitLength), valsize);
+		m_vValues[m_nSndVals - 1]->SetBytes(snd_buf[m_nint_sndvals-1].GetArr(), bits_in_bytes(OT_ptr * diff_choicecodes * m_nBitLength), valsize);
 	}
 
 	buf = (uint8_t*) malloc(bufsize);
@@ -332,23 +340,28 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 	//m_vValues[1]->SetBytes(snd_buf[m_nint_sndvals-1].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
 
 #ifdef DEBUG_KK_OTBREAKDOWN
-	cout << endl << "X0: ";
-	m_vValues[0].PrintHex(0, valsize);
-	cout << "X1: ";
-	m_vValues[1].PrintHex(0, valsize);
+	cout << endl;
+	for(uint32_t i = 0; i < m_nSndVals; i++) {
+		cout << "X" << i<< ": ";
+		m_vValues[i]->PrintHex(0, valsize);
+	}
 #endif
 
 	uint8_t* tmpbuf = (uint8_t*) malloc(bits_in_bytes(m_nBitLength));
 	for(uint32_t i = startval; i < endval; i++) {//iteration from 1 to N
 		tmpmask.Reset();
-		for(uint32_t j = 0; j < choicecodebits; j++) { //iteration over all bit positions
+		for(uint32_t j = 0; j < diff_choicecodes; j++) { //iteration over all bit positions
 			//write the value of snd_buf[0] or snd_buf[1] in every choicecodebits position
-			snd_buf_ptr = m_vValues[((i>>j) & (m_nSndVals-1))];
+			snd_buf_ptr = m_vValues[((i>>(j*ext_choicecodebits)) & (m_nSndVals-1))];
+			//cout << "Taking value " << ((i>>(j*ext_choicecodebits)) & (m_nSndVals-1)) << " for i = " << i << endl;
+
 			for(uint32_t o = 0; o < OT_len; o++) { //iterations over all OTs
+				//reset tmpbuf
 				memset(tmpbuf, 0, bits_in_bytes(m_nBitLength));
-				snd_buf_ptr->GetBits(tmpbuf, (OT_ptr+o)*choicecodebits*m_nBitLength+j*m_nBitLength, m_nBitLength);
-				tmpmask.SetBits(tmpbuf, o*choicecodebits*m_nBitLength+j*m_nBitLength, m_nBitLength);
-				//tmpmask.SetBit(i*choicecodebits + o, snd_buf_ptr->GetBit(i*choicecodebits + o));
+				//get the bits of the required OT. TODO: adapt the j when the quotient is not an int
+				snd_buf_ptr->GetBits(tmpbuf, (OT_ptr+o)*diff_choicecodes*m_nBitLength+j*m_nBitLength, m_nBitLength);
+				//write the copied bits into tmpmask for later XORing
+				tmpmask.SetBits(tmpbuf, o*diff_choicecodes*m_nBitLength+j*m_nBitLength, m_nBitLength);
 			}
 		}
 #ifdef DEBUG_KK_OTBREAKDOWN

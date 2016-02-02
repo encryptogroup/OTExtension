@@ -380,11 +380,8 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 		}
 
 		for (uint64_t j = 0; j < otlen && i < NumOTs; j++, i++) {
-		//	if(choicecodebits == 1) {
-			//	tmpchoice = m_vChoices->GetBitNoMask(i);
-			//} else {
 			tmpchoice = m_vChoices->Get<uint32_t>(i * choicecodebits, choicecodebits);
-			//}
+
 			Xc = &vRcvX[tmpchoice];
 			Xc->GetBits(tempXc, j * m_nBitLength, m_nBitLength);
 

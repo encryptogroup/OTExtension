@@ -14,17 +14,20 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	set_internal_sndvals(m_nSndVals, m_nBitLength);
 
-	uint32_t choicecodebitlen = ceil_log2(m_nint_sndvals);
+	//uint32_t choicecodebitlen = ceil_log2(m_nint_sndvals);
+	uint32_t int_choicecodebits = ceil_log2(m_nint_sndvals);
+	uint32_t ext_choicecodebits = ceil_log2(m_nSndVals);
+	uint32_t diff_choicecodes = int_choicecodebits / ext_choicecodebits;
 
 	uint64_t myStartPos = id * myNumOTs;
-	uint64_t myStartPos1ooN = ceil_divide(myStartPos, choicecodebitlen);
+	uint64_t myStartPos1ooN = ceil_divide(myStartPos, diff_choicecodes);
 	uint64_t wd_size_bits = m_nBlockSizeBits;
 
 	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	//TODO some re-formating of myNumOTs due to 1ooN OT
-	uint64_t lim = myStartPos1ooN + ceil_divide(myNumOTs, choicecodebitlen);
+	uint64_t lim = myStartPos1ooN + ceil_divide(myNumOTs, diff_choicecodes);
 
-	if(myStartPos1ooN * choicecodebitlen> m_nOTs) {
+	if(myStartPos1ooN * diff_choicecodes > m_nOTs) {
 		cerr << "Thread " << id << " not doing any work to align to window size " << endl;
 		return true;
 	}
@@ -59,7 +62,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	queue<mask_block*> mask_queue;
 
 	CBitVector maskbuf;
-	maskbuf.Create(m_nBitLength * OTwindow * choicecodebitlen);
+	maskbuf.Create(m_nBitLength * OTwindow * diff_choicecodes);
 
 	//Choice bits corresponding to the codeword
 	CBitVector choicecodes(m_nCodeWordBits * m_nCodeWordBits);
@@ -236,7 +239,9 @@ void KKOTExtRec::KKHashValues(CBitVector& T, CBitVector& seedbuf, CBitVector* ma
 	uint64_t* tmpbuf = (uint64_t*) calloc(PadToMultiple(bits_in_bytes(m_nBitLength), sizeof(uint64_t)), 1);
 	uint8_t* tmpbufb = (uint8_t*) calloc(bits_in_bytes(m_nBitLength), 1);
 
-	uint32_t choicecodebits = ceil_log2(m_nint_sndvals);
+	uint32_t int_choicecodebits = ceil_log2(m_nint_sndvals);
+	uint32_t ext_choicecodebits = ceil_log2(m_nSndVals);
+	uint32_t diff_choicecodes = int_choicecodebits / ext_choicecodebits;
 
 #ifdef USE_PIPELINED_AES_NI
 	AES_KEY tk_aeskey;
@@ -284,7 +289,7 @@ void KKOTExtRec::KKHashValues(CBitVector& T, CBitVector& seedbuf, CBitVector* ma
 		}
 		//TODO: difference is in here!! (could be solved by giving the bit-length as parameter in the function call)
 		//m_fMaskFct->expandMask(m_vTempOTMasks, seedbuf.GetArr(), OT_ptr, OT_len, m_nBitLength, m_cCrypt);
-		m_fMaskFct->expandMask(maskbuf, seedbuf.GetArr(), 0, OT_len, m_nBitLength * choicecodebits, m_cCrypt);
+		m_fMaskFct->expandMask(maskbuf, seedbuf.GetArr(), 0, OT_len, m_nBitLength * diff_choicecodes, m_cCrypt);
 
 	} else {
 		for(uint64_t i = 0; i < OT_len; i++, Tptr += m_nBlockSizeBytes) {
@@ -328,7 +333,10 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queu
 	CBitVector mask;
 	mask_block* tmpblock;
 	uint32_t tmpchoice;
-	uint32_t choicecodebits = ceil_log2(m_nint_sndvals);
+	uint32_t int_choicecodebits = ceil_log2(m_nint_sndvals);
+	uint32_t ext_choicecodebits = ceil_log2(m_nSndVals);
+	uint32_t diff_choicecodes = int_choicecodebits / ext_choicecodebits;
+
 	uint32_t tmpmask;
 	uint8_t* tmpmaskbuf;
 	uint32_t startval, endval;
@@ -344,7 +352,7 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queu
 		endval = m_nint_sndvals - 1;
 	}
 
-	tmpmaskbuf = (uint8_t*) malloc(bits_in_bytes(choicecodebits * m_nBitLength));
+	tmpmaskbuf = (uint8_t*) malloc(bits_in_bytes(diff_choicecodes * m_nBitLength));
 
 	while(chan->data_available() && !(mask_queue->empty())) {
 		tmpblock = mask_queue->front();
@@ -355,55 +363,69 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queu
 		//cout << " oten = " << otlen << ", tmpblock otlen = " << tmpblock.otlen << endl;
 		assert(otlen == tmpblock->otlen);
 
-		valsize = bits_in_bytes(otlen * m_nBitLength * choicecodebits);
+		valsize = bits_in_bytes(otlen * m_nBitLength * diff_choicecodes);
 		bufsize = valsize * m_nint_sndvals;
 
 		vRcv.AttachBuf(tmpbuf, bufsize);
 
-		m_vRet->Copy(*tmpblock->buf, bits_in_bytes(choicecodebits * startotid * m_nBitLength), valsize);
+		m_vRet->Copy(*tmpblock->buf, bits_in_bytes(diff_choicecodes * startotid * m_nBitLength), valsize);
 #ifdef DEBUG_KK_OTBREAKDOWN
 		cout << "Base: ";
-		m_vRet.PrintHex(0, bufsize);
+		m_vRet->PrintHex(0, bufsize);
 #endif
 
 		for(uint32_t i = 0; i < otlen; i++) {
-			tmpchoice = m_vChoices->Get<uint32_t>((startotid + i) * choicecodebits, choicecodebits);
+			tmpchoice = m_vChoices->Get<uint32_t>((startotid + i) * int_choicecodebits, int_choicecodebits);
 #ifdef DEBUG_KK_OTBREAKDOWN
 			cout << "choice in " <<i << "-th 1-out-of-" << m_nint_sndvals << " OT: " << tmpchoice << endl;
 #endif
 			if(tmpchoice >= startval && tmpchoice != endval) {
 				//tmpmask = vRcv.Get<uint32_t>((tmpchoice-1) * valsize * 8 + i * choicecodebits*m_nBitLength, choicecodebits*m_nBitLength);
-				vRcv.GetBits(tmpmaskbuf, (tmpchoice-startval) * valsize * 8 + i * choicecodebits*m_nBitLength, choicecodebits*m_nBitLength);
+				vRcv.GetBits(tmpmaskbuf, (tmpchoice-startval) * valsize * 8 + i * diff_choicecodes*m_nBitLength, diff_choicecodes*m_nBitLength);
 #ifdef DEBUG_KK_OTBREAKDOWN
-				cout << "Accessing bit-address " << (tmpchoice-1) * valsize * 8 + i * choicecodebits*m_nBitLength << " with bit-length " << choicecodebits*m_nBitLength << endl;
+				cout << "Accessing bit-address " << (tmpchoice-1) * valsize * 8 + i * diff_choicecodes*m_nBitLength << " with bit-length " << diff_choicecodes*m_nBitLength << endl;
 #endif
 			}
 			else {
-				memset(tmpmaskbuf, 0, bits_in_bytes(choicecodebits * m_nBitLength));
+				memset(tmpmaskbuf, 0, bits_in_bytes(diff_choicecodes * m_nBitLength));
 			}
 
 #ifdef DEBUG_KK_OTBREAKDOWN
+
+
 			cout << "Mask " << tmpchoice << ": "<< (hex);
-			for(uint32_t j = 0; j < bits_in_bytes(choicecodebits * m_nBitLength); j++)
-				cout << (uint32_t) tmpmaskbuf[j];
+			for(uint32_t j = 0; j < bits_in_bytes(diff_choicecodes * m_nBitLength); j++)
+				cout << (uint32_t) m_vRet->Get<uint8_t>((startotid + i) * diff_choicecodes * m_nBitLength + j*8, 8);
 			cout << (dec) << endl;
 			//tmpmask ^= tmpblock.Get<uint32_t>(i * choicecodebits, choicecodebits);
 			//m_vRet.XOR(tmpmask, (startotid + i), choicecodebits);
-			cout << "startotid = " << startotid << ", start = " << (startotid + i) * choicecodebits * m_nBitLength << ", len = " <<  choicecodebits * m_nBitLength << endl;
+
+			cout << "Recv " << tmpchoice << ": "<< (hex);
+			for(uint32_t j = 0; j < bits_in_bytes(diff_choicecodes * m_nBitLength); j++)
+				cout << (uint32_t) tmpmaskbuf[j];
+			cout << (dec) << endl;
+			cout << "startotid = " << startotid << ", start = " << (startotid + i) * diff_choicecodes * m_nBitLength << ", len = " <<  diff_choicecodes * m_nBitLength << endl;
 #endif
 			//m_vRet.XORBytes(tmpmaskbuf, bits_in_bytes((startotid + i) * choicecodebits * m_nBitLength), bits_in_bytes(choicecodebits * m_nBitLength));
-			m_vRet->XORBits(tmpmaskbuf, (startotid + i) * choicecodebits * m_nBitLength, choicecodebits * m_nBitLength);
+			m_vRet->XORBits(tmpmaskbuf, (startotid + i) * diff_choicecodes * m_nBitLength, diff_choicecodes * m_nBitLength);
 
-		}
 #ifdef DEBUG_KK_OTBREAKDOWN
-		cout << endl << "Xc: ";
-		m_vRet.PrintHex(0, valsize);
+			cout << "Val " << tmpchoice << ": "<< (hex);
+			for(uint32_t j = 0; j < bits_in_bytes(diff_choicecodes * m_nBitLength); j++)
+				cout << (uint32_t) m_vRet->Get<uint8_t>((startotid + i) * diff_choicecodes * m_nBitLength + j*8, 8);
+			cout << (dec) << endl;
 #endif
+		}
+
 		mask_queue->pop();
 		tmpblock->buf->delCBitVector();
 		free(buf);
 	}
 	free(tmpmaskbuf);
+#ifdef DEBUG_KK_OTBREAKDOWN
+	cout << "Final output: ";
+	m_vRet->PrintHex();
+#endif
 }
 
 void KKOTExtRec::KKMaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t numblocks) {

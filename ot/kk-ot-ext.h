@@ -26,7 +26,7 @@ protected:
 				min_cost = tmp_cost;
 			}
 		}
-		m_nint_sndvals = min_int;
+		m_nint_sndvals = 16; //min_int;
 		cout << "Internally computing 1-out-of-" << m_nint_sndvals << " for external " << ext_sndvals << endl;
 	}
 	uint32_t m_nint_sndvals;

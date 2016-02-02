@@ -235,10 +235,23 @@ void KKOTExtRec::KKHashValues(CBitVector& T, CBitVector& seedbuf, CBitVector* ma
 
 	uint32_t choicecodebits = ceil_log2(m_nSndVals);
 
+#ifdef USE_PIPELINED_AES_NI
+	AES_KEY tk_aeskey;
+	block inblock, outblock;
+	tk_aeskey.rounds = 14;
+
+	uint64_t* global_OT_ptr = (uint64_t*) inbuf;
+	*global_OT_ptr = OT_ptr + m_nCounter;
+#else
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
+#endif
 
 	if(m_eSndOTFlav != Snd_GC_OT) {
+#ifdef USE_PIPELINED_AES_NI
+		for (uint64_t i = 0; i < OT_len; i++, Tptr += m_nBlockSizeBytes, bufptr += aes_key_bytes, (*global_OT_ptr)++) {
+#else
 		for (uint64_t i = 0; i < OT_len; i++, Tptr += m_nBlockSizeBytes, bufptr += aes_key_bytes, global_OT_ptr++) {
+#endif
 #ifdef DEBUG_OT_HASH_IN
 			cout << "Hash-In for i = " << global_OT_ptr << ": " << (hex);
 			for(uint32_t p = 0; p < rowbytelen; p++)
@@ -246,8 +259,11 @@ void KKOTExtRec::KKHashValues(CBitVector& T, CBitVector& seedbuf, CBitVector* ma
 				cout << (dec) << endl;
 #endif
 
-#ifdef FIXED_KEY_AES_HASHING
-			FixedKeyHashing(m_kCRFKey, bufptr, Tptr, hash_buf, i, ceil_divide(m_nBaseOTs, 8), m_cCrypt);
+#ifdef USE_PIPELINED_AES_NI
+			AES_256_Key_Expansion(Tptr, &tk_aeskey);
+			inblock = _mm_loadu_si128((__m128i const*)(resbuf));
+			AES_encryptC(&inblock, &outblock, &tk_aeskey);
+			_mm_storeu_si128((__m128i *)(bufptr), outblock);
 #else
 			memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
 			memcpy(inbuf+sizeof(uint64_t), Tptr, rowbytelen);

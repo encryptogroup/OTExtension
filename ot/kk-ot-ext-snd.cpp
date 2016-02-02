@@ -185,13 +185,48 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 	uint64_t* tmpbuf = (uint64_t*) calloc(PadToMultiple(bits_in_bytes(m_nBitLength), sizeof(uint64_t)), 1);
 	uint8_t* tmpbufb = (uint8_t*) calloc(bits_in_bytes(m_nBitLength), 1);
 
-	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
+#ifdef USE_PIPELINED_AES_NI
+	AES_KEY tk_aeskey;
+	block inblock, outblock;
+	tk_aeskey.rounds = 14;
+	uint32_t maskbytesize = rowbytelen * m_nSndVals;
+	CBitVector refmask(maskbytesize * 8);
+	for(u = 0; u < m_nSndVals; u++) {
+		refmask.Copy(m_tBaseOTChoices.front()->GetArr(), u*rowbytelen, rowbytelen);
+		refmask.ANDBytes((uint8_t*) m_vCodeWords[u], u*rowbytelen, rowbytelen);
+	}
+	CBitVector mask(maskbytesize * 8);
+	uint64_t* global_OT_ptr = (uint64_t*) inbuf;
+	*global_OT_ptr = OT_ptr + m_nCounter;
+#else
 	CBitVector mask(m_nCodeWordBits);
+	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
+
+#endif
+
 
 	for (u = 0; u < m_nSndVals; u++)
 		sbp[u] = seedbuf[u].GetArr();
 
+
+#ifdef USE_PIPELINED_AES_NI
+	for (uint64_t i = 0; i < OT_len; (*global_OT_ptr)++, i++, Qptr += 2) {
+		mask.Copy(refmask.GetArr(), 0, maskbytesize);
+		for (u = 0; u < m_nSndVals; u++) {
+			mask.XORBytes(Q.GetArr() + i * rowbytelen, u*rowbytelen, rowbytelen);
+
+			AES_256_Key_Expansion(mask.GetArr() + u*rowbytelen, &tk_aeskey);
+			inblock = _mm_loadu_si128((__m128i const*)(resbuf));
+			AES_encryptC(&inblock, &outblock, &tk_aeskey);
+			_mm_storeu_si128((__m128i *)(sbp[u]), outblock);
+
+			sbp[u]+=aes_key_bytes;
+		}
+	}
+#else
 	for (uint64_t i = 0; i < OT_len; global_OT_ptr++, i++, Qptr += 2) {
+
+
 		for (u = 0; u < m_nSndVals; u++) {
 			mask.Copy(m_tBaseOTChoices.front()->GetArr(), 0, rowbytelen);
 			mask.ANDBytes((uint8_t*) m_vCodeWords[u], 0, rowbytelen);
@@ -207,9 +242,6 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 #endif
 
 			if(m_eSndOTFlav != Snd_GC_OT) {
-#ifdef FIXED_KEY_AES_HASHING
-				FixedKeyHashing(m_kCRFKey, sbp[u], (BYTE*) Qptr, hash_buf, i, hashinbytelen, m_cCrypt);
-#else
 				memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
 				//memcpy(inbuf+sizeof(uint64_t), Q.GetArr() + i * wd_size_bytes, rowbytelen);
 				memcpy(inbuf+sizeof(uint64_t), mask.GetArr(), rowbytelen);
@@ -225,7 +257,6 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 					//m_vTempOTMasks.SetBytes(tmpbufb, (uint64_t) (OT_ptr + i) * aes_key_bytes, (uint64_t) aes_key_bytes);
 				//m_vValues[u].SetBytes(Q.GetArr() + i * wd_size_bytes, (OT_ptr + i)* wd_size_bytes, rowbytelen);
 			}
-#endif
 
 #ifdef DEBUG_OT_HASH_OUT
 			cout << "Hash-Out for i = " << global_OT_ptr << ", u = " << u << ": " << (hex);
@@ -236,6 +267,7 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 			sbp[u]+=m_cCrypt->get_aes_key_bytes();
 		}
 	}
+#endif
 
 	//TODO: difference is in here!! (could be solved by giving the bit-length as parameter in the function call)
 	for (uint32_t u = 0; u < m_nSndVals; u++) {

@@ -392,7 +392,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 			m_vRet->GetBits(tempRet, i * m_nBitLength, m_nBitLength);
 			for (uint64_t k = 0; k < bytelen; k++) {
 				if (tempXc[k] != tempRet[k]) {
-					cout << "Error at position i = " << i << ", k = " << k << ", with X" << (hex) << (uint32_t) m_vChoices->GetBitNoMask(i) <<
+					cout << "Error at position i = " << i << ", k = " << k << ", with X" << (hex) << tmpchoice <<
 							" = " << (uint32_t) tempXc[k] << " and res = " << (uint32_t) tempRet[k] << ". All values: " <<endl;
 					for(uint64_t k = 0, ctr=0; k < nsndvals; k++) {
 						tmpret64 = vRcvX[k].Get<uint64_t>(i * m_nBitLength, m_nBitLength);

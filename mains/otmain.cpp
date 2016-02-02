@@ -314,8 +314,6 @@ int main(int argc, char** argv)
 			X[i] = new CBitVector();
 			X[i]->Create(numOTs, bitlength, crypt);
 		}
-		//X1.Create(numOTs, bitlength, crypt);
-		//X2.Create(numOTs, bitlength, crypt);
 
 #ifndef BATCH
 		cout << getProt(m_eProt) << " Sender performing " << numOTs << " " << getSndFlavor(stype) << " / " <<

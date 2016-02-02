@@ -215,7 +215,7 @@ void OTExtSnd::HashValues(CBitVector* Q, CBitVector* seedbuf, CBitVector* snd_bu
 				memcpy(inbuf+sizeof(uint64_t), Q->GetArr() + i * wd_size_bytes, rowbytelen);
 				m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
 				memcpy(sbp[u], resbuf, aes_key_bytes);
-
+#endif
 			} else {
 
 				BitMatrixMultiplication(tmpbufb, bits_in_bytes(m_nBitLength), Q->GetArr() + i * wd_size_bytes, m_nBaseOTs, mat_mul, tmpbuf);
@@ -223,8 +223,8 @@ void OTExtSnd::HashValues(CBitVector* Q, CBitVector* seedbuf, CBitVector* snd_bu
 				snd_buf[u].SetBits(tmpbufb, i * m_nBitLength, m_nBitLength);
 					//m_vTempOTMasks.SetBytes(tmpbufb, (uint64_t) (OT_ptr + i) * aes_key_bytes, (uint64_t) aes_key_bytes);
 				//m_vValues[u].SetBytes(Q.GetArr() + i * wd_size_bytes, (OT_ptr + i)* wd_size_bytes, rowbytelen);
+
 			}
-#endif
 
 #ifdef DEBUG_OT_HASH_OUT
 			cout << "Hash-Out for i = " << global_OT_ptr << ", u = " << u << ": " << (hex);

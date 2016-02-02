@@ -31,8 +31,8 @@ class IKNPOTExtRec : public OTExtRec {
 	 * Output: was the execution successful?
 	 */
 public:
-	IKNPOTExtRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread) {
-		InitRec(nSndVals, crypt, rcvthread, sndthread, crypt->get_seclvl().symbits);
+	IKNPOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread) {
+		InitRec(crypt, rcvthread, sndthread, crypt->get_seclvl().symbits);
 	}
 	;
 

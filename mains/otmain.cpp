@@ -131,7 +131,6 @@ listen_failure:
 
 void InitOTSender(const char* address, int port, crypto* crypt)
 {
-	int nSndVals = 2;
 #ifdef OTTiming
 	timeval np_begin, np_end;
 #endif
@@ -151,11 +150,11 @@ void InitOTSender(const char* address, int port, crypto* crypt)
 	sndthread->Start();
 
 	switch(m_eProt) {
-		case ALSZ: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
-		case IKNP: sender = new IKNPOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
-		case NNOB: sender = new NNOBOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
-		case KK: sender = new KKOTExtSnd(nSndVals, crypt, rcvthread, sndthread); break;
-		default: sender = new ALSZOTExtSnd(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
+		case ALSZ: sender = new ALSZOTExtSnd(crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
+		case IKNP: sender = new IKNPOTExtSnd(crypt, rcvthread, sndthread); break;
+		case NNOB: sender = new NNOBOTExtSnd(crypt, rcvthread, sndthread); break;
+		case KK: sender = new KKOTExtSnd(crypt, rcvthread, sndthread); break;
+		default: sender = new ALSZOTExtSnd(crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 
 	if(m_bUseMinEntCorAssumption)
@@ -165,8 +164,6 @@ void InitOTSender(const char* address, int port, crypto* crypt)
 
 void InitOTReceiver(const char* address, int port, crypto* crypt)
 {
-	int nSndVals = 2;
-
 	m_nPort = (USHORT) port;
 	m_nAddr = address;
 
@@ -183,11 +180,11 @@ void InitOTReceiver(const char* address, int port, crypto* crypt)
 	sndthread->Start();
 
 	switch(m_eProt) {
-		case ALSZ: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
-		case IKNP: receiver = new IKNPOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
-		case NNOB: receiver = new NNOBOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
-		case KK: receiver = new KKOTExtRec(nSndVals, crypt, rcvthread, sndthread); break;
-		default: receiver = new ALSZOTExtRec(nSndVals, crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
+		case ALSZ: receiver = new ALSZOTExtRec(crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
+		case IKNP: receiver = new IKNPOTExtRec(crypt, rcvthread, sndthread); break;
+		case NNOB: receiver = new NNOBOTExtRec(crypt, rcvthread, sndthread); break;
+		case KK: receiver = new KKOTExtRec(crypt, rcvthread, sndthread); break;
+		default: receiver = new ALSZOTExtRec(crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 
 
@@ -197,20 +194,19 @@ void InitOTReceiver(const char* address, int port, crypto* crypt)
 }
 
 
-BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength,
+BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndvals,
 		snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt)
 {
 	bool success = FALSE;
 
 	m_vSocket->reset_bytes_sent();
 	m_vSocket->reset_bytes_received();
-	int nSndVals = 2; //Perform 1-out-of-2 OT
 	timeval ot_begin, ot_end;
 
 	
 	gettimeofday(&ot_begin, NULL);
 	// Execute OT sender routine 	
-	success = sender->send((uint32_t) numOTs, (uint32_t) bitlength, &X1, &X2, stype, rtype, m_nNumOTThreads, m_fMaskFct);
+	success = sender->send(numOTs, bitlength, nsndvals, X, stype, rtype, m_nNumOTThreads, m_fMaskFct);
 	gettimeofday(&ot_end, NULL);
 
 #ifndef BATCH
@@ -225,7 +221,7 @@ BOOL ObliviouslySend(CBitVector& X1, CBitVector& X2, int numOTs, int bitlength,
 	return success;
 }
 
-BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength,
+BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, uint32_t nsndvals,
 		snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt)
 {
 	bool success = FALSE;
@@ -237,7 +233,7 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 	timeval ot_begin, ot_end;
 	gettimeofday(&ot_begin, NULL);
 	// Execute OT receiver routine 	
-	success = receiver->receive(numOTs, bitlength, &choices, &ret, stype, rtype, m_nNumOTThreads, m_fMaskFct);
+	success = receiver->receive(numOTs, bitlength, nsndvals, &choices, &ret, stype, rtype, m_nNumOTThreads, m_fMaskFct);
 	gettimeofday(&ot_end, NULL);
 
 #ifndef BATCH
@@ -268,6 +264,8 @@ int main(int argc, char** argv)
 
 	uint32_t runs = 1;
 
+	uint32_t nsndvals = 2;
+
 	//Use elliptic curve cryptography in the base-OTs
 	m_eFType = ECC_FIELD;
 	//The symmetric security parameter (80, 112, 128)
@@ -289,7 +287,7 @@ int main(int argc, char** argv)
 	m_eProt = IKNP;
 
 	read_test_options(&argc, &argv, &m_nPID, &numOTs, &bitlength, &m_nSecParam, addr, &port, &m_eProt, &stype, &rtype,
-			&m_nNumOTThreads, &m_nBaseOTs, &m_nChecks, &m_bUseMinEntCorAssumption, &runs);
+			&m_nNumOTThreads, &m_nBaseOTs, &m_nChecks, &nsndvals, &m_bUseMinEntCorAssumption, &runs);
 
 	/*int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_t* numots, uint32_t* bitlen,
 			uint32_t* secparam, string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
@@ -297,12 +295,13 @@ int main(int argc, char** argv)
 
 	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);
 
-
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
 		InitOTSender(addr->c_str(), port, crypt);
 
-		CBitVector delta, X1, X2;
+		CBitVector delta;
+		CBitVector** X = (CBitVector**) malloc(sizeof(CBitVector*) * nsndvals);
+
 
 		//The masking function with which the values that are sent in the last communication step are processed
 		m_fMaskFct = new XORMasking(bitlength, delta);
@@ -310,9 +309,13 @@ int main(int argc, char** argv)
 		//creates delta as an array with "numOTs" entries of "bitlength" bit-values and fills delta with random values
 		delta.Create(numOTs, bitlength, crypt);
 
-		//Create X1 and X2 as two arrays with "numOTs" entries of "bitlength" bit-values and resets them to 0
-		X1.Create(numOTs, bitlength, crypt);
-		X2.Create(numOTs, bitlength, crypt);
+		//Create the X values as two arrays with "numOTs" entries of "bitlength" bit-values and resets them to 0
+		for(uint32_t i = 0; i < nsndvals; i++) {
+			X[i] = new CBitVector();
+			X[i]->Create(numOTs, bitlength, crypt);
+		}
+		//X1.Create(numOTs, bitlength, crypt);
+		//X2.Create(numOTs, bitlength, crypt);
 
 #ifndef BATCH
 		cout << getProt(m_eProt) << " Sender performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
@@ -321,7 +324,7 @@ int main(int argc, char** argv)
 				runs << " times" << endl;
 #endif
 		for(uint32_t i = 0; i < runs; i++) {
-			ObliviouslySend(X1, X2, numOTs, bitlength, stype, rtype, crypt);
+			ObliviouslySend(X, numOTs, bitlength, nsndvals, stype, rtype, crypt);
 		}
 	}
 	else //Play as OT receiver
@@ -334,7 +337,7 @@ int main(int argc, char** argv)
 		m_fMaskFct = new XORMasking(bitlength);
 
 		//Create the bitvector choices as a bitvector with numOTs entries
-		choices.Create(numOTs, crypt);
+		choices.Create(numOTs * ceil_log2(nsndvals), crypt);
 
 		//Pre-generate the respose vector for the results
 		response.Create(numOTs, bitlength);
@@ -351,7 +354,7 @@ int main(int argc, char** argv)
 				runs << " times" << endl;
 #endif
 		for(uint32_t i = 0; i < runs; i++) {
-			ObliviouslyReceive(choices, response, numOTs, bitlength, stype, rtype, crypt);
+			ObliviouslyReceive(choices, response, numOTs, bitlength, nsndvals, stype, rtype, crypt);
 		}
 	}
 
@@ -364,7 +367,8 @@ int main(int argc, char** argv)
 
 int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_t* numots, uint32_t* bitlen,
 		uint32_t* secparam, string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
-		rec_ot_flavor* rcvflav, uint32_t* nthreads, uint32_t* nbaseots, uint32_t* nchecks, bool* usemecr, uint32_t* runs) {
+		rec_ot_flavor* rcvflav, uint32_t* nthreads, uint32_t* nbaseots, uint32_t* nchecks, uint32_t* N, bool* usemecr,
+		uint32_t* runs) {
 
 	uint32_t int_port = 0, int_prot = 0, int_snd_flav = 0, int_rec_flav = 0;
 
@@ -382,7 +386,8 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 			{ (void*) nbaseots, T_NUM, 'e', "Number of baseots for ALSZ, default 190", false, false },
 			{ (void*) nchecks, T_NUM, 'c', "Number of checks for ALSZ, default 380", false, false },
 			{ (void*) usemecr, T_FLAG, 'm', "Use Min-Entropy Correlation-Robustness Assumption, default: false", false, false },
-			{ (void*) runs, T_NUM, 'u', "Number of repetitions, default: 1", false, false }
+			{ (void*) runs, T_NUM, 'u', "Number of repetitions, default: 1", false, false },
+			{ (void*) N, T_NUM, 'N', "1-oo-N OT extension. Only works in combination with KK13 and needs to be a power of two, default: 2", false, false }
 	};
 
 	if (!parse_options(argcp, argvp, options, sizeof(options) / sizeof(parsing_ctx))) {
@@ -411,6 +416,11 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 	if (int_rec_flav != 0) {
 		assert(int_rec_flav > 0 && int_rec_flav < Rec_OT_LAST);
 		*rcvflav = (rec_ot_flavor) int_rec_flav;
+	}
+
+	if(*N != 2 && (*protocol) != KK) {
+		cout << "The N option can only be used in combination with the KK13 OT. Resetting to N=2" << endl;
+		*N = 2;
 	}
 
 	//delete options;

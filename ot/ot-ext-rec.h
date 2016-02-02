@@ -26,7 +26,7 @@ public:
 
 	OTExtRec(){};
 	virtual ~OTExtRec(){};
-	BOOL receive(uint64_t numOTs, uint64_t bitlength, CBitVector* choices, CBitVector* ret,
+	BOOL receive(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector* choices, CBitVector* ret,
 			snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct);
 
 	virtual void ComputeBaseOTs(field_type ftype) = 0;
@@ -36,8 +36,8 @@ protected:
 
 	virtual BOOL receiver_routine(uint32_t threadid, uint64_t numOTs) = 0;
 
-	void InitRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
-		Init(nSndVals, crypt, rcvthread, sndthread, nbaseOTs, 2*nbaseOTs);
+	void InitRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
+		Init(crypt, rcvthread, sndthread, nbaseOTs, 2*nbaseOTs);
 	}
 	;
 

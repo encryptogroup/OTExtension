@@ -230,10 +230,10 @@ OTExtSnd* InitOTExtSnd(ot_ext_prot m_eProt, uint32_t nbaseots, uint32_t nchecks,
 	uint32_t nsndvals = 2;
 	OTExtSnd* sender;
 	switch(m_eProt) {
-		case ALSZ: sender = new ALSZOTExtSnd(nsndvals, crypt, rcvthread, sndthread, nbaseots, nchecks); break;
-		case IKNP: sender = new IKNPOTExtSnd(nsndvals, crypt, rcvthread, sndthread); break;
-		case NNOB: sender = new NNOBOTExtSnd(nsndvals, crypt, rcvthread, sndthread); break;
-		default: sender = new ALSZOTExtSnd(nsndvals, crypt, rcvthread, sndthread, nbaseots, nchecks); break;
+		case ALSZ: sender = new ALSZOTExtSnd(crypt, rcvthread, sndthread, nbaseots, nchecks); break;
+		case IKNP: sender = new IKNPOTExtSnd(crypt, rcvthread, sndthread); break;
+		case NNOB: sender = new NNOBOTExtSnd(crypt, rcvthread, sndthread); break;
+		default: sender = new ALSZOTExtSnd(crypt, rcvthread, sndthread, nbaseots, nchecks); break;
 	}
 
 	if(enablemecr)
@@ -247,10 +247,10 @@ OTExtRec* InitOTExtRec(ot_ext_prot m_eProt, uint32_t nbaseots, uint32_t nchecks,
 	uint32_t nsndvals = 2;
 	OTExtRec* receiver;
 	switch(m_eProt) {
-		case ALSZ: receiver = new ALSZOTExtRec(nsndvals, crypt, rcvthread, sndthread, nbaseots, nchecks); break;
-		case IKNP: receiver = new IKNPOTExtRec(nsndvals, crypt, rcvthread, sndthread); break;
-		case NNOB: receiver = new NNOBOTExtRec(nsndvals, crypt, rcvthread, sndthread); break;
-		default: receiver = new ALSZOTExtRec(nsndvals, crypt, rcvthread, sndthread, nbaseots, nchecks); break;
+		case ALSZ: receiver = new ALSZOTExtRec(crypt, rcvthread, sndthread, nbaseots, nchecks); break;
+		case IKNP: receiver = new IKNPOTExtRec(crypt, rcvthread, sndthread); break;
+		case NNOB: receiver = new NNOBOTExtRec(crypt, rcvthread, sndthread); break;
+		default: receiver = new ALSZOTExtRec(crypt, rcvthread, sndthread, nbaseots, nchecks); break;
 	}
 
 	if(enablemecr)
@@ -330,7 +330,9 @@ int main(int argc, char** argv)
 
 void run_test_sender(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numthreads,
 		crypto* crypt, OTExtSnd* sender) {
-	CBitVector delta, X1, X2;
+	CBitVector delta;
+	uint32_t nsndvals = 2;
+	CBitVector** X = (CBitVector**) malloc(sizeof(CBitVector*) * nsndvals);
 
 	//The masking function with which the values that are sent in the last communication step are processed
 	XORMasking* m_fMaskFct = new XORMasking(bitlength, delta);
@@ -339,16 +341,24 @@ void run_test_sender(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype, r
 	delta.Create(numots, bitlength, crypt);
 
 	//Create X1 and X2 as two arrays with "numOTs" entries of "bitlength" bit-values and resets them to 0
-	X1.Create(numots, bitlength, crypt);
-	X2.Create(numots, bitlength, crypt);
+	//X1.Create(numots, bitlength, crypt);
+	//X2.Create(numots, bitlength, crypt);
+	for(uint32_t i = 0; i < nsndvals; i++) {
+		X[i] = new CBitVector();
+		X[i]->Create(numots, bitlength, crypt);
+	}
 
-	sender->send(numots, bitlength, &X1, &X2, stype, rtype, numthreads, m_fMaskFct);
+	sender->send(numots, bitlength, nsndvals, X, stype, rtype, numthreads, m_fMaskFct);
 
 	//X1.PrintHex();
 	//X2.PrintHex();
 
-	X1.delCBitVector();
-	X2.delCBitVector();
+	for(uint32_t i = 0; i < nsndvals; i++) {
+		X[i]->delCBitVector();
+	}
+	//free(X);
+	//X1.delCBitVector();
+	//X2.delCBitVector();
 	delta.delCBitVector();
 	delete m_fMaskFct;
 }
@@ -357,7 +367,7 @@ void run_test_sender(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype, r
 void run_test_receiver(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numthreads,
 		crypto* crypt, OTExtRec* receiver) {
 	CBitVector choices, response;
-
+	uint32_t nsndvals = 2;
 	//The masking function with which the values that are sent in the last communication step are processed
 	XORMasking* m_fMaskFct = new XORMasking(bitlength);
 
@@ -373,7 +383,7 @@ void run_test_receiver(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype,
 	 * variable that has to match the version of the sender.
 	*/
 
-	receiver->receive(numots, bitlength, &choices, &response, stype, rtype, numthreads, m_fMaskFct);
+	receiver->receive(numots, bitlength, nsndvals, &choices, &response, stype, rtype, numthreads, m_fMaskFct);
 	delete m_fMaskFct;
 	choices.delCBitVector();
 	response.delCBitVector();

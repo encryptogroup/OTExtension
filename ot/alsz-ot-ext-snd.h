@@ -28,9 +28,9 @@ typedef struct alsz_snd_check_ctx {
 class ALSZOTExtSnd : public OTExtSnd {
 
 public:
-	ALSZOTExtSnd(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseots,
+	ALSZOTExtSnd(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseots,
 			uint32_t nchecks) {
-		InitSnd(nSndVals, crypt, rcvthread, sndthread, nbaseots);
+		InitSnd(crypt, rcvthread, sndthread, nbaseots);
 		m_nChecks = nchecks;
 		m_bDoBaseOTs = false;
 		//m_tBaseOTQ.resize(0);// = new vector<base_ots_rcv_t>();

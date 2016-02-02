@@ -6,15 +6,18 @@
  */
 #include "ot-ext-rec.h"
 
-BOOL OTExtRec::receive(uint64_t numOTs, uint64_t bitlength, CBitVector* choices, CBitVector* ret,
+BOOL OTExtRec::receive(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector* choices, CBitVector* ret,
 		snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* unmaskfct) {
 	m_nOTs = numOTs;
 	m_nBitLength = bitlength;
+	m_nSndVals = nsndvals;
 	m_vChoices = choices;
 	m_vRet = ret;
 	m_eSndOTFlav = stype;
 	m_eRecOTFlav = rtype;
 	m_fMaskFct = unmaskfct;
+
+	assert(pad_to_power_of_two(m_nSndVals) == m_nSndVals);
 
 	return start_receive(numThreads);
 }
@@ -343,23 +346,32 @@ void OTExtRec::ReceiveAndXORCorRobVector(CBitVector& T, uint64_t OT_len, channel
 
 
 BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
-	cout << "Verifying OT" << endl;
-	uint32_t nsndvals = 2;
+	cout << "Verifying 1oo" << m_nSndVals << " OT" << endl;
+	uint32_t nsndvals = m_nSndVals;
+	uint32_t choicecodebits = ceil_log2(m_nSndVals);
 
 	CBitVector* vRcvX = new CBitVector[nsndvals];//(CBitVector*) malloc(sizeof(CBitVector)*m_nSndVals);
-	vRcvX[0].Create(0);
-	vRcvX[1].Create(0);
+	for(uint64_t i = 0; i < nsndvals; i++) {
+		vRcvX[i].Create(0);
+	}
+	//vRcvX[1].Create(0);
 	CBitVector *Xc, *Xn;
 	uint64_t processedOTBlocks, otlen, otstart;
 	uint32_t bytelen = ceil_divide(m_nBitLength, 8);
 	uint8_t* tempXc = (uint8_t*) malloc(bytelen);
-	uint8_t* tempXn = (uint8_t*) malloc(bytelen);
+	//uint8_t* tempXn = (uint8_t*) malloc(bytelen);
+	//uint8_t** tmpXn = (uint8_t**) malloc(nsndvals-1);
 	uint8_t* tempRet = (uint8_t*) malloc(bytelen);
 	uint8_t** buf = (uint8_t**) malloc(sizeof(uint8_t*) * nsndvals);
 	channel* chan = new channel(0, m_cRcvThread, m_cSndThread);
 	uint8_t *tmpbuf;
 	BYTE resp;
+	uint64_t tmpchoice;
+	uint64_t tmpret64;
 
+	/*for(uint32_t i = 0; i < nsndvals-1; i++) {
+		tmpXn[i] = (uint8_t*) malloc(bytelen);
+	}*/
 
 	for (uint64_t i = 0; i < NumOTs;) {
 		for(uint64_t j = 0; j < nsndvals; j++) {
@@ -368,21 +380,25 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 		}
 
 		for (uint64_t j = 0; j < otlen && i < NumOTs; j++, i++) {
-			if (m_vChoices->GetBitNoMask(i) == 0) {
-				Xc = &vRcvX[0];
-				Xn = &vRcvX[1];
-			} else {
-				Xc = &vRcvX[1];
-				Xn = &vRcvX[0];
-			}
+		//	if(choicecodebits == 1) {
+			//	tmpchoice = m_vChoices->GetBitNoMask(i);
+			//} else {
+			tmpchoice = m_vChoices->Get<uint32_t>(i * choicecodebits, choicecodebits);
+			//}
+			Xc = &vRcvX[tmpchoice];
 			Xc->GetBits(tempXc, j * m_nBitLength, m_nBitLength);
-			Xn->GetBits(tempXn, j * m_nBitLength, m_nBitLength);
+
+			//Xn->GetBits(tempXn, j * m_nBitLength, m_nBitLength);
 			m_vRet->GetBits(tempRet, i * m_nBitLength, m_nBitLength);
 			for (uint64_t k = 0; k < bytelen; k++) {
 				if (tempXc[k] != tempRet[k]) {
 					cout << "Error at position i = " << i << ", k = " << k << ", with X" << (hex) << (uint32_t) m_vChoices->GetBitNoMask(i) <<
-							" = " << (uint32_t) tempXc[k] << " and res = " << (uint32_t) tempRet[k] << " (X" << ((uint32_t) !m_vChoices->GetBitNoMask(i)) <<
-							" = " << (uint32_t) tempXn[k] << ")" << (dec) << endl;
+							" = " << (uint32_t) tempXc[k] << " and res = " << (uint32_t) tempRet[k] << ". All values: " <<endl;
+					for(uint64_t k = 0, ctr=0; k < nsndvals; k++) {
+						tmpret64 = vRcvX[k].Get<uint64_t>(i * m_nBitLength, m_nBitLength);
+						cout << "X" << k << ": " << (hex) << tmpret64 << (dec) << endl;
+					}
+
 					resp = 0x00;
 					chan->send(&resp, 1);
 
@@ -407,7 +423,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 
 	delete chan;
 	free(tempXc);
-	free(tempXn);
+	//free(tempXn);
 	free(tempRet);
 	free(buf);
 
@@ -419,14 +435,15 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 
 void OTExtRec::ComputePKBaseOTs() {
 	channel* chan = new channel(0, m_cRcvThread, m_cSndThread);
-	uint8_t* pBuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes() * m_nBaseOTs * m_nSndVals);
-	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs * m_nSndVals);
+	uint32_t nsndvals = 2;
+	uint8_t* pBuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes() * m_nBaseOTs * nsndvals);
+	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs * nsndvals);
 
-	OT_AES_KEY_CTX* tmpkeybuf = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs * m_nSndVals);
+	OT_AES_KEY_CTX* tmpkeybuf = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs * nsndvals);
 
 	timeval np_begin, np_end;
 	gettimeofday(&np_begin, NULL);
-	m_cBaseOT->Sender(m_nSndVals, m_nBaseOTs, chan, pBuf);
+	m_cBaseOT->Sender(nsndvals, m_nBaseOTs, chan, pBuf);
 	gettimeofday(&np_end, NULL);
 
 #ifndef BATCH
@@ -447,7 +464,7 @@ void OTExtRec::ComputePKBaseOTs() {
 
 	free(pBuf);
 
-	InitPRFKeys(tmpkeybuf, keyBuf, m_nBaseOTs * m_nSndVals);
+	InitPRFKeys(tmpkeybuf, keyBuf, m_nBaseOTs * nsndvals);
 	m_tBaseOTKeys.push_back(tmpkeybuf);
 
 	free(keyBuf);

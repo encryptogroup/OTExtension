@@ -34,9 +34,9 @@ class ALSZOTExtRec : public OTExtRec {
 	 * Output: was the execution successful?
 	 */
 public:
-	ALSZOTExtRec(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread,
+	ALSZOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread,
 			uint32_t nbaseots, uint32_t nchecks) {
-		InitRec(nSndVals, crypt, rcvthread, sndthread, nbaseots);
+		InitRec(crypt, rcvthread, sndthread, nbaseots);
 		m_nChecks = nchecks;
 		m_bDoBaseOTs=false;
 		//m_tBaseOTQ.resize(0);// = new vector<base_ots_snd_t>;// = new vector<base_ots_sndt>();

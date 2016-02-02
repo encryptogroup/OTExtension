@@ -100,8 +100,7 @@ public:
 	}
 
 protected:
-	void Init(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs, uint32_t nbasekeys) {
-		m_nSndVals = nSndVals;
+	void Init(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs, uint32_t nbasekeys) {
 		m_cCrypt = crypt;
 		m_nSymSecParam = m_cCrypt->get_seclvl().symbits;
 		m_nBaseOTs = nbaseOTs;

@@ -437,21 +437,23 @@ void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
 		memcpy(tmp->base_ot_key_ptr, m_vBaseOTKeys, sizeof(AES_KEY_CTX) * m_nBaseOTs * nsndvals);
 		m_tBaseOTQ.push_back(tmp);*/
 	} else {
-		ALSZOTExtSnd* snd = new ALSZOTExtSnd(m_nSndVals, m_cCrypt, m_cRcvThread, m_cSndThread, m_nBaseOTs, m_nChecks);
+		ALSZOTExtSnd* snd = new ALSZOTExtSnd(m_cCrypt, m_cRcvThread, m_cSndThread, m_nBaseOTs, m_nChecks);
 		uint32_t numots = BUFFER_OT_KEYS * m_nBaseOTs;
 		XORMasking* m_fMaskFct = new XORMasking(m_cCrypt->get_seclvl().symbits);
-		CBitVector X0, X1;
+		CBitVector** X = (CBitVector**) malloc(sizeof(CBitVector*) * nsndvals);//new CBitVector[nsndvals];
 		uint32_t secparambytes = bits_in_bytes(m_cCrypt->get_seclvl().symbits);
 		uint8_t* buf;
 
-
-		X0.Create(numots * m_cCrypt->get_seclvl().symbits);
-		X1.Create(numots * m_cCrypt->get_seclvl().symbits);
+		for(uint32_t i = 0; i < nsndvals; i++) {
+			X[i] = new CBitVector();
+			X[i]->Create(numots * m_cCrypt->get_seclvl().symbits);
+		}
+		//X1.Create(numots * m_cCrypt->get_seclvl().symbits);
 
 		snd->computePKBaseOTs();
 		snd->ComputeBaseOTs(ftype);
 
-		snd->send(numots, m_cCrypt->get_seclvl().symbits, &X0, &X1, Snd_R_OT, Rec_R_OT, 1, m_fMaskFct);
+		snd->send(numots, m_cCrypt->get_seclvl().symbits, nsndvals, X, Snd_R_OT, Rec_R_OT, 1, m_fMaskFct);
 
 		//assign keys to base OT queue
 		buf = (uint8_t*) malloc(secparambytes * nsndvals * m_nBaseOTs);
@@ -464,15 +466,19 @@ void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
 				memcpy(buf + j * nsndvals * secparambytes, X0.GetArr() + (i * m_nBaseOTs + j) * secparambytes, secparambytes);
 				memcpy(buf + (j * nsndvals + 1) * secparambytes, X1.GetArr() + (i * m_nBaseOTs + j) * secparambytes, secparambytes);
 			}*/
-			memcpy(buf, X0.GetArr() + secparambytes * m_nBaseOTs * i, secparambytes * m_nBaseOTs);
-			memcpy(buf + secparambytes * m_nBaseOTs, X1.GetArr() + secparambytes * m_nBaseOTs * i, secparambytes * m_nBaseOTs);
+			memcpy(buf, X[0]->GetArr() + secparambytes * m_nBaseOTs * i, secparambytes * m_nBaseOTs);
+			memcpy(buf + secparambytes * m_nBaseOTs, X[1]->GetArr() + secparambytes * m_nBaseOTs * i, secparambytes * m_nBaseOTs);
 			InitAESKey(tmp_keys, buf, nsndvals * m_nBaseOTs, m_cCrypt);
 			m_tBaseOTKeys.push_back(tmp_keys);
 		}
 
 		free(buf);
-		X0.delCBitVector();
-		X1.delCBitVector();
+		for(uint32_t i = 0; i < nsndvals; i++) {
+			X[i]->delCBitVector();
+		}
+		//free(X);
+	//	X0.delCBitVector();
+	//	X1.delCBitVector();
 		delete m_fMaskFct;
 		delete snd;
 	}

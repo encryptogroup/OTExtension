@@ -30,16 +30,15 @@ public:
 		free(m_vValues);
 	};
 
-	BOOL send(uint32_t numOTs, uint32_t bitlength, CBitVector* s0, CBitVector* s1, snd_ot_flavor stype,
+	BOOL send(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector** X, snd_ot_flavor stype,
 			rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct);
 
 	virtual void ComputeBaseOTs(field_type ftype) = 0;
 protected:
-	void InitSnd(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
-		Init(nSndVals, crypt, rcvthread, sndthread, nbaseOTs, nbaseOTs);
+	void InitSnd(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
+		Init(crypt, rcvthread, sndthread, nbaseOTs, nbaseOTs);
 
 		m_tBaseOTChoices.resize(0);
-		m_vValues = (CBitVector**) malloc(sizeof(CBitVector*) * nSndVals);
 	}
 	;
 

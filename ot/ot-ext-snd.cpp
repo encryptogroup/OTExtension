@@ -7,15 +7,19 @@
 
 #include "ot-ext-snd.h"
 
-BOOL OTExtSnd::send(uint32_t numOTs, uint32_t bitlength, CBitVector* x0, CBitVector* x1, snd_ot_flavor stype,
+BOOL OTExtSnd::send(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector** X, snd_ot_flavor stype,
 		rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct) {
 	m_nOTs = numOTs;
 	m_nBitLength = bitlength;
-	m_vValues[0] = x0;
-	m_vValues[1] = x1;
+	m_nSndVals = nsndvals;
+	m_vValues = X;
+	//m_vValues[0] = x0;
+	//m_vValues[1] = x1;
 	m_eSndOTFlav = stype;
 	m_eRecOTFlav = rtype;
 	m_fMaskFct = maskfct;
+
+	assert(pad_to_power_of_two(m_nSndVals) == m_nSndVals);
 
 	return start_send(numThreads);
 }
@@ -279,7 +283,7 @@ void OTExtSnd::MaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len
 
 
 BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
-	cout << "Verifying OT" << endl;
+	cout << "Verifying 1oo"<< m_nSndVals << " OT" << endl;
 	uint64_t processedOTBlocks, OTsPerIteration;
 	uint32_t bytelen = ceil_divide(m_nBitLength, 8);
 	uint64_t nSnd;
@@ -292,16 +296,12 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 		OTsPerIteration = min(processedOTBlocks * AES_BITS, NumOTs - i);
 		nSnd = ceil_divide(OTsPerIteration * m_nBitLength, 8);
 
-		chan->send_id_len(m_vValues[0]->GetArr() + bits_in_bytes(i * m_nBitLength), nSnd, i, OTsPerIteration);
-		chan->send_id_len(m_vValues[1]->GetArr() + bits_in_bytes(i * m_nBitLength), nSnd, i, OTsPerIteration);
-		//sndthread->add_snd_task_start_len(0, nSnd, m_vValues[0].GetArr() + bits_in_bytes(i * m_nBitLength), i, OTsPerIteration);
-		//sndthread->add_snd_task_start_len(0, nSnd, m_vValues[1].GetArr() + bits_in_bytes(i * m_nBitLength), i, OTsPerIteration);
+		for(uint64_t j = 0; j < m_nSndVals; j++) {
+			chan->send_id_len(m_vValues[j]->GetArr() + bits_in_bytes(i * m_nBitLength), nSnd, i, OTsPerIteration);
+		}
 
 		resp = chan->blocking_receive();
-		//rcvev->Wait();
-		//resp = *rcvqueue->front();
-		//rcvqueue->pop();
-		//cout << "Got reply with " << (uint32_t) resp << endl;
+
 		if (*resp == 0x00) {
 			cout << "OT verification unsuccessful" << endl;
 			free(resp);
@@ -310,8 +310,6 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 		}
 		free(resp);
 	}
-	//cout << "signalling end" << endl,
-	//sndthread->signal_end(0);
 
 	cout << "OT Verification successful" << flush << endl;
 	chan->synchronize_end();
@@ -328,6 +326,7 @@ void OTExtSnd::ComputePKBaseOTs() {
 	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs);
 
 	timeval np_begin, np_end;
+	uint32_t nsndvals = 2;
 
 	CBitVector* U = new CBitVector();
 	U->Create(m_nBaseOTs, m_cCrypt);
@@ -338,7 +337,7 @@ void OTExtSnd::ComputePKBaseOTs() {
 	OT_AES_KEY_CTX* tmpkeybuf = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs);
 
 	gettimeofday(&np_begin, NULL);
-	m_cBaseOT->Receiver(m_nSndVals, m_nBaseOTs, U, chan, pBuf);
+	m_cBaseOT->Receiver(nsndvals, m_nBaseOTs, U, chan, pBuf);
 	gettimeofday(&np_end, NULL);
 
 #ifndef BATCH

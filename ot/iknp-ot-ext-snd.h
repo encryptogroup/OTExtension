@@ -13,8 +13,8 @@
 class IKNPOTExtSnd : public OTExtSnd {
 
 public:
-	IKNPOTExtSnd(uint32_t nSndVals, crypto* crypt, RcvThread* rcvthread, SndThread* sndthread) {
-		InitSnd(nSndVals, crypt, rcvthread, sndthread, crypt->get_seclvl().symbits);
+	IKNPOTExtSnd(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread) {
+		InitSnd(crypt, rcvthread, sndthread, crypt->get_seclvl().symbits);
 	}
 	;
 

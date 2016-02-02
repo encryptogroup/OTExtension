@@ -457,18 +457,20 @@ void ALSZOTExtSnd::ComputeBaseOTs(field_type ftype) {
 		memcpy(tmp->base_ot_key_ptr, m_vBaseOTKeys, sizeof(AES_KEY_CTX) * m_nBaseOTs);
 		m_tBaseOTQ.push_back(tmp);*/
 	} else {
-		ALSZOTExtRec* rec = new ALSZOTExtRec(m_nSndVals, m_cCrypt, m_cRcvThread, m_cSndThread, m_nBaseOTs, m_nChecks);
+		ALSZOTExtRec* rec = new ALSZOTExtRec(m_cCrypt, m_cRcvThread, m_cSndThread, m_nBaseOTs, m_nChecks);
 		uint32_t numots = BUFFER_OT_KEYS * m_nBaseOTs;
 		XORMasking* m_fMaskFct = new XORMasking(m_cCrypt->get_seclvl().symbits);
 		CBitVector U, resp;
 		uint32_t secparambytes = bits_in_bytes(m_cCrypt->get_seclvl().symbits);
+		uint32_t nsndvals = 2;
+
 		U.Create(numots, m_cCrypt);
 		resp.Create(m_cCrypt->get_seclvl().symbits * numots);
 
 		rec->computePKBaseOTs();
 		rec->ComputeBaseOTs(ftype);
 
-		rec->receive(numots, m_cCrypt->get_seclvl().symbits, &U, &resp, Snd_R_OT, Rec_R_OT, 1, m_fMaskFct);
+		rec->receive(numots, m_cCrypt->get_seclvl().symbits, nsndvals, &U, &resp, Snd_R_OT, Rec_R_OT, 1, m_fMaskFct);
 
 		CBitVector* tmp_choices;
 		OT_AES_KEY_CTX* tmp_keys;

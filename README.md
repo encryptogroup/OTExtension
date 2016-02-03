@@ -27,7 +27,7 @@ Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10].
 3. Call `make` in the root directory to compile all the code and create the corresponding executables.
 
 ###USE
-To start OT extension, open two terminals on the same PC and call `ot.exe -r 0` in one terminal to start OT extension as sender and call `ot.exe -r 1` in the second terminal to start OT extension as receiver. 
+To start OT extension, open two terminals on the same PC and call `ot.exe -r 0` in one terminal to start OT extension as sender and call `ot.exe -r 1` in the second terminal to start OT extension as receiver. This will invoke the passive secure IKNP 1-out-of-2 OT extension protocol for 1 million OTs on 8-bit strings. The result of the OT will be checked for correctness and the times (in ms) for the base-OTs, for the OT extensions, the number of bytes sent and the number of bytes received will be printed on the terminals.
 A list of all available options can be obtained via `ot.exe -h`.
 
 ###NOTES

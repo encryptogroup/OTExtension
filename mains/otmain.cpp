@@ -369,6 +369,7 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 		uint32_t* runs) {
 
 	uint32_t int_port = 0, int_prot = 0, int_snd_flav = 0, int_rec_flav = 0;
+	bool printhelp = false;
 
 	parsing_ctx options[] = {
 			{ (void*) role, T_NUM, 'r', "Role: 0/1", true, false },
@@ -385,10 +386,17 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 			{ (void*) nchecks, T_NUM, 'c', "Number of checks for ALSZ, default 380", false, false },
 			{ (void*) usemecr, T_FLAG, 'm', "Use Min-Entropy Correlation-Robustness Assumption, default: false", false, false },
 			{ (void*) runs, T_NUM, 'u', "Number of repetitions, default: 1", false, false },
-			{ (void*) N, T_NUM, 'N', "1-oo-N OT extension. Only works in combination with KK13 and needs to be a power of two, default: 2", false, false }
+			{ (void*) N, T_NUM, 'N', "1-oo-N OT extension. Only works in combination with KK13 and needs to be a power of two, default: 2", false, false },
+			{ (void*) &printhelp, T_FLAG, 'h', "Print help", false, false }
 	};
 
 	if (!parse_options(argcp, argvp, options, sizeof(options) / sizeof(parsing_ctx))) {
+		print_usage(*argvp[0], options, sizeof(options) / sizeof(parsing_ctx));
+		cout << "Exiting" << endl;
+		exit(0);
+	}
+
+	if(printhelp) {
 		print_usage(*argvp[0], options, sizeof(options) / sizeof(parsing_ctx));
 		cout << "Exiting" << endl;
 		exit(0);

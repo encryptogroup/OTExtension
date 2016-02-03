@@ -1,32 +1,34 @@
 ###DESCRIPTION
 Implementation of the passive secure OT extension protocol of [1] and the active secure OT extension protocols of [2] and [3]. Implements the general OT (G_OT), correlated OT (C_OT), global correlated OT (GC_OT), sender random OT (SR_OT), and receiver random OT (RR_OT) (Definitions of the functionalities will follow). Implements the base-OTs by Naor-Pinkas [4], Peikert-Vaikuntanathan-Waters [5], and Chou-Orlandi [6]. The code is based on the OT extension implementation of [7] and uses the MIRACL libary [8] for elliptic curve arithmetic. 
 
-Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10]. Currently only works for OTs with random sender input.
+Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10].
 
-###COMPILE
-####Linux: 
-Required compiler: g++
+###REQUIREMENTS
 
-Required libraries: OpenSSL and GMP (e.g., on Ubuntu run `sudo apt-get install libssl-dev libgmp-dev`) 
+* A **Linux distribution** of your choice (the OT extension code was developed under [Ubuntu](http://www.ubuntu.com/)).
+* **Required packages:**
+  * [`g++`](https://packages.debian.org/testing/g++)
+  * [`make`](https://packages.debian.org/testing/make)
+  * [`libgmp-dev`](https://packages.debian.org/testing/libgmp-dev)
+  * [`libssl-dev`](https://packages.debian.org/testing/libssl-dev)
 
-1. Compile Miracl in util/Miracl either using "bash linux" or "bash linux64" (see `util/Miracl/first.txt` for more information)
-2. Compile OT extension by executing make
+  Install these packages with your favorite package manager, e.g, `sudo apt-get install <package-name>`.
 
-####Windows:
-ATTENTION: CURRENTLY NOT TESTED. 
 
-Required compiler: mingw32
+###COMPILING
 
-Required libraries: OpenSSL (the OpenSSL library is part of msys in mingw, can be installed using `mingw-get`, and the Windows `$PATH` variable has to be set to `[PATH_TO_MINGW]\msys\1.0\bin\`.) 
+1. Clone a copy of the main OTExtension git repository and the Miracl submodule by running:
+	```
+	git clone --recursive git://github.com/encryptogroup/OTExtension
+	```
 
-1. Compile Miracl in util/Miracl using `windows32.bat`
-2. Set the Paths to your MSYS directory in `Makefile.bat`
-3. Compile OT extension by invoking `Makefile.bat`
+2. Enter the Framework directory: `cd OTExtension/`
 
+3. Call `make` in the root directory to compile all the code and create the corresponding executables.
 
 ###USE
-To start OT extension, open two terminals on the same PC and call `ot.exe 0` in one terminal to start OT extension as sender and call `ot.exe 1` in the second terminal to start OT extension as receiver. 
-
+To start OT extension, open two terminals on the same PC and call `ot.exe -r 0` in one terminal to start OT extension as sender and call `ot.exe -r 1` in the second terminal to start OT extension as receiver. 
+A list of all available options can be obtained via `ot.exe -h`.
 
 ###NOTES
 An example implementation of OT extension can be found in `mains/otmain.cpp`.
@@ -39,9 +41,7 @@ Different compilation flags can be set in `util/constants.h`.
 The current version is in a prototypical state. Next steps: 
 
 1. Better documentation. Clean interfaces and source code
-2. Integration into the ABY framework [10] and Miracl [8] as external GIT project
-3. Test and enable support under Windows
-4. Implement all functionalities for 1-out-of-N OT extension of [9]
+2. Test and enable support under Windows
 
 
 ###REFERENCES

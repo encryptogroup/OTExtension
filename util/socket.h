@@ -14,18 +14,25 @@ class CSocket {
 public:
 	CSocket() {
 		m_hSock = INVALID_SOCKET;
-		bytes_sent = 0;
-		bytes_received = 0;
+		m_nSndCount = 0;
+		m_nRcvCount = 0;
 	}
 	~CSocket() {
 		Close();
 	}
 
-	uint64_t get_bytes_sent() { return bytes_sent; };
-	uint64_t get_bytes_received() { return bytes_received; };
-
-	void reset_bytes_sent() { bytes_sent = 0;};
-	void reset_bytes_received() { bytes_received = 0;};
+	uint64_t getSndCnt() {
+		return m_nSndCount;
+	}
+	uint64_t getRcvCnt() {
+		return m_nRcvCount;
+	}
+	void ResetSndCnt() {
+		m_nSndCount = 0;
+	};
+	void ResetRcvCnt() {
+		m_nRcvCount = 0;
+	};
 
 public:
 	BOOL Socket() {
@@ -199,6 +206,9 @@ public:
 		char* p = (char*) pBuf;
 		int64_t n = nLen;
 		int64_t ret = 0;
+
+		m_nRcvCount += nLen;
+
 		while (n > 0) {
 			ret = recv(m_hSock, p, n, 0);
 #ifdef WIN32
@@ -225,20 +235,18 @@ public:
 			p += ret;
 			n -= ret;
 		}
-		bytes_received += ((uint64_t) nLen);
 		return nLen;
 	}
 
 	int Send(const void* pBuf, uint64_t nLen, int nFlags = 0) {
-		bytes_sent+= ((uint64_t) nLen);
+		m_nSndCount += nLen;
 		return send(m_hSock, (char*) pBuf, nLen, nFlags);
 	}
 
 private:
 
 	SOCKET m_hSock;
-	uint64_t bytes_sent;
-	uint64_t bytes_received;
+	uint64_t m_nSndCount, m_nRcvCount;
 };
 
 #endif //SOCKET_H__BY_SGCHOI

@@ -10,29 +10,11 @@
 
 #include "typedefs.h"
 
-//Defines for parameterizing the OT extension
-//#define OTTiming
 #define BATCH
 //#define FIXED_KEY_AES_HASHING
-//#define AES_OWF
-#define VERIFY_OT
 //#define USE_PIPELINED_AES_NI
 //#define SIMPLE_TRANSPOSE //activate the simple transpose, only required for benchmarking, not recommended
-//#define GENERATE_T_EXPLICITELY //send two instead of only one message, only required for benchmarking, not recommended
-//#define DEBUG_OT_HASH_IN
-//#define DEBUG_OT_HASH_OUT
-//#define DEBUG_OT_SEED_EXPANSION
-//#define DEBUG_BASE_OT_HASH_RET
-//#define DEBUG_RECEIVE_THREAD
-//#define DEBUG_SEND_THREAD
-//#define HIGH_SPEED_ROT_LT
-//#define DEBUG_ALSZ_CHECKS
-//#define DEBUG_ALSZ_CHECKS_INPUT
-//#define DEBUG_ALSZ_CHECKS_OUTPUT
-//#define DEBUG_NNOB_CHECKS
-//#define DEBUG_NNOB_CHECKS_INPUT
-//#define DEBUG_NNOB_CHECKS_OUTPUT
-//#define DEBUG_KK_OTBREAKDOWN
+
 
 
 

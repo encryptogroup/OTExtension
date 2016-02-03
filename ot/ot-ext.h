@@ -8,6 +8,28 @@
 #ifndef __OT_EXTENSION_H_
 #define __OT_EXTENSION_H_
 
+//#define OTTiming
+//#define AES_OWF
+#define VERIFY_OT
+//#define GENERATE_T_EXPLICITELY //send two instead of only one message, only required for benchmarking, not recommended
+//#define DEBUG_OT_HASH_IN
+//#define DEBUG_OT_HASH_OUT
+//#define DEBUG_OT_SEED_EXPANSION
+//#define DEBUG_BASE_OT_HASH_RET
+//#define DEBUG_RECEIVE_THREAD
+//#define DEBUG_SEND_THREAD
+//#define HIGH_SPEED_ROT_LT
+//#define DEBUG_ALSZ_CHECKS
+//#define DEBUG_ALSZ_CHECKS_INPUT
+//#define DEBUG_ALSZ_CHECKS_OUTPUT
+//#define DEBUG_NNOB_CHECKS
+//#define DEBUG_NNOB_CHECKS_INPUT
+//#define DEBUG_NNOB_CHECKS_OUTPUT
+//#define DEBUG_KK_OTBREAKDOWN
+
+#define NUMOTBLOCKS 128
+#define BUFFER_OT_KEYS 128
+
 #include "../util/typedefs.h"
 #include "../util/socket.h"
 #include "../util/thread.h"
@@ -21,6 +43,9 @@
 #include "naor-pinkas.h"
 #include "pvwddh.h"
 #include "simpleot.h"
+
+
+
 
 #ifdef USE_PIPELINED_AES_NI
 	typedef ROUND_KEYS OT_AES_KEY_CTX;

@@ -53,7 +53,7 @@ public:
 	fe* get_generator();
 	fe* get_rnd_generator();
 	uint32_t get_size();
-	//fe* sample_fe_from_bytes(uint8_t* buf, uint32_t bytelen)
+	//fe* sample_fe_from_bytes(uint8_t* buf, uint32_t bytelen);
 	num* get_order();
 	uint32_t num_byte_size() {
 		return ceil_divide(secparam.ecckcbits, 8);

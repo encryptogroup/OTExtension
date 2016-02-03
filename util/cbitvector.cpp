@@ -30,11 +30,12 @@ void CBitVector::Create(uint64_t bits) {
 	if (bits == 0)
 		bits = AES_BITS;
 
-	if (m_nByteSize > 0)
+	if (m_nByteSize > 0) {
 		free(m_pBits);
+	}
 
 	//TODO: check if padding to aes bits is still necessary, otherwise pad to bytes
-	int size = ceil_divide(bits, AES_BITS);
+	uint64_t size = ceil_divide(bits, AES_BITS);
 	m_nByteSize = size * AES_BYTES;
 	m_pBits = (BYTE*) calloc(m_nByteSize, sizeof(BYTE));
 	assert(m_pBits != NULL);
@@ -64,12 +65,12 @@ void CBitVector::Create(uint64_t numelementsDimA, uint64_t numelementsDimB, uint
 	m_nNumElementsDimB = numelementsDimB;
 }
 
-void CBitVector::ResizeinBytes(int newSizeBytes) {
+void CBitVector::ResizeinBytes(uint64_t newSizeBytes) {
 	BYTE* tBits = m_pBits;
-	int tSize = m_nByteSize;
+	uint64_t tSize = (m_nByteSize<newSizeBytes)? m_nByteSize:newSizeBytes; //fix for overflow condition in memcpy.
 
 	m_nByteSize = newSizeBytes;
-	m_pBits = (BYTE*) calloc(m_nByteSize, sizeof(BYTE));
+	m_pBits = (uint8_t*) calloc(m_nByteSize, sizeof(uint8_t));
 
 	memcpy(m_pBits, tBits, tSize);
 
@@ -125,9 +126,9 @@ void CBitVector::SetBits(BYTE* p, uint64_t pos, uint64_t len) {
 }
 
 //XOR bits given an offset on the bits for p which is not necessarily divisible by 8
-void CBitVector::SetBitsPosOffset(BYTE* p, int ppos, int pos, int len) {
+void CBitVector::SetBitsPosOffset(BYTE* p, uint64_t ppos, uint64_t pos, uint64_t len) {
 	uint8_t bit;
-	for (int i = pos, j = ppos; j < ppos + len; i++, j++) {
+	for (uint64_t i = pos, j = ppos; j < ppos + len; i++, j++) {
 		bit = !!(p[j>>3] & (1<<(j&0x07)));
 		SetBit(bit, i);
 	}
@@ -345,7 +346,8 @@ void CBitVector::Print(int fromBit, int toBit) {
 }
 
 void CBitVector::PrintHex(int fromByte, int toByte) {
-	for (int i = fromByte; i < toByte; i++) {
+	int to = toByte > (m_nByteSize) ? (m_nByteSize) : toByte;
+	for (int i = fromByte; i < to; i++) {
 		cout << setw(2) << setfill('0') << (hex) << ((unsigned int) m_pBits[i]);
 	}
 	cout << (dec) << endl;
@@ -359,7 +361,8 @@ void CBitVector::PrintHex() {
 }
 
 void CBitVector::PrintBinaryMasked(int from, int to) {
-	for (int i = from; i < to; i++) {
+	int new_to = to > (m_nByteSize<<3) ? (m_nByteSize<<3) : to;
+	for (int i = from; i < new_to; i++) {
 		cout << (unsigned int) GetBit(i);
 	}
 	cout << endl;

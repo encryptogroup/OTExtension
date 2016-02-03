@@ -180,12 +180,6 @@ ecc_fe::~ecc_fe() {
 
 void ecc_fe::set(fe* src) {
 	*val = *fe2ec2(src);
-	//*val = EC2(*fe2ec2(src));///copy(*val->getbig(), *fe2ec2(src)->getbig);
-	//Big x, y;
-	//int sign = fe2ec2(src)->get(x);
-	//val->set(x, sign);
-	//fe2ec2(src)->getxy(x, y);
-	//val->set(x, y);
 
 }
 
@@ -202,7 +196,6 @@ void ecc_fe::set_mul(fe* a, fe* b) {
 void ecc_fe::set_pow(fe* a, num* e) {
 	set(a);
 	(*val) *= (*num2Big(e));
-	//ecurve2_mult(num2Big(e)->getbig(), fe2ec2(a)->get_point(), fe2ec2(val)->get_point());
 }
 
 //Note: if the same value is processed, a has to be this value

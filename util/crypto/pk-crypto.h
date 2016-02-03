@@ -19,6 +19,7 @@ class brickexp;
 class pk_crypto {
 public:
 	pk_crypto(seclvl sp, uint8_t* seed) {
+		fe_bytelen = 0;
 	}
 	;
 	virtual ~pk_crypto() {};
@@ -34,7 +35,7 @@ public:
 		return fe_bytelen;
 	}
 	;
-	virtual uint32_t get_field_size() =0;
+	virtual uint32_t get_field_size() = 0;
 	virtual brickexp* get_brick(fe* gen) = 0;
 
 protected:

@@ -89,10 +89,12 @@ public:
 		m_nByteSize = 0;
 	}
 
-	//~CBitVector(){ delCBitVector(); };
+	//~CBitVector(){
+	//	delCBitVector();
+	//};
 
 	void delCBitVector() {
-		if (m_nByteSize > 0) {
+		if (m_nByteSize > 0 && m_pBits != NULL) {
 			free(m_pBits);
 		}
 		m_nByteSize = 0;
@@ -131,7 +133,7 @@ public:
 	/*
 	 * Management operations
 	 */
-	void ResizeinBytes(int newSizeBytes);
+	void ResizeinBytes(uint64_t newSizeBytes);
 	void Reset() {
 		memset(m_pBits, 0, m_nByteSize);
 	}
@@ -149,6 +151,9 @@ public:
 
 	void SetElementLength(int elelen) {
 		m_nElementLength = elelen;
+	}
+	uint64_t GetElementLength() {
+		return m_nElementLength;
 	}
 
 	/*
@@ -188,7 +193,7 @@ public:
 	}
 
 	//used to access bits in the regular order
-	BYTE GetBitNoMask(int idx) {
+	BYTE GetBitNoMask(uint64_t idx) {
 		return !!(m_pBits[idx >> 3] & BIT[idx & 0x7]);
 	}
 	void SetBitNoMask(int idx, BYTE b) {
@@ -237,7 +242,7 @@ public:
 	void SetBits(BYTE* p, int pos, int len) {
 		SetBits(p, (uint64_t) pos, (uint64_t) len);
 	}
-	void SetBitsPosOffset(BYTE* p, int ppos, int pos, int len);
+	void SetBitsPosOffset(BYTE* p, uint64_t ppos, uint64_t pos, uint64_t len);
 
 	void SetBytes(BYTE* p, int pos, int len);
 	template<class T> void SetBytes(T* dst, T* src, T* lim);

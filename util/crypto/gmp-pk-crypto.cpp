@@ -199,11 +199,7 @@ uint32_t prime_field::get_size() {
 void prime_field::init(seclvl sp, uint8_t* seed) {
 	mpz_t rnd_seed;
 
-	//TODO: change to inits if working correctly
-	mpz_init(p);
-	mpz_init(g);
-	mpz_init(q);
-	mpz_init(rnd_seed);
+	mpz_inits(p, q, g, rnd_seed, NULL);
 	secparam = sp;
 
 	mpz_import(rnd_seed, ceil_divide(secparam.symbits, 8), 1, sizeof((seed)[0]), 0, 0, seed);

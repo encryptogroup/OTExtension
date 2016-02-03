@@ -199,8 +199,8 @@ BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndval
 {
 	bool success = FALSE;
 
-	m_vSocket->reset_bytes_sent();
-	m_vSocket->reset_bytes_received();
+	m_vSocket->ResetSndCnt();
+	m_vSocket->ResetRcvCnt();
 	timeval ot_begin, ot_end;
 
 	
@@ -214,7 +214,7 @@ BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndval
 	cout << "Sent:\t\t" << m_vSocket->get_bytes_sent() << " bytes" << endl;
 	cout << "Received:\t" << m_vSocket->get_bytes_received() <<" bytes" << endl;
 #else
-	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->get_bytes_sent() << "\t" << m_vSocket->get_bytes_received() << endl;
+	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << endl;
 #endif
 
 
@@ -226,8 +226,8 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 {
 	bool success = FALSE;
 
-	m_vSocket->reset_bytes_sent();
-	m_vSocket->reset_bytes_received();
+	m_vSocket->ResetSndCnt();
+	m_vSocket->ResetRcvCnt();
 
 
 	timeval ot_begin, ot_end;
@@ -242,7 +242,7 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 	cout << "Sent:\t\t" << m_vSocket->get_bytes_sent() << " bytes" << endl;
 	cout << "Received:\t" << m_vSocket->get_bytes_received() <<" bytes" << endl;
 #else
-	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->get_bytes_sent() << "\t" << m_vSocket->get_bytes_received() << endl;
+	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << endl;
 #endif
 	
 

@@ -319,7 +319,6 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 		endval = m_nint_sndvals;
 		//hack: extract the delta from the masking function and set m_vValues[0] randomly and m_vValues[1] = m_vValues[0] \oplus Delta
 		// snd_buf[1] is modified and has to be XORed with m_vValues[1] to revert to the original value
-		//TODO: test again due to diff_choicecodes instead of int_choicecodes
 		m_fMaskFct->Mask(OT_ptr*diff_choicecodes, OT_len*diff_choicecodes, m_vValues, snd_buf, m_eSndOTFlav);
 		snd_buf[1].XORBits(m_vValues[1]->GetArr() + bits_in_bytes(OT_ptr*diff_choicecodes*m_nBitLength), 0, OT_len*diff_choicecodes * m_nBitLength);
 	} else if(m_eSndOTFlav == Snd_R_OT) {
@@ -327,7 +326,6 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 		startval = 1;
 		endval = m_nint_sndvals - 1;
 		//Define the X0 values as the output of 0 and the X(m_nSndVals-1) values as output of m_nint_sndvals-1 (only 1 values)
-		//TODO: test again due to diff_choicecodes instead of int_choicecodes
 		m_vValues[0]->SetBytes(snd_buf[0].GetArr(), bits_in_bytes(OT_ptr * diff_choicecodes * m_nBitLength), valsize);
 		m_vValues[m_nSndVals - 1]->SetBytes(snd_buf[m_nint_sndvals-1].GetArr(), bits_in_bytes(OT_ptr * diff_choicecodes * m_nBitLength), valsize);
 	}

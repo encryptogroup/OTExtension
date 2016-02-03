@@ -17,17 +17,17 @@ protected:
 		double tmp_cost, min_cost, tmp_log;
 		assert(ext_sndvals <= 256);
 		min_cost = DBL_MAX;
-		for(uint32_t i = ext_sndvals; i <= 256; i*=2) {
+		for(uint32_t i = ext_sndvals; i <= 256; i*=ext_sndvals) {
 			tmp_log = ((double) ceil_log2(i)) / ((double) ceil_log2(ext_sndvals));
 			tmp_cost = (256 + i * bitlen * tmp_log) / tmp_log;
-			cout << "cost for i = " << i << ": " << tmp_cost << ", log fact = " << tmp_log << ", min_cost = " << min_cost << endl;
+			//cout << "cost for i = " << i << ": " << tmp_cost << ", log fact = " << tmp_log << ", min_cost = " << min_cost << endl;
 			if(tmp_cost < min_cost) {
 				min_int = i;
 				min_cost = tmp_cost;
 			}
 		}
-		m_nint_sndvals = 16; //min_int;
-		cout << "Internally computing 1-out-of-" << m_nint_sndvals << " for external " << ext_sndvals << endl;
+		m_nint_sndvals = min_int;
+		//cout << "Internally computing 1-out-of-" << m_nint_sndvals << " for external " << ext_sndvals << endl;
 	}
 	uint32_t m_nint_sndvals;
 	uint64_t** m_vCodeWords;

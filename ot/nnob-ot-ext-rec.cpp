@@ -143,9 +143,10 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef ABY_OT
 		while(!(mask_queue.empty())) {
 #else
-		while(ot_chan->is_alive() && !(mask_queue.empty()))
+		while(ot_chan->is_alive() && !(mask_queue.empty())) {
 #endif
 			ReceiveAndUnMask(ot_chan, &mask_queue);
+		}
 	}
 	ot_chan->synchronize_end();
 	check_chan->synchronize_end();

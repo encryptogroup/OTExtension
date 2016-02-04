@@ -145,10 +145,10 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef ABY_OT
 	while(!(mask_queue.empty())) {
 #else
-	while(chan->is_alive() && !(mask_queue.empty()))
+	while(chan->is_alive() && !(mask_queue.empty())) {
 #endif
 		KKReceiveAndUnMask(chan, &mask_queue);
-
+	}
 
 	chan->synchronize_end();
 

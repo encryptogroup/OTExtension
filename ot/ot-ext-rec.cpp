@@ -93,7 +93,7 @@ void OTExtRec::BuildMatrices(CBitVector& T, CBitVector& SndBuf, uint64_t OT_ptr,
 	uint32_t keyoffset = m_nBaseOTs;
 
 #ifdef USE_PIPELINED_AES_NI
-	//first prg output written to tptr
+	//first prg output written to tptrelse
 	intrin_sequential_gen_rnd8(ctr_buf, global_OT_ptr, Tptr, iters, (int) m_nBaseOTs, seedkeyptr);
 
 	*counter = global_OT_ptr;
@@ -363,7 +363,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	//uint8_t** tmpXn = (uint8_t**) malloc(nsndvals-1);
 	uint8_t* tempRet = (uint8_t*) malloc(bytelen);
 	uint8_t** buf = (uint8_t**) malloc(sizeof(uint8_t*) * nsndvals);
-	channel* chan = new channel(OT_BASE_CHANNEL, m_cRcvThread, m_cSndThread);
+	channel* chan = new channel(OT_ADMIN_CHANNEL, m_cRcvThread, m_cSndThread);
 	uint8_t *tmpbuf;
 	BYTE resp;
 	uint64_t tmpchoice;
@@ -431,7 +431,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 
 
 void OTExtRec::ComputePKBaseOTs() {
-	channel* chan = new channel(OT_BASE_CHANNEL, m_cRcvThread, m_cSndThread);
+	channel* chan = new channel(OT_ADMIN_CHANNEL, m_cRcvThread, m_cSndThread);
 	uint32_t nsndvals = 2;
 	uint8_t* pBuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes() * m_nBaseOTs * nsndvals);
 	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs * nsndvals);

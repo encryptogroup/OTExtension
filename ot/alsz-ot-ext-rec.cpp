@@ -26,8 +26,8 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		nchans = 3;
 	}
 
-	channel* ot_chan = new channel(nchans*id, m_cRcvThread, m_cSndThread);
-	channel* check_chan = new channel(nchans*id+1, m_cRcvThread, m_cSndThread);
+	channel* ot_chan = new channel(OT_BASE_CHANNEL+nchans*id, m_cRcvThread, m_cSndThread);
+	channel* check_chan = new channel(OT_BASE_CHANNEL+nchans*id+1, m_cRcvThread, m_cSndThread);
 	channel* mat_chan;
 	if(use_mat_chan) {
 		mat_chan = new channel(nchans*id+2, m_cRcvThread, m_cSndThread);
@@ -182,7 +182,11 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(m_eSndOTFlav != Snd_R_OT) {
 		//finevent->Wait();
+#ifdef ABY_OT
+		while(!(mask_queue.empty())) {
+#else
 		while(ot_chan->is_alive() && !(mask_queue.empty())) {
+#endif
 #ifdef OTTiming
 			gettimeofday(&tempStart, NULL);
 #endif

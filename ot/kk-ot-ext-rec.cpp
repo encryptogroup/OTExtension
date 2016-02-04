@@ -38,7 +38,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t OTwindow = NUMOTBLOCKS * wd_size_bits;
 	uint64_t** rndmat;
 	uint64_t processedOTs;
-	channel* chan = new channel(id, m_cRcvThread, m_cSndThread);
+	channel* chan = new channel(OT_BASE_CHANNEL+id, m_cRcvThread, m_cSndThread);
 
 	//counter variables
 	uint64_t numblocks = ceil_divide(myNumOTs, OTsPerIteration);
@@ -142,8 +142,11 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		T.Reset();
 	}
 	//sndthread->signal_end(id);
-
+#ifdef ABY_OT
+	while(!(mask_queue.empty())) {
+#else
 	while(chan->is_alive() && !(mask_queue.empty()))
+#endif
 		KKReceiveAndUnMask(chan, &mask_queue);
 
 

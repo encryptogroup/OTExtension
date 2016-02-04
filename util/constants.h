@@ -11,6 +11,7 @@
 #include "typedefs.h"
 
 #define BATCH
+#define VERIFY_OT
 //#define FIXED_KEY_AES_HASHING
 //#define USE_PIPELINED_AES_NI
 //#define SIMPLE_TRANSPOSE //activate the simple transpose, only required for benchmarking, not recommended
@@ -30,6 +31,7 @@
 #define MAX_NUM_COMM_CHANNELS 256
 #define ADMIN_CHANNEL MAX_NUM_COMM_CHANNELS-1
 #define OT_ADMIN_CHANNEL ADMIN_CHANNEL-1
+#define OT_BASE_CHANNEL 0
 
 
 

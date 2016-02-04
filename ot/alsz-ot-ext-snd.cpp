@@ -20,8 +20,8 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		nchans = 3;
 	}
 
-	channel* ot_chan = new channel(nchans*id, m_cRcvThread, m_cSndThread);
-	channel* check_chan = new channel(nchans*id + 1, m_cRcvThread, m_cSndThread);
+	channel* ot_chan = new channel(OT_BASE_CHANNEL+nchans*id, m_cRcvThread, m_cSndThread);
+	channel* check_chan = new channel(OT_BASE_CHANNEL+nchans*id + 1, m_cRcvThread, m_cSndThread);
 	channel* mat_chan;
 	if(use_mat_chan) {
 		mat_chan = new channel(nchans*id+2, m_cRcvThread, m_cSndThread);

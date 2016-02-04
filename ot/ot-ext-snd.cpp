@@ -289,7 +289,7 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 	uint64_t nSnd;
 	uint8_t* resp;
 
-	channel* chan = new channel(0, m_cRcvThread, m_cSndThread);
+	channel* chan = new channel(OT_BASE_CHANNEL, m_cRcvThread, m_cSndThread);
 
 	for (uint64_t i = 0; i < NumOTs; i += OTsPerIteration) {
 		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(NumOTs - i, AES_BITS));
@@ -321,7 +321,7 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 
 
 void OTExtSnd::ComputePKBaseOTs() {
-	channel* chan = new channel(0, m_cRcvThread, m_cSndThread);
+	channel* chan = new channel(OT_BASE_CHANNEL, m_cRcvThread, m_cSndThread);
 	uint8_t* pBuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes() * m_nBaseOTs);
 	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs);
 

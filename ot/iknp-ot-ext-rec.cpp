@@ -19,7 +19,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	uint64_t OTwindow = NUMOTBLOCKS * wd_size_bits;
 	uint64_t** rndmat;
-	channel* chan = new channel(id, m_cRcvThread, m_cSndThread);
+	channel* chan = new channel(OT_BASE_CHANNEL+id, m_cRcvThread, m_cSndThread);
 
 	//counter variables
 	uint64_t numblocks = ceil_divide(myNumOTs, OTsPerIteration);
@@ -117,7 +117,11 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(m_eSndOTFlav != Snd_R_OT && m_eSndOTFlav != Snd_GC_OT) {
 		//finevent->Wait();
+#ifdef ABY_OT
+		while(!(mask_queue.empty())) {
+#else
 		while(chan->is_alive() && !(mask_queue.empty())) {
+#endif
 			ReceiveAndUnMask(chan, &mask_queue);
 		}
 	}

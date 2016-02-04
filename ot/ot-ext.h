@@ -8,9 +8,9 @@
 #ifndef __OT_EXTENSION_H_
 #define __OT_EXTENSION_H_
 
+//internal OT options
 //#define OTTiming
 //#define AES_OWF
-#define VERIFY_OT
 //#define GENERATE_T_EXPLICITELY //send two instead of only one message, only required for benchmarking, not recommended
 //#define DEBUG_OT_HASH_IN
 //#define DEBUG_OT_HASH_OUT

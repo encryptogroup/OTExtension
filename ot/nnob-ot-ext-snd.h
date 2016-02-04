@@ -11,6 +11,7 @@
 #define NNOB_OT_EXT_SND_H_
 
 #include "ot-ext-snd.h"
+#include "simpleot.h"
 
 typedef struct nnob_snd_check_ctx {
 	uint64_t otid;

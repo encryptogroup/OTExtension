@@ -13,6 +13,7 @@
 #include "ot-ext-snd.h"
 #include "alsz-ot-ext-rec.h"
 #include "xormasking.h"
+#include "simpleot.h"
 
 
 typedef struct alsz_snd_check_ctx {

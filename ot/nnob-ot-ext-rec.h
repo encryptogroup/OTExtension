@@ -11,6 +11,7 @@
 #define NNOB_OT_EXT_REC_H_
 
 #include "ot-ext-rec.h"
+#include "simpleot.h"
 
 
 

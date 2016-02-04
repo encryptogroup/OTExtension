@@ -41,8 +41,6 @@
 #include "../util/rcvthread.h"
 #include "../util/sndthread.h"
 #include "naor-pinkas.h"
-#include "pvwddh.h"
-#include "simpleot.h"
 
 
 

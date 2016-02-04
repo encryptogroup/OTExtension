@@ -143,7 +143,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	}
 	//sndthread->signal_end(id);
 
-	while(chan->is_alive() && !(mask_queue.empty()))
+	while(!(mask_queue.empty()))
 		KKReceiveAndUnMask(chan, &mask_queue);
 
 

@@ -25,7 +25,7 @@
 
 using namespace std;
 
-USHORT		m_nPort = 7766;
+USHORT		m_nPort = 7894;
 const char* m_nAddr ;// = "localhost";
 
 static const char* m_cConstSeed[2] = {"437398417012387813714564100", "15657566154164561"};

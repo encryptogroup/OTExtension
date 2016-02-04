@@ -140,7 +140,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(m_eSndOTFlav != Snd_R_OT) {
 		//finevent->Wait();
-		while(ot_chan->is_alive() && !(mask_queue.empty()))
+		while(!(mask_queue.empty()))
 			ReceiveAndUnMask(ot_chan, &mask_queue);
 	}
 	ot_chan->synchronize_end();

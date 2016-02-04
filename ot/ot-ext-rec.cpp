@@ -424,7 +424,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	free(tempRet);
 	free(buf);
 
-	delete vRcvX;
+	//delete vRcvX;
 	return true;
 }
 

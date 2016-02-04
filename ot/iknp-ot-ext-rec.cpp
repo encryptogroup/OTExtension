@@ -117,7 +117,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(m_eSndOTFlav != Snd_R_OT && m_eSndOTFlav != Snd_GC_OT) {
 		//finevent->Wait();
-		while(!(mask_queue.empty())) {
+		while(chan->is_alive() && !(mask_queue.empty())) {
 			ReceiveAndUnMask(chan, &mask_queue);
 		}
 	}

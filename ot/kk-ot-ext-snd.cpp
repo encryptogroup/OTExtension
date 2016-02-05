@@ -140,9 +140,10 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		vSnd[i].delCBitVector();
 		seedbuf[i].delCBitVector();
 	}
+#ifndef ABY_OT
 	delete vSnd;
 	delete seedbuf;
-
+#endif
 	if(m_eSndOTFlav==Snd_GC_OT)
 		freeRndMatrix(rndmat, m_nBaseOTs);
 

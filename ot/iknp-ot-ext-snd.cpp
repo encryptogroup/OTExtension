@@ -126,12 +126,16 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	Q.delCBitVector();
 	for (uint32_t u = 0; u < m_nSndVals; u++)
 		seedbuf[u].delCBitVector();
-	//delete seedbuf;
+#ifndef ABY_OT
+	delete seedbuf;
+#endif
 
 	for (uint32_t i = 0; i < numsndvals; i++)
 		vSnd[i].delCBitVector();
-	//if (numsndvals > 0)
-	//	delete vSnd;
+#ifndef ABY_OT
+	if (numsndvals > 0)
+		delete vSnd;
+#endif
 
 	if(m_eSndOTFlav==Snd_GC_OT)
 		freeRndMatrix(rndmat, m_nBaseOTs);

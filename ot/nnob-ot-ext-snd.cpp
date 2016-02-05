@@ -180,12 +180,15 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	for (uint32_t u = 0; u < m_nSndVals; u++)
 		seedbuf[u].delCBitVector();
+#ifndef ABY_OT
 	delete seedbuf;
-
+#endif
 	for (uint32_t i = 0; i < numsndvals; i++)
 		vSnd[i].delCBitVector();
+#ifndef ABY_OT
 	if (numsndvals > 0)
 		delete vSnd;
+#endif
 
 	if(use_mat_chan) {
 		mat_chan->synchronize_end();

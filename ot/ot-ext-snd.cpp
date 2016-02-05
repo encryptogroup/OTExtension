@@ -340,10 +340,8 @@ void OTExtSnd::ComputePKBaseOTs() {
 	m_cBaseOT->Receiver(nsndvals, m_nBaseOTs, U, chan, pBuf);
 	gettimeofday(&np_end, NULL);
 
-#ifndef BATCH
+#ifdef OTTiming
 	printf("Time for performing the base-OTs: %f seconds\n", getMillies(np_begin, np_end));
-#else
-	cout << getMillies(np_begin, np_end) << "\t";
 #endif
 
 	//Key expansion

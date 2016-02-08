@@ -37,12 +37,6 @@ OT related source code is found in `ot/`.
 
 Different compilation flags can be set in `util/constants.h`.
 
-###TBD
-The current version is in a prototypical state. Next steps: 
-
-1. Better documentation. Clean interfaces and source code
-2. Test and enable support under Windows
-
 
 ###REFERENCES
 * [1] G. Asharov, Y. Lindell, T. Schneider, M. Zohner: More Efficient Oblivious Transfer and Extensions for Faster Secure Computation (CCS'13). 

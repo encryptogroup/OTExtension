@@ -343,6 +343,7 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queu
 	uint32_t tmpmask;
 	uint8_t* tmpmaskbuf;
 	uint32_t startval, endval;
+	uint32_t offset = m_nint_sndvals;
 
 	if(m_eSndOTFlav == Snd_OT) {
 		startval = 0;
@@ -353,6 +354,7 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queu
 	} else if(m_eSndOTFlav == Snd_R_OT) {
 		startval = 1;
 		endval = m_nint_sndvals - 1;
+		offset = endval / (m_nSndVals-1);
 	}
 
 	tmpmaskbuf = (uint8_t*) malloc(bits_in_bytes(diff_choicecodes * m_nBitLength));
@@ -382,9 +384,15 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queu
 #ifdef DEBUG_KK_OTBREAKDOWN
 			cout << "choice in " <<i << "-th 1-out-of-" << m_nint_sndvals << " OT: " << tmpchoice << endl;
 #endif
-			if(tmpchoice >= startval && tmpchoice != endval) {
-				//tmpmask = vRcv.Get<uint32_t>((tmpchoice-1) * valsize * 8 + i * choicecodebits*m_nBitLength, choicecodebits*m_nBitLength);
-				vRcv.GetBits(tmpmaskbuf, (tmpchoice-startval) * valsize * 8 + i * diff_choicecodes*m_nBitLength, diff_choicecodes*m_nBitLength);
+			//if(tmpchoice >= startval && tmpchoice != endval) {
+			if(ceil_divide(tmpchoice, offset) * offset != tmpchoice || startval == 0) {
+				//cout << "Getting bits for i = " << i << ", tmpchoice = " << tmpchoice <<", and offset = " << offset << endl;
+				//vRcv.GetBits(tmpmaskbuf, (tmpchoice-startval) * valsize * 8 + i * diff_choicecodes*m_nBitLength, diff_choicecodes*m_nBitLength);
+				if(m_eSndOTFlav == Snd_R_OT) {
+					vRcv.GetBits(tmpmaskbuf, (tmpchoice-(ceil_divide(tmpchoice, offset))) * valsize * 8 + i * diff_choicecodes*m_nBitLength, diff_choicecodes*m_nBitLength);
+				} else {
+					vRcv.GetBits(tmpmaskbuf, (tmpchoice-startval) * valsize * 8 + i * diff_choicecodes*m_nBitLength, diff_choicecodes*m_nBitLength);
+				}
 #ifdef DEBUG_KK_OTBREAKDOWN
 				cout << "Accessing bit-address " << (tmpchoice-1) * valsize * 8 + i * diff_choicecodes*m_nBitLength << " with bit-length " << diff_choicecodes*m_nBitLength << endl;
 #endif

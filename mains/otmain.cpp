@@ -221,7 +221,7 @@ BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndval
 	return success;
 }
 
-BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, uint32_t nsndvals,
+BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bitlength, uint32_t nsndvals,
 		snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt)
 {
 	bool success = FALSE;
@@ -233,7 +233,7 @@ BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bi
 	timeval ot_begin, ot_end;
 	gettimeofday(&ot_begin, NULL);
 	// Execute OT receiver routine 	
-	success = receiver->receive(numOTs, bitlength, nsndvals, &choices, &ret, stype, rtype, m_nNumOTThreads, m_fMaskFct);
+	success = receiver->receive(numOTs, bitlength, nsndvals, choices, ret, stype, rtype, m_nNumOTThreads, m_fMaskFct);
 	gettimeofday(&ot_end, NULL);
 
 #ifndef BATCH
@@ -312,7 +312,7 @@ int main(int argc, char** argv)
 		//Create the X values as two arrays with "numOTs" entries of "bitlength" bit-values and resets them to 0
 		for(uint32_t i = 0; i < nsndvals; i++) {
 			X[i] = new CBitVector();
-			X[i]->Create(numOTs, bitlength, crypt);
+			X[i]->Create(numOTs, bitlength);
 		}
 
 #ifndef BATCH
@@ -324,6 +324,10 @@ int main(int argc, char** argv)
 		for(uint32_t i = 0; i < runs; i++) {
 			ObliviouslySend(X, numOTs, bitlength, nsndvals, stype, rtype, crypt);
 		}
+		/*for(uint32_t i = 0; i < nsndvals; i++) {
+			cout << "X" << i << ": ";
+			X[i]->PrintHex(0, numOTs);
+		}*/
 	}
 	else //Play as OT receiver
 	{
@@ -352,8 +356,13 @@ int main(int argc, char** argv)
 				runs << " times" << endl;
 #endif
 		for(uint32_t i = 0; i < runs; i++) {
-			ObliviouslyReceive(choices, response, numOTs, bitlength, nsndvals, stype, rtype, crypt);
+			ObliviouslyReceive(&choices, &response, numOTs, bitlength, nsndvals, stype, rtype, crypt);
 		}
+		/*cout << "C: ";
+		choices.PrintHex(0, numOTs);
+		cout << "R: ";
+		response.PrintHex(0, numOTs);*/
+
 	}
 
 	//Cleanup();

@@ -42,7 +42,7 @@ BOOL Listen();
 void InitOTSender(const char* address, int port, crypto* crypt);
 void InitOTReceiver(const char* address, int port, crypto* crypt);
 
-BOOL ObliviouslyReceive(CBitVector& choices, CBitVector& ret, int numOTs, int bitlength, uint32_t nsndvals, snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt);
+BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bitlength, uint32_t nsndvals, snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt);
 BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndvals, snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt);
 
 // Network Communication

@@ -286,7 +286,7 @@ static void InitAndReadCodeWord(uint64_t*** codewords) {
 	uint32_t ncodewords = m_nCodeWordBits;
 	uint32_t ncwintlen = 8;
 	*codewords = (uint64_t**) malloc(sizeof(uint64_t*) * ncodewords);
-	for(uint32_t i = 0; i < m_nCodewords; i++) {
+	for(uint32_t i = 0; i < ncodewords; i++) {
 		(*codewords)[i] = (uint64_t*) malloc(sizeof(uint64_t) * ((ncwintlen * sizeof(uint32_t)) / sizeof(uint64_t)));
 	}
 	readCodeWords(*codewords);

@@ -87,14 +87,15 @@ public:
 	void Init() {
 		m_pBits = NULL;
 		m_nByteSize = 0;
+		//retain = 1;
 	}
 
-	//~CBitVector(){
-	//	delCBitVector();
-	//};
+	~CBitVector(){
+		delCBitVector();
+	};
 
 	void delCBitVector() {
-		if (m_nByteSize > 0 && m_pBits != NULL) {
+		if (( m_nByteSize > 0 )&& (m_pBits != NULL)) {
 			free(m_pBits);
 		}
 		m_nByteSize = 0;

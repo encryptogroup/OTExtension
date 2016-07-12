@@ -133,10 +133,6 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	chan->synchronize_end();
 
-	T.delCBitVector();
-	vSnd.delCBitVector();
-	seedbuf.delCBitVector();
-	maskbuf.delCBitVector();
 	if(m_eSndOTFlav==Snd_GC_OT)
 		freeRndMatrix(rndmat, m_nBaseOTs);
 #ifdef OTTiming
@@ -149,6 +145,12 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
 	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
 #endif
+
+	T.delCBitVector();
+	vSnd.delCBitVector();
+	seedbuf.delCBitVector();
+	maskbuf.delCBitVector();
+	delete chan;
 
 	return TRUE;
 }

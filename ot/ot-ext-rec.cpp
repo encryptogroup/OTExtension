@@ -192,7 +192,7 @@ void OTExtRec::MaskBaseOTs(CBitVector& T, CBitVector& SndBuf, uint64_t OTid, uin
 }
 
 
-void OTExtRec::SendMasks(CBitVector Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs, uint64_t rec_r_ot_startpos) {
+void OTExtRec::SendMasks(CBitVector& Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs, uint64_t rec_r_ot_startpos) {
 	uint8_t* bufptr = Sndbuf.GetArr();
 #ifdef GENERATE_T_EXPLICITELY
 	uint64_t nSize = 2 * bits_in_bytes(m_nBaseOTs * processedOTs);
@@ -424,7 +424,10 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	free(tempRet);
 	free(buf);
 
-	//delete vRcvX;
+/*	for(uint64_t i = 0; i < nsndvals; i++) {
+		vRcvX[i].delCBitVector();
+	}
+	delete[] vRcvX;*/
 	return true;
 }
 

@@ -74,7 +74,7 @@ void CBitVector::ResizeinBytes(uint64_t newSizeBytes) {
 
 	memcpy(m_pBits, tBits, tSize);
 
-	delete (tBits);
+	free(tBits);
 }
 
 void CBitVector::Copy(BYTE* p, int pos, int len) {

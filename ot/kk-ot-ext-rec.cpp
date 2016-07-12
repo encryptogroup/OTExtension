@@ -90,7 +90,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildMatrices(T, vSnd, otid, processedOTBlocks, m_tBaseOTKeys.front());
+		BuildMatrices(&T, &vSnd, otid, processedOTBlocks, m_tBaseOTKeys.front());
 
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
@@ -123,7 +123,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalHshTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		SendMasks(vSnd, chan, otid, OTsPerIteration, 0);
+		SendMasks(&vSnd, chan, otid, OTsPerIteration, 0);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalSndTime += getMillies(tempStart, tempEnd);

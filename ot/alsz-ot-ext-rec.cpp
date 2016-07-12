@@ -83,7 +83,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildMatrices(T, vSnd, otid, processedOTBlocks, tmp_base_keys);
+		BuildMatrices(&T, &vSnd, otid, processedOTBlocks, tmp_base_keys);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
@@ -94,13 +94,13 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalEnqueueTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		MaskBaseOTs(T, vSnd, otid, processedOTBlocks);
+		MaskBaseOTs(&T, &vSnd, otid, processedOTBlocks);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMaskTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		SendMasks(vSnd, ot_chan, otid, OTsPerIteration);
+		SendMasks(&vSnd, ot_chan, otid, OTsPerIteration);
 		//ot_chan->send_id_len(vSnd.GetArr(), nSize, otid, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
@@ -130,7 +130,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 			}
 			ComputeOWF(&check_buf, check_chan);
 			if(m_bUseMinEntCorRob) {
-				ReceiveAndXORCorRobVector(Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
+				ReceiveAndXORCorRobVector(&Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
 				Ttmp.Transpose(wd_size_bits, OTsPerIteration);
 				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
 			}
@@ -172,7 +172,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 			totalChkTime += getMillies(tempStart, tempEnd);
 #endif
 			if(m_bUseMinEntCorRob) {
-				ReceiveAndXORCorRobVector(Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
+				ReceiveAndXORCorRobVector(&Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
 				Ttmp.Transpose(wd_size_bits, OTsPerIteration);
 				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
 			}

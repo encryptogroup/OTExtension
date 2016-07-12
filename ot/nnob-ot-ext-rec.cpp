@@ -72,7 +72,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 		gettimeofday(&tempStart, NULL);
 #endif
-		BuildMatrices(T, vSnd, otid, processedOTBlocks, m_tBaseOTKeys.front());
+		BuildMatrices(&T, &vSnd, otid, processedOTBlocks, m_tBaseOTKeys.front());
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMtxTime += getMillies(tempStart, tempEnd);
@@ -84,13 +84,13 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalEnqueueTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		MaskBaseOTs(T, vSnd, otid, processedOTBlocks);
+		MaskBaseOTs(&T, &vSnd, otid, processedOTBlocks);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalMaskTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		SendMasks(vSnd, ot_chan, otid, OTsPerIteration);
+		SendMasks(&vSnd, ot_chan, otid, OTsPerIteration);
 		//ot_chan->send_id_len(vSnd.GetArr(), nSize, otid, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
@@ -98,7 +98,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		gettimeofday(&tempStart, NULL);
 #endif
 		ReceiveAndFillMatrix(rndmat, mat_chan);
-		ReceiveAndXORCorRobVector(T, OTsPerIteration, mat_chan);
+		ReceiveAndXORCorRobVector(&T, OTsPerIteration, mat_chan);
 
 		T.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming

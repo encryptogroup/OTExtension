@@ -148,7 +148,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 			MaskAndSend(tmpmaskbuf.maskbuf, tmpmaskbuf.otid, tmpmaskbuf.otlen, ot_chan);
 			for(uint32_t i = 0; i < numsndvals; i++)
 				tmpmaskbuf.maskbuf[i].delCBitVector();
-			delete tmpmaskbuf.maskbuf;
+			delete[] tmpmaskbuf.maskbuf;
 		}
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
@@ -168,7 +168,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 			MaskAndSend(tmpmaskbuf.maskbuf, tmpmaskbuf.otid, tmpmaskbuf.otlen, ot_chan);
 			for(uint32_t i = 0; i < numsndvals; i++)
 				tmpmaskbuf.maskbuf[i].delCBitVector();
-			delete tmpmaskbuf.maskbuf;
+			delete[] tmpmaskbuf.maskbuf;
 		}
 	}
 
@@ -181,13 +181,13 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	for (uint32_t u = 0; u < m_nSndVals; u++)
 		seedbuf[u].delCBitVector();
 #ifndef ABY_OT
-	delete seedbuf;
+	delete[] seedbuf;
 #endif
 	for (uint32_t i = 0; i < numsndvals; i++)
 		vSnd[i].delCBitVector();
 #ifndef ABY_OT
 	if (numsndvals > 0)
-		delete vSnd;
+		delete[] vSnd;
 #endif
 
 	if(use_mat_chan) {

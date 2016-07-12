@@ -218,6 +218,7 @@ void NNOBOTExtRec::ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* che
 	uint8_t* sender_permchoicebitptr = rcv_buf_permchoices;
 
 	nnob_rcv_check_t check_buf = check_buf_q->front();
+
 	check_buf_q->pop();
 
 	assert(tmpid == check_buf.otid);
@@ -301,7 +302,7 @@ void NNOBOTExtRec::ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* che
 
 	free(rcv_buf_perm);
 	free(rcv_buf_permchoices);
-	free(tmpbuf);
+	//free(tmpbuf);
 	free(ka);
 	free(kb);
 	free(check_buf.T0);

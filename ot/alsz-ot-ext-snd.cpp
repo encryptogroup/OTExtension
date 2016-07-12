@@ -214,7 +214,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		vSnd[i].delCBitVector();
 #ifndef ABY_OT
 	if (numsndvals > 0)
-		delete vSnd;
+		delete[] vSnd;
 #endif
 	if(use_mat_chan) {
 		mat_chan->synchronize_end();

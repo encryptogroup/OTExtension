@@ -409,9 +409,9 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 		resp = 0x01;
 		chan->send(&resp, (uint64_t) 1);
 
-		for(uint64_t j = 0; j < nsndvals; j++) {
+		/*for(uint64_t j = 0; j < nsndvals; j++) {
 			free(buf[j]);
-		}
+		}*/
 	}
 
 	cout << "OT Verification successful" << endl;
@@ -423,12 +423,12 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	free(tempXc);
 	//free(tempXn);
 	free(tempRet);
-	free(buf);
+	//free(buf);
 
 	/*for(uint64_t i = 0; i < nsndvals; i++) {
 		vRcvX[i].delCBitVector();
-	}
-	delete[] vRcvX;*/
+	}*/
+	//delete[] vRcvX;
 	return true;
 }
 

@@ -413,13 +413,15 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 #endif
 
 	free(rcv_buf);
-	for(uint32_t i = 0; i < receiver_hashes; i++)
+	for (uint32_t i = 0; i < receiver_hashes; i++) {
 		free(tmpbuf[i]);
+	}
 	free(tmpbuf);
 	free(ka);
 	free(kb);
 	free(check_buf.T0);
 	free(check_buf.T1);
+	free(outhashes);
 #ifndef AES_OWF
 	free(hash_buf);
 #endif

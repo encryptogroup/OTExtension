@@ -307,6 +307,7 @@ void NNOBOTExtRec::ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* che
 	free(kb);
 	free(check_buf.T0);
 	//free(check_buf.T1);
+	free(outhashes);
 #ifndef AES_OWF
 	free(hash_buf);
 #endif

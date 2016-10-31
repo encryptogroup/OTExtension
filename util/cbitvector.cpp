@@ -149,7 +149,7 @@ void CBitVector::SetBitsToZero(int bitpos, int bitlen) {
 }
 
 void CBitVector::SetBytesToZero(int bytepos, int bytelen) {
-	assert(bytepos + bytelen < m_nByteSize);
+	assert(bytepos + bytelen <= m_nByteSize); //TODO: verify this with the test cases.
 	memset(m_pBits + bytepos, 0x00, bytelen);
 }
 

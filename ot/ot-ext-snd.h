@@ -11,14 +11,7 @@
 #include "ot-ext.h"
 
 class OTExtSnd : public OTExt {
-	/*
-	 * OT sender part
-	 * Input:
-	 * ret: returns the resulting bit representations. Has to initialized to a byte size of: nOTs * nSndVals * state.field_size
-	 *
-	 * CBitVector* values: holds the values to be transferred. If C_OT is enabled, the first dimension holds the value while the delta is written into the second dimension
-	 * Output: was the execution successful?
-	 */
+
 public:
 	OTExtSnd() {};
 

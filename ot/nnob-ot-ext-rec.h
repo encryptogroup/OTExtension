@@ -22,16 +22,7 @@ typedef struct nnob_rcv_check_ctx {
 } nnob_rcv_check_t;
 
 class NNOBOTExtRec : public OTExtRec {
-	/*
-	 * OT receiver part
-	 * Input:
-	 * nSndVals: perform a 1-out-of-nSndVals OT
-	 * nOTs: the number of OTs that shall be performed
-	 * choices: a vector containing nBaseOTs choices in the domain 0-(SndVals-1)
-	 * ret: returns the resulting bit representations, Has to initialized to a byte size of: nOTs * state.field_size
-	 *
-	 * Output: was the execution successful?
-	 */
+
 public:
 	NNOBOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool dobaseots=true) {
 		uint32_t nbaseots = ceil_divide(crypt->get_seclvl().symbits * 8, 3);

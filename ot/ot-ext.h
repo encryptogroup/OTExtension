@@ -27,8 +27,6 @@
 //#define DEBUG_NNOB_CHECKS_OUTPUT
 //#define DEBUG_KK_OTBREAKDOWN
 
-#define NUMOTBLOCKS 128
-#define BUFFER_OT_KEYS 128
 
 #include "../util/typedefs.h"
 #include "../util/socket.h"

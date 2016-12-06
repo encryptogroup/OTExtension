@@ -110,10 +110,10 @@ void OTExtSnd::UnMaskBaseOTs(CBitVector* T, CBitVector* RcvBuf, CBitVector* U, u
 
 	for (uint64_t k = 0; k < m_nBaseOTs; k++, rcvbufptr += rowbytelen) {
 #ifdef GENERATE_T_EXPLICITELY
-		if (Uptr->.GetBit(k) == 0) {
-			T.XORBytes(rcvbufptr, k * rowbytelen, rowbytelen);
+		if (U->GetBit(k) == 0) {
+			T->XORBytes(rcvbufptr, k * rowbytelen, rowbytelen);
 		} else {
-			T.XORBytes(rcvbufptr + blocksizebytes, k * rowbytelen, rowbytelen);
+			T->XORBytes(rcvbufptr + blocksizebytes, k * rowbytelen, rowbytelen);
 		}
 #else
 		if (U->GetBit(k)) {
@@ -135,17 +135,17 @@ void OTExtSnd::ReceiveMasks(CBitVector* vRcv, channel* chan, uint64_t processedO
 	if(m_eRecOTFlav == Rec_R_OT) {
 		startpos = rec_r_ot_startpos;
 #ifdef GENERATE_T_EXPLICITELY
-		vRcv.SetBytesToZero(0, 2* bits_in_bytes(processedOTs));
+		vRcv->SetBytesToZero(0, 2* bits_in_bytes(processedOTs));
 #else
 		vRcv->SetBytesToZero(0, bits_in_bytes(processedOTs));
 #endif
 	}
 #ifdef GENERATE_T_EXPLICITELY
 	if(m_eRecOTFlav == Rec_R_OT) {
-		vRcv.SetBytes(rcvbuftmpptr, bits_in_bytes(processedOTs), bits_in_bytes((m_nBaseOTs -startpos) * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
-		vRcv.SetBytes(rcvbuftmpptr + bits_in_bytes((m_nBaseOTs -startpos) * processedOTs), bits_in_bytes(m_nBaseOTs * processedOTs), bits_in_bytes((m_nBaseOTs -startpos) * processedOTs));
+		vRcv->SetBytes(rcvbuftmpptr, bits_in_bytes(processedOTs), bits_in_bytes((m_nBaseOTs -startpos) * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+		vRcv->SetBytes(rcvbuftmpptr + bits_in_bytes((m_nBaseOTs -startpos) * processedOTs), bits_in_bytes(m_nBaseOTs * processedOTs), bits_in_bytes((m_nBaseOTs -startpos) * processedOTs));
 	} else {
-		vRcv.SetBytes(rcvbuftmpptr, 0, 2 * bits_in_bytes(m_nBaseOTs* processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
+		vRcv->SetBytes(rcvbuftmpptr, 0, 2 * bits_in_bytes(m_nBaseOTs* processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
 	}
 #else
 	vRcv->SetBytes(rcvbuftmpptr, bits_in_bytes(startpos * processedOTs), bits_in_bytes((m_nBaseOTs - startpos) * processedOTs));//AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));

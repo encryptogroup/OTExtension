@@ -140,7 +140,7 @@ void OTExtRec::MaskBaseOTs(CBitVector* T, CBitVector* SndBuf, uint64_t OTid, uin
 	if(m_eRecOTFlav == Rec_R_OT) {
 		tmp.CreateBytes(rowbytelen);
 		tmp.Reset();
-		tmp.XORBytesReverse(SndBuf.GetArr(), 0, rowbytelen);
+		tmp.XORBytesReverse(SndBuf->GetArr(), 0, rowbytelen);
 		tmp.XORBytesReverse(T->GetArr(), 0, rowbytelen);
 		m_vChoices->Copy(tmp.GetArr(), ceil_divide(OTid, 8), choicebytelen);
 

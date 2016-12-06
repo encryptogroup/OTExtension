@@ -211,8 +211,8 @@ BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndval
 
 #ifndef BATCH
 	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
-	cout << "Sent:\t\t" << m_vSocket->get_bytes_sent() << " bytes" << endl;
-	cout << "Received:\t" << m_vSocket->get_bytes_received() <<" bytes" << endl;
+	cout << "Sent:\t\t" << m_vSocket->getSndCnt() << " bytes" << endl;
+	cout << "Received:\t" << m_vSocket->getRcvCnt() <<" bytes" << endl;
 #else
 	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << endl;
 #endif
@@ -239,8 +239,8 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 #ifndef BATCH
 	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
 
-	cout << "Sent:\t\t" << m_vSocket->get_bytes_sent() << " bytes" << endl;
-	cout << "Received:\t" << m_vSocket->get_bytes_received() <<" bytes" << endl;
+	cout << "Sent:\t\t" << m_vSocket->getSndCnt() << " bytes" << endl;
+	cout << "Received:\t" << m_vSocket->getRcvCnt() <<" bytes" << endl;
 #else
 	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << endl;
 #endif

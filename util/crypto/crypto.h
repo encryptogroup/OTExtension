@@ -31,7 +31,17 @@ enum bc_mode {
 	ECB, CBC
 };
 
+//Check for the OpenSSL version number, since the EVP_CIPHER_CTX has become opaque from >= 1.1.0
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+	#define OPENSSL_OPAQUE_EVP_CIPHER_CTX
+#endif
+
+
+#ifdef OPENSSL_OPAQUE_EVP_CIPHER_CTX
+typedef EVP_CIPHER_CTX* AES_KEY_CTX;
+#else
 typedef EVP_CIPHER_CTX AES_KEY_CTX;
+#endif
 
 /* Predefined security levels,
  * ST (SHORTTERM) = 1024/160/163 bit public key, 80 bit private key

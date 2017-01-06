@@ -18,8 +18,6 @@
 
 
 
-
-
 #define AES_KEY_BITS			128
 #define AES_KEY_BYTES			16
 #define AES_BITS				128

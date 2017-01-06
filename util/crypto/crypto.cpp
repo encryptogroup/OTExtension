@@ -39,8 +39,6 @@ void crypto::init(uint32_t symsecbits, uint8_t* seed) {
 	aes_hash_key = EVP_CIPHER_CTX_new();
 	aes_enc_key = EVP_CIPHER_CTX_new();
 	aes_dec_key = EVP_CIPHER_CTX_new();
-
-	global_prf_state.aes_key = EVP_CIPHER_CTX_new();
 #endif
 
 	init_prf_state(&global_prf_state, seed);
@@ -198,8 +196,10 @@ void crypto::clean_aes_key(AES_KEY_CTX* aeskey) {
 void crypto::seed_aes_key(AES_KEY_CTX* aeskey, uint32_t symbits, uint8_t* seed, bc_mode mode, const uint8_t* iv, bool encrypt) {
 #ifdef OPENSSL_OPAQUE_EVP_CIPHER_CTX
 	*aeskey = EVP_CIPHER_CTX_new();
+	AES_KEY_CTX aes_key_tmp = *aeskey;
 #else
 	EVP_CIPHER_CTX_init(aeskey);
+	AES_KEY_CTX aes_key_tmp = aeskey;
 #endif
 
 	int (*initfct)(EVP_CIPHER_CTX*, const EVP_CIPHER*, ENGINE*, const unsigned char*, const unsigned char*);
@@ -212,23 +212,23 @@ void crypto::seed_aes_key(AES_KEY_CTX* aeskey, uint32_t symbits, uint8_t* seed, 
 	switch (mode) {
 	case ECB:
 		if (symbits <= 128) {
-			initfct(*aeskey, EVP_aes_128_ecb(), NULL, seed, iv);
+			initfct(aes_key_tmp, EVP_aes_128_ecb(), NULL, seed, iv);
 		} else {
-			initfct(*aeskey, EVP_aes_256_ecb(), NULL, seed, iv);
+			initfct(aes_key_tmp, EVP_aes_256_ecb(), NULL, seed, iv);
 		}
 		break;
 	case CBC:
 		if (symbits <= 128) {
-			initfct(*aeskey, EVP_aes_128_cbc(), NULL, seed, iv);
+			initfct(aes_key_tmp, EVP_aes_128_cbc(), NULL, seed, iv);
 		} else {
-			initfct(*aeskey, EVP_aes_256_cbc(), NULL, seed, iv);
+			initfct(aes_key_tmp, EVP_aes_256_cbc(), NULL, seed, iv);
 		}
 		break;
 	default:
 		if (symbits <= 128) {
-			initfct(*aeskey, EVP_aes_128_ecb(), NULL, seed, iv);
+			initfct(aes_key_tmp, EVP_aes_128_ecb(), NULL, seed, iv);
 		} else {
-			initfct(*aeskey, EVP_aes_256_ecb(), NULL, seed, iv);
+			initfct(aes_key_tmp, EVP_aes_256_ecb(), NULL, seed, iv);
 		}
 		break;
 	}

@@ -98,7 +98,7 @@ void ecc_field::init(seclvl sp, uint8_t* seed) {
 	//*((ecc_num*) order)->get_val() = ecr;//*((num2Big) *order) = ord;
 	mip->IOBASE = 16;
 	order = new ecc_num(this, tmp);
-
+	delete tmp;
 }
 
 ecc_field::~ecc_field() {
@@ -254,7 +254,7 @@ ecc_num::ecc_num(ecc_field* fld, Big* src) {
 }
 
 ecc_num::~ecc_num() {
-	//delete val;
+	delete val;
 }
 
 Big* ecc_num::get_val() {

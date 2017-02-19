@@ -120,7 +120,6 @@ void NaorPinkas::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t
 	pCr = (fe**) malloc(sizeof(fe*) * nSndVals);
 	pC = (fe**) malloc(sizeof(fe*) * nSndVals);
 
-	fetmp = m_cPKCrypto->get_fe();
 	PK0r = m_cPKCrypto->get_fe();
 	pC[0] = m_cPKCrypto->get_fe();
 	g = m_cPKCrypto->get_generator();
@@ -158,7 +157,6 @@ void NaorPinkas::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t
 	free(pBuf);
 	// N-P sender: receive pk0
 	nBufSize = fe_bytes * nOTs;
-	pBuf = (uint8_t*) malloc(nBufSize);
 	pBuf = chan->blocking_receive();//pBuf, nBufSize);
 
 	pBufIdx = pBuf;

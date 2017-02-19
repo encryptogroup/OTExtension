@@ -307,8 +307,8 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 		tmpbuf[i] = (uint8_t*) malloc(bufrowbytelen);
 	}
 
-	uint8_t **ka = (uint8_t**) malloc(2);
-	uint8_t **kb = (uint8_t**) malloc(2);
+	uint8_t **ka = (uint8_t**) malloc(2 * sizeof(uint8_t*));
+	uint8_t **kb = (uint8_t**) malloc(2 * sizeof(uint8_t*));
 	uint8_t  *kaptr, *kbptr;
 	uint8_t* outptr = outhashes;
 	uint32_t ida, idb;

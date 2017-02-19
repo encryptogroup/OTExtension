@@ -150,6 +150,8 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	}
 	ot_chan->synchronize_end();
 	check_chan->synchronize_end();
+	delete ot_chan;
+	delete check_chan;
 
 	T.delCBitVector();
 	vSnd.delCBitVector();
@@ -158,6 +160,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(use_mat_chan) {
 		mat_chan->synchronize_end();
+		delete mat_chan;
 	}
 
 	if(m_eSndOTFlav==Snd_GC_OT) {

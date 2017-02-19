@@ -200,6 +200,8 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	ot_chan->synchronize_end();
 	check_chan->synchronize_end();
+	delete ot_chan;
+	delete check_chan;
 
 
 	T.delCBitVector();
@@ -210,6 +212,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(use_mat_chan) {
 		mat_chan->synchronize_end();
+		delete mat_chan;
 	}
 
 	if(m_eSndOTFlav==Snd_GC_OT) {
@@ -480,7 +483,7 @@ void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
 
 		free(buf);
 		for(uint32_t i = 0; i < nsndvals; i++) {
-			X[i]->delCBitVector();
+			delete X[i];
 		}
 		//free(X);
 	//	X0.delCBitVector();

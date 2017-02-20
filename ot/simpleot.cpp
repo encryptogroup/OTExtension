@@ -46,6 +46,7 @@ void SimpleOT::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, c
 			AB = m_cPKCrypto->get_fe();
 			AB->set_mul(B[i], A);
 			AB->export_to_bytes(sndbufptr);
+			delete AB;
 		}
 	}
 
@@ -83,7 +84,7 @@ void SimpleOT::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, c
 
 void SimpleOT::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* retbuf) {
 	fe *g, *A, *Asqr, *B, *AB, *tmp;
-	num *a, *asqr;
+	num *a, *asqr, *order;
 
 	brickexp *bg;
 
@@ -114,7 +115,9 @@ void SimpleOT::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* 
 	asqr = m_cPKCrypto->get_num();
 	Asqr = m_cPKCrypto->get_fe();
 
-	asqr->set_mul_mod(a, a, m_cPKCrypto->get_order());
+	order = m_cPKCrypto->get_order();
+	asqr->set_mul_mod(a, a, order);
+	delete order;
 	bg->pow(Asqr, asqr);
 	//Asqr->set_pow(g, asqr);
 
@@ -147,6 +150,7 @@ void SimpleOT::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* 
 		hashReturn(retbufptr, hash_bytes, tmpbuf, fe_bytes, i);
 		retbufptr+=hash_bytes;
 
+		delete AB;
 		delete B;
 		delete tmp;
 	}
@@ -158,7 +162,6 @@ void SimpleOT::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* 
 	delete g;
 	delete A;
 	delete Asqr;
-	delete AB;
 	delete a;
 	delete asqr;
 }

@@ -151,6 +151,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	}
 
 	chan->synchronize_end();
+	delete chan;
 
 	/*T.delCBitVector();
 	vSnd.delCBitVector();
@@ -430,10 +431,11 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queu
 		}
 
 		mask_queue->pop();
-		tmpblock->buf->delCBitVector();
+		delete tmpblock->buf;
+		free(tmpblock);
 		free(buf);
 	}
-	vRcv.AttachBuf(buf, 0);
+	vRcv.DetachBuf();
 	free(tmpmaskbuf);
 #ifdef DEBUG_KK_OTBREAKDOWN
 	cout << "Final output: ";

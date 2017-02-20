@@ -156,6 +156,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 			tmpmaskbuf = mask_queue.front();
 			mask_queue.pop();
 			MaskAndSend(tmpmaskbuf.maskbuf, tmpmaskbuf.otid, tmpmaskbuf.otlen, ot_chan);
+			delete[] tmpmaskbuf.maskbuf;
 		}
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);

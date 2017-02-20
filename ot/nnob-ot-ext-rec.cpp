@@ -150,6 +150,8 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	}
 	ot_chan->synchronize_end();
 	check_chan->synchronize_end();
+	delete ot_chan;
+	delete check_chan;
 
 	T.delCBitVector();
 	vSnd.delCBitVector();
@@ -158,6 +160,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	if(use_mat_chan) {
 		mat_chan->synchronize_end();
+		delete mat_chan;
 	}
 
 	if(m_eSndOTFlav==Snd_GC_OT) {
@@ -246,8 +249,8 @@ void NNOBOTExtRec::ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* che
 	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
 #endif
 	uint8_t* tmpbuf = (uint8_t*) malloc(bufrowbytelen);
-	uint8_t **ka = (uint8_t**) malloc(2);
-	uint8_t **kb = (uint8_t**) malloc(2);
+	uint8_t **ka = (uint8_t**) malloc(2 * sizeof(uint8_t*));
+	uint8_t **kb = (uint8_t**) malloc(2 * sizeof(uint8_t*));
 	uint8_t  *kaptr, *kbptr;
 	uint8_t* outptr = outhashes;
 	uint32_t ida, idb;

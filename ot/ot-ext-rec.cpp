@@ -328,9 +328,10 @@ void OTExtRec::ReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queue) {
 		uint32_t remots = min(otlen, m_nOTs - startotid);
 		m_fMaskFct->UnMask(startotid, remots, m_vChoices, m_vRet, &vRcv, tmpblock->buf, m_eSndOTFlav);
 		mask_queue->pop();
-		tmpblock->buf->delCBitVector();
+		delete tmpblock->buf;
+		free(tmpblock);
 		free(buf);
-		vRcv.AttachBuf(buf, 0);
+		vRcv.DetachBuf();
 		//cout <<  "Start: " << startotid << " data available? " << (uint32_t) chan->data_available() <<
 		//		", queue_empty? "<< (uint32_t) mask_queue->empty() << endl;
 	}
@@ -352,10 +353,6 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	uint32_t choicecodebits = ceil_log2(m_nSndVals);
 
 	CBitVector* vRcvX = new CBitVector[nsndvals];//(CBitVector*) malloc(sizeof(CBitVector)*m_nSndVals);
-	for(uint64_t i = 0; i < nsndvals; i++) {
-		vRcvX[i].Create(0);
-	}
-	//vRcvX[1].Create(0);
 	CBitVector *Xc, *Xn;
 	uint64_t processedOTBlocks, otlen, otstart;
 	uint32_t bytelen = ceil_divide(m_nBitLength, 8);
@@ -412,6 +409,9 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 		/*for(uint64_t j = 0; j < nsndvals; j++) {
 			free(buf[j]);
 		}*/
+		for(uint64_t j = 0; j < nsndvals; j++) {
+			vRcvX[j].DetachBuf();
+		}
 	}
 
 	cout << "OT Verification successful" << endl;
@@ -423,12 +423,9 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	free(tempXc);
 	//free(tempXn);
 	free(tempRet);
-	//free(buf);
+	free(buf);
 
-	/*for(uint64_t i = 0; i < nsndvals; i++) {
-		vRcvX[i].delCBitVector();
-	}*/
-	//delete[] vRcvX;
+	delete[] vRcvX;
 	return true;
 }
 

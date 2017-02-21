@@ -213,7 +213,7 @@ void OTExtSnd::HashValues(CBitVector* Q, CBitVector* seedbuf, CBitVector* snd_bu
 
 			if(m_eSndOTFlav != Snd_GC_OT) {
 #ifdef FIXED_KEY_AES_HASHING
-				FixedKeyHashing(m_kCRFKey, sbp[u], (BYTE*) Qptr, hash_buf, i, hashinbytelen, m_cCrypt);
+				FixedKeyHashing(m_kCRFKey, sbp[u], (BYTE*) Qptr, hash_buf, i, m_nSymSecParam, m_cCrypt);
 #else
 				memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
 				memcpy(inbuf+sizeof(uint64_t), Q->GetArr() + i * wd_size_bytes, rowbytelen);

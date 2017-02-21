@@ -238,12 +238,13 @@ static void BitMatrixMultiplication(uint8_t* resbuf, uint64_t resbytelen, uint8_
 
 #ifdef FIXED_KEY_AES_HASHING
 inline void FixedKeyHashing(AES_KEY_CTX* aeskey, BYTE* outbuf, BYTE* inbuf, BYTE* tmpbuf, uint64_t id, uint32_t bytessecparam, crypto* crypt) {
+	assert(bytessecparam <= AES_BYTES);
 #ifdef HIGH_SPEED_ROT_LT
 	((uint64_t*) tmpbuf)[0] = id ^ ((uint64_t*) inbuf)[0];
 	((uint64_t*) tmpbuf)[1] = ((uint64_t*) inbuf)[1];
 #else
 	memset(tmpbuf, 0, AES_BYTES);
-	memcpy(tmpbuf, (BYTE*) (&id), sizeof(int));
+	memcpy(tmpbuf, (BYTE*) (&id), sizeof(uint64_t));
 
 	for (int i = 0; i < bytessecparam; i++) {
 		tmpbuf[i] = tmpbuf[i] ^ inbuf[i];

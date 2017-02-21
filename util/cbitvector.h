@@ -139,6 +139,8 @@ public:
 		memset(m_pBits, 0, m_nByteSize);
 	}
 	void ResetFromTo(int frombyte, int tobyte) {
+		assert(frombyte <= tobyte);
+		assert(tobyte < m_nByteSize);
 		memset(m_pBits + frombyte, 0, tobyte - frombyte);
 	}
 	void SetToOne() {
@@ -180,30 +182,38 @@ public:
 	 * Bitwise operations
 	 */
 	BYTE GetBit(int idx) {
+		assert(idx < (m_nByteSize << 3));
 		return !!(m_pBits[idx >> 3] & MASK_BIT[idx & 0x7]);
 	}
 	void SetBit(int idx, BYTE b) {
+		assert(idx < (m_nByteSize << 3));
 		m_pBits[idx >> 3] = (m_pBits[idx >> 3] & CMASK_BIT[idx & 0x7]) | MASK_SET_BIT_C[!(b & 0x01)][idx & 0x7];
 	}
 	void XORBit(int idx, BYTE b) {
+		assert(idx < (m_nByteSize << 3));
 		m_pBits[idx >> 3] ^= MASK_SET_BIT_C[!(b & 0x01)][idx & 0x7];
 	}
 	void ANDBit(int idx, BYTE b) {
+		assert(idx < (m_nByteSize << 3));
 		if (!b)
 			m_pBits[idx >> 3] &= CMASK_BIT[idx & 0x7];
 	}
 
 	//used to access bits in the regular order
 	BYTE GetBitNoMask(uint64_t idx) {
+		assert(idx < (m_nByteSize << 3));
 		return !!(m_pBits[idx >> 3] & BIT[idx & 0x7]);
 	}
 	void SetBitNoMask(int idx, BYTE b) {
+		assert(idx < (m_nByteSize << 3));
 		m_pBits[idx >> 3] = (m_pBits[idx >> 3] & C_BIT[idx & 0x7]) | SET_BIT_C[!(b & 0x01)][idx & 0x7];
 	}
 	void XORBitNoMask(int idx, BYTE b) {
+		assert(idx < (m_nByteSize << 3));
 		m_pBits[idx >> 3] ^= SET_BIT_C[!(b & 0x01)][idx & 0x7];
 	}
 	void ANDBitNoMask(int idx, BYTE b) {
+		assert(idx < (m_nByteSize << 3));
 		if (!b)
 			m_pBits[idx >> 3] &= C_BIT[idx & 0x7];
 	}
@@ -212,15 +222,19 @@ public:
 	 * Single byte operations
 	 */
 	void SetByte(int idx, BYTE p) {
+		assert(idx < m_nByteSize);
 		m_pBits[idx] = p;
 	}
 	BYTE GetByte(int idx) {
+		assert(idx < m_nByteSize);
 		return m_pBits[idx];
 	}
 	void XORByte(int idx, BYTE b) {
+		assert(idx < m_nByteSize);
 		m_pBits[idx] ^= b;
 	}
 	void ANDByte(int idx, BYTE b) {
+		assert(idx < m_nByteSize);
 		m_pBits[idx] &= b;
 	}
 
@@ -231,6 +245,7 @@ public:
 	void GetBytes(BYTE* p, int pos, int len);
 	template<class T> void GetBytes(T* dst, T* src, T* lim);
 	template<class T> T Get(int pos, int len) {
+		assert(len <= sizeof(T) * 8);
 		T val = 0;
 		GetBits((BYTE*) &val, pos, len);
 		return val;
@@ -248,6 +263,7 @@ public:
 	void SetBytes(BYTE* p, int pos, int len);
 	template<class T> void SetBytes(T* dst, T* src, T* lim);
 	template<class T> void Set(T val, int pos, int len) {
+		assert(len <= sizeof(T) * 8);
 		SetBits((BYTE*) &val, (uint64_t) pos, (uint64_t) len);
 	}
 	void SetBitsToZero(int bitpos, int bitlen);
@@ -265,6 +281,7 @@ public:
 		XORBytes(vec.GetArr(), pos, len);
 	}
 	template<class T> void XOR(T val, int pos, int len) {
+		assert(len <= sizeof(T) * 8);
 		XORBits((BYTE*) &val, pos, len);
 	}
 	void XORBits(BYTE* p, int pos, int len);

@@ -390,8 +390,8 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 					cout << "Error at position i = " << i << ", k = " << k << ", with X" << (hex) << tmpchoice <<
 							" = " << (uint32_t) tempXc[k] << " and res = " << (uint32_t) tempRet[k] << ". All values: " <<endl;
 					for(uint64_t k = 0, ctr=0; k < nsndvals; k++) {
-						tmpret64 = vRcvX[k].Get<uint64_t>(i * m_nBitLength, m_nBitLength);
-						cout << "X" << k << ": " << (hex) << tmpret64 << (dec) << endl;
+						cout << "X" << k << ": ";
+						vRcvX[k].Print(i * m_nBitLength, (i+1) * m_nBitLength);
 					}
 
 					resp = 0x00;

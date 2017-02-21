@@ -237,7 +237,7 @@ void OTExtRec::HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbu
 #endif
 
 #ifdef FIXED_KEY_AES_HASHING
-			FixedKeyHashing(m_kCRFKey, bufptr, Tptr, hash_buf, i, m_nSymSecParam, m_cCrypt);
+			FixedKeyHashing(m_kCRFKey, bufptr, Tptr, hash_buf, i, ceil_divide(m_nSymSecParam, 8), m_cCrypt);
 #else
 			memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
 			memcpy(inbuf+sizeof(uint64_t), Tptr, rowbytelen);

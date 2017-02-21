@@ -1,5 +1,5 @@
 ###DESCRIPTION
-Implementation of the passive secure OT extension protocol of [1] and the active secure OT extension protocols of [2] and [3]. Implements the general OT (G_OT), correlated OT (C_OT), global correlated OT (GC_OT), sender random OT (SR_OT), and receiver random OT (RR_OT) (Definitions of the functionalities will follow). Implements the base-OTs by Naor-Pinkas [4], Peikert-Vaikuntanathan-Waters [5], and Chou-Orlandi [6]. The code is based on the OT extension implementation of [7] and uses the MIRACL libary [8] for elliptic curve arithmetic. 
+Implementation of the passive secure OT extension protocol of [1] and the active secure OT extension protocols of [2] and [3]. Implements the general OT (G_OT), correlated OT (C_OT), global correlated OT (GC_OT), sender random OT (SR_OT), and receiver random OT (RR_OT) (Definitions of the functionalities will follow). Implements the base-OTs by Naor-Pinkas [4], Peikert-Vaikuntanathan-Waters [5], and Chou-Orlandi [6]. The code is based on the OT extension implementation of [7] and uses the MIRACL libary [8] for elliptic curve arithmetic.
 
 Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10].
 
@@ -19,7 +19,7 @@ Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10].
 
 1. Clone a copy of the main OTExtension git repository and the Miracl submodule by running:
 	```
-	git clone --recursive git://github.com/encryptogroup/OTExtension
+	git clone --recursive https://github.com/encryptogroup/OTExtension.git
 	```
 
 2. Enter the Framework directory: `cd OTExtension/`
@@ -33,19 +33,19 @@ A list of all available options can be obtained via `ot.exe -h`.
 ###NOTES
 An example implementation of OT extension can be found in `mains/otmain.cpp`.
 
-OT related source code is found in `ot/`. 
+OT related source code is found in `ot/`.
 
 Different compilation flags can be set in `util/constants.h`.
 
 
 ###REFERENCES
-* [1] G. Asharov, Y. Lindell, T. Schneider, M. Zohner: More Efficient Oblivious Transfer and Extensions for Faster Secure Computation (CCS'13). 
+* [1] G. Asharov, Y. Lindell, T. Schneider, M. Zohner: More Efficient Oblivious Transfer and Extensions for Faster Secure Computation (CCS'13).
 * [2] G. Asharov, Y. Lindell, T. Schneider, M. Zohner: More Efficient Oblivious Transfer Extensions with Security for Malicious Adversaries. EUROCRYPT (1) 2015: 673-701.
 * [3] J. B. Nielsen, P. S. Nordholt, C. Orlandi, S. S. Burra: A New Approach to Practical Active-Secure Two-Party Computation. CRYPTO 2012: 681-700.
-* [4] M. Naor, B. Pinkas: Efficient oblivious transfer protocols. SODA 2001: 448-457. 
+* [4] M. Naor, B. Pinkas: Efficient oblivious transfer protocols. SODA 2001: 448-457.
 * [5] C. Peikert, V. Vaikuntanathan, B. Waters: A Framework for Efficient and Composable Oblivious Transfer. CRYPTO 2008: 554-571.
-* [6] T. Chou, C. Orlandi: The Simplest Protocol for Oblivious Transfer. Online at: http://eprint.iacr.org/2015/267. 
-* [7] S.G. Choi, K.W. Hwang, J.Katz, T. Malkin, D. Rubenstein: Secure multi-party computation of Boolean circuits with applications to privacy in on-line market-places. In CT-RSA’12. LNCS, vol. 7178, pp. 416–432. 
+* [6] T. Chou, C. Orlandi: The Simplest Protocol for Oblivious Transfer. Online at: http://eprint.iacr.org/2015/267.
+* [7] S.G. Choi, K.W. Hwang, J.Katz, T. Malkin, D. Rubenstein: Secure multi-party computation of Boolean circuits with applications to privacy in on-line market-places. In CT-RSA’12. LNCS, vol. 7178, pp. 416–432.
 * [8] CertiVox, Multiprecision Integer and Rational Arithmetic Cryptographic Library (MIRACL) https://github.com/CertiVox/MIRACL
 * [9] V. Kolesnikov, R. Kumaresan: Improved OT Extension for Transferring Short Secrets. In CRYPTO'13 (2).
-* [10] D. Demmler, T. Schneider, M. Zohner: ABY - A Framework for Efficient Mixed-Protocol Secure Two-Party Computation. NDSS 2015.
+* [10] D. Demmler, T. Schneider, M. Zohner: ABY - A Framework for Efficient Mixed-Protocol Secure Two-Party Computation. NDSS 2015. https://github.com/encryptogroup/ABY

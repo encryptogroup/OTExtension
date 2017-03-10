@@ -1,7 +1,18 @@
 /**
  \file 		cbitvector.cpp
  \author 	michael.zohner@ec-spride.de
- \copyright __________________
+ \copyright	ABY - A Framework for Efficient Mixed-protocol Secure Two-party Computation
+			Copyright (C) 2015 Engineering Cryptographic Protocols Group, TU Darmstadt
+			This program is free software: you can redistribute it and/or modify
+			it under the terms of the GNU Affero General Public License as published
+			by the Free Software Foundation, either version 3 of the License, or
+			(at your option) any later version.
+			This program is distributed in the hope that it will be useful,
+			but WITHOUT ANY WARRANTY; without even the implied warranty of
+			MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+			GNU Affero General Public License for more details.
+			You should have received a copy of the GNU Affero General Public License
+			along with this program. If not, see <http://www.gnu.org/licenses/>.
  \brief		CBitVector Implementation
  */
 
@@ -90,10 +101,9 @@ void CBitVector::Copy(BYTE* p, int pos, int len) {
 
 //pos and len in bits
 void CBitVector::SetBits(BYTE* p, uint64_t pos, uint64_t len) {
-	assert((pos + len) <= (m_nByteSize << 3)); 
-	if (len < 1) {
+	if (len < 1 || (pos + len) > (m_nByteSize << 3)){
 		return;
-	} 
+	}
 
 	if (len == 1) {
 		SetBitNoMask(pos, *p);
@@ -127,15 +137,14 @@ void CBitVector::SetBits(BYTE* p, uint64_t pos, uint64_t len) {
 	}
 }
 
-//XOR bits given an offset on the bits for p which is not necessarily divisible by 8
+
+//Set bits given an offset on the bits for p which is not necessarily divisible by 8
 void CBitVector::SetBitsPosOffset(BYTE* p, uint64_t ppos, uint64_t pos, uint64_t len) {
-	uint8_t bit;
-	assert((pos + len) > (m_nByteSize << 3)); 
 	for (uint64_t i = pos, j = ppos; j < ppos + len; i++, j++) {
-		bit = !!(p[j>>3] & (1<<(j&0x07)));
-		SetBit(bit, i);
+		m_pBits[i / 8] ^= (((p[j / 8] & (1 << (j % 8))) >> j % 8) << i % 8);
 	}
 }
+
 
 void CBitVector::SetBitsToZero(int bitpos, int bitlen) {
 	int firstlim = ceil_divide(bitpos, 8);
@@ -152,22 +161,31 @@ void CBitVector::SetBitsToZero(int bitpos, int bitlen) {
 }
 
 void CBitVector::SetBytesToZero(int bytepos, int bytelen) {
-	assert(bytepos + bytelen <= m_nByteSize); 
+	assert(bytepos + bytelen <= m_nByteSize);
 	memset(m_pBits + bytepos, 0x00, bytelen);
 }
 
+void CBitVector::Invert() {
+	for(uint64_t i = 0; i < m_nByteSize; i++) {
+		m_pBits[i] = ~m_pBits[i];
+	}
+}
+
+
 void CBitVector::GetBits(BYTE* p, int pos, int len) {
-	assert((pos + len) <= (m_nByteSize << 3)); 
-	if (len < 1)
+	if (len < 1 || (pos + len) > (m_nByteSize << 3)) {
 		return;
+	}
 	if (len == 1) {
 		*p = GetBitNoMask(pos);
 		return;
 	}
+
 	if (!((pos & 0x07) || (len & 0x07))) {
 		GetBytes(p, pos >> 3, len >> 3);
 		return;
 	}
+
 	int posctr = pos >> 3;
 	int lowermask = pos & 7;
 	int uppermask = 8 - lowermask;
@@ -181,7 +199,7 @@ void CBitVector::GetBits(BYTE* p, int pos, int len) {
 	int remlen = len & 0x07;
 	if (remlen) {
 		if (remlen <= uppermask) {
-			p[i] = ((m_pBits[posctr] & (((1 << remlen) - 1 << lowermask))) >> lowermask) & 0xFF;
+			p[i] = ((m_pBits[posctr] & ((((1 << remlen) - 1) << lowermask))) >> lowermask) & 0xFF;
 		} else {
 			p[i] = ((m_pBits[posctr] & GET_BIT_POSITIONS[lowermask]) >> lowermask) & 0xFF;
 			p[i] |= (m_pBits[posctr + 1] & (((1 << (remlen - uppermask)) - 1))) << uppermask;
@@ -208,8 +226,7 @@ void CBitVector::XORBitsPosOffset(BYTE* p, int ppos, int pos, int len) {
 }
 
 void CBitVector::XORBits(BYTE* p, int pos, int len) {
-	assert((pos + len) <= (m_nByteSize<<3)); 
-	if (len < 1) {
+	if (len < 1 || (pos + len) > m_nByteSize << 3) {
 		return;
 	}
 	if (len == 1) {
@@ -268,6 +285,8 @@ template<class T> void CBitVector::GetBytes(T* dst, T* src, T* lim) {
 
 //optimized bytewise XOR operation
 void CBitVector::XORBytes(BYTE* p, int pos, int len) {
+	if(pos + len > m_nByteSize)
+	cout << "pos = " << pos << ", len = " << len << ", bytesize = " << m_nByteSize << endl;
 	assert(pos + len <= m_nByteSize);
 
 	BYTE* dst = m_pBits + pos;
@@ -279,12 +298,19 @@ void CBitVector::XORBytes(BYTE* p, int pos, int len) {
 	XORBytes(dst, src, dst + (len & ((1 << SHIFTVAL) - 1)));
 }
 
+//Method for directly XORing CBitVectors
+void CBitVector::XOR(CBitVector* b) {
+	assert(b->GetSize() == m_nByteSize);
+	XORBytes(b->GetArr(), 0, m_nByteSize);
+}
+
 //Generic bytewise XOR operation
 template<class T> void CBitVector::XORBytes(T* dst, T* src, T* lim) {
 	while (dst != lim) {
 		*dst++ ^= *src++;
 	}
 }
+
 
 void CBitVector::XORRepeat(BYTE* p, int pos, int len, int num) {
 	assert(pos+len <= m_nByteSize); 
@@ -346,6 +372,23 @@ void CBitVector::SetAND(BYTE* p, BYTE* q, int pos, int len) {
 	ANDBytes(q, pos, len);
 }
 
+//Method for directly ANDing CBitVectors
+void CBitVector::AND(CBitVector* b) {
+	assert(b->GetSize() == m_nByteSize);
+	ANDBytes(b->GetArr(), 0, m_nByteSize);
+}
+
+//Cyclic left shift by pos bits
+void CBitVector::CLShift(uint64_t pos) {
+	uint8_t* tmpbuf = (uint8_t*) malloc(m_nByteSize);
+	for(uint64_t i = 0; i < m_nByteSize; i++) {
+		tmpbuf[i+pos] = m_pBits[i];
+	}
+	free(m_pBits);
+	m_pBits = tmpbuf;
+}
+
+
 void CBitVector::Print(int fromBit, int toBit) {
 	int to = toBit > (m_nByteSize << 3) ? (m_nByteSize << 3) : toBit;
 	for (int i = fromBit; i < to; i++) {
@@ -354,23 +397,29 @@ void CBitVector::Print(int fromBit, int toBit) {
 	cout << endl;
 }
 
-void CBitVector::PrintHex(int fromByte, int toByte) {
+void CBitVector::PrintHex(int fromByte, int toByte, bool linebreak) {
 	int to = toByte > (m_nByteSize) ? (m_nByteSize) : toByte;
+
 	for (int i = fromByte; i < to; i++) {
 		cout << setw(2) << setfill('0') << (hex) << ((unsigned int) m_pBits[i]);
 	}
-	cout << (dec) << endl;
+	if(linebreak){
+		cout << (dec) << endl;
+	}
 }
 
-void CBitVector::PrintHex() {
+void CBitVector::PrintHex(bool linebreak) {
 	for (int i = 0; i < m_nByteSize; i++) {
 		cout << setw(2) << setfill('0') << (hex) << ((unsigned int) m_pBits[i]);
 	}
-	cout << (dec) << endl;
+	if(linebreak){
+		cout << (dec) << endl;
+	}
 }
 
 void CBitVector::PrintBinaryMasked(int from, int to) {
 	int new_to = to > (m_nByteSize<<3) ? (m_nByteSize<<3) : to;
+
 	for (int i = from; i < new_to; i++) {
 		cout << (unsigned int) GetBit(i);
 	}
@@ -401,13 +450,15 @@ void CBitVector::PrintContent() {
 }
 
 BOOL CBitVector::IsEqual(CBitVector& vec) {
-	if (vec.GetSize() != m_nByteSize)
+	if (vec.GetSize() != m_nByteSize) {
 		return false;
+	}
 
 	BYTE* ptr = vec.GetArr();
 	for (int i = 0; i < m_nByteSize; i++) {
-		if (ptr[i] != m_pBits[i])
+		if (ptr[i] != m_pBits[i]) {
 			return false;
+		}
 	}
 	return true;
 }
@@ -484,7 +535,7 @@ void CBitVector::EklundhBitTranspose(int rows, int columns) {
 	lim = (REGISTER_SIZE*) m_pBits + ceil_divide(rows * columns, 8);
 
 	int offset = (columns >> 3) / sizeof(REGISTER_SIZE);
-	int numiters = ceil_log2(rows);
+	int numiters = ceil_log2(min(rows, columns));
 	int srcidx = 1, destidx;
 	int rounds;
 	int p;
@@ -556,6 +607,25 @@ void CBitVector::EklundhBitTranspose(int rows, int columns) {
 			rowbptr += (i * rowregsize);
 			for (int j = 0; j < rows; j++, rowaptr += rowregsize, rowbptr += offset) {
 				memcpy(rowaptr, rowbptr, rowbytesize);
+			}
+		}
+		free(tempvec);
+	}
+
+	if (rows > columns) {
+		BYTE* tempvec = (BYTE*) malloc((rows * columns) / 8);
+		memcpy(tempvec, m_pBits, ((rows / 8) * columns));
+
+		REGISTER_SIZE* rowaptr = (REGISTER_SIZE*) m_pBits;
+		int colbytesize = columns / 8;
+		int colregsize = columns / (sizeof(REGISTER_SIZE) * 8);
+		int offset_cols = (columns * columns) / (sizeof(REGISTER_SIZE) * 8);
+
+		for (int i = 0; i < columns; i++) {
+			rowbptr = (REGISTER_SIZE*) tempvec;
+			rowbptr += (i * colregsize);
+			for (int j = 0; j < rows / columns; j++, rowaptr += colregsize, rowbptr += offset_cols) {
+				memcpy(rowaptr, rowbptr, colbytesize);
 			}
 		}
 		free(tempvec);

@@ -275,7 +275,7 @@ void NNOBOTExtRec::ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* che
 			assert((*sender_permchoicebitptr) == 0 || (*sender_permchoicebitptr == 1));
 
 			tmp.SetXOR(kaptr, kbptr, 0, bufrowbytelen);
-			if((*sender_permchoicebitptr == 1)) {
+			if(*sender_permchoicebitptr == 1) {
 				tmp.XORBytesReverse(receiver_choicebits, 0, checkbytelen);
 			}
 

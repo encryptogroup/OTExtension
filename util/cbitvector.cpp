@@ -181,7 +181,7 @@ void CBitVector::GetBits(BYTE* p, int pos, int len) {
 	int remlen = len & 0x07;
 	if (remlen) {
 		if (remlen <= uppermask) {
-			p[i] = ((m_pBits[posctr] & (((1 << remlen) - 1 << lowermask))) >> lowermask) & 0xFF;
+			p[i] = ((m_pBits[posctr] & ((((1 << remlen) - 1) << lowermask))) >> lowermask) & 0xFF;
 		} else {
 			p[i] = ((m_pBits[posctr] & GET_BIT_POSITIONS[lowermask]) >> lowermask) & 0xFF;
 			p[i] |= (m_pBits[posctr + 1] & (((1 << (remlen - uppermask)) - 1))) << uppermask;

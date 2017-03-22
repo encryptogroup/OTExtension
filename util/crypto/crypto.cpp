@@ -1,7 +1,18 @@
 /**
  \file 		crypto.cpp
  \author 	michael.zohner@ec-spride.de
- \copyright __________________
+ \copyright	ABY - A Framework for Efficient Mixed-protocol Secure Two-party Computation
+			Copyright (C) 2015 Engineering Cryptographic Protocols Group, TU Darmstadt
+			This program is free software: you can redistribute it and/or modify
+			it under the terms of the GNU Affero General Public License as published
+			by the Free Software Foundation, either version 3 of the License, or
+			(at your option) any later version.
+			This program is distributed in the hope that it will be useful,
+			but WITHOUT ANY WARRANTY; without even the implied warranty of
+			MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+			GNU Affero General Public License for more details.
+			You should have received a copy of the GNU Affero General Public License
+			along with this program. If not, see <http://www.gnu.org/licenses/>.
  \brief		Implementation of crypto primitive class
  */
 
@@ -103,7 +114,6 @@ void gen_rnd_bytes(prf_state_ctx* prf_state, uint8_t* resbuf, uint32_t nbytes) {
 		EVP_EncryptUpdate(aes_key, tmpbuf + i * AES_BYTES, &dummy, (uint8_t*) rndctr, AES_BYTES);
 #endif
 	}
-
 	memcpy(resbuf, tmpbuf, nbytes);
 
 	free(tmpbuf);
@@ -131,7 +141,6 @@ void crypto::gen_rnd_uniform(uint32_t* res, uint32_t mod) {
 	*res = (uint32_t) tmpval;
 	free(rndbuf);
 }
-
 void crypto::gen_rnd_from_seed(uint8_t* resbuf, uint32_t resbytes, uint8_t* seed) {
 	prf_state_ctx tmpstate;
 	init_prf_state(&tmpstate, seed);
@@ -179,8 +188,8 @@ void crypto::init_aes_key(AES_KEY_CTX* aes_key, uint8_t* seed, bc_mode mode, con
 	seed_aes_key(aes_key, seed, mode, iv);
 }
 
-void crypto::init_aes_key(AES_KEY_CTX* aes_key, uint32_t symbits, uint8_t* seed, bc_mode mode, const uint8_t* iv) {
-	seed_aes_key(aes_key, symbits, seed, mode, iv);
+void crypto::init_aes_key(AES_KEY_CTX* aes_key, uint32_t symbits, uint8_t* seed, bc_mode mode, const uint8_t* iv, bool encrypt) {
+	seed_aes_key(aes_key, symbits, seed, mode, iv, encrypt);
 }
 
 void crypto::seed_aes_key(AES_KEY_CTX* aeskey, uint8_t* seed, bc_mode mode, const uint8_t* iv, bool encrypt) {
@@ -203,7 +212,6 @@ void crypto::seed_aes_key(AES_KEY_CTX* aeskey, uint32_t symbits, uint8_t* seed, 
 	EVP_CIPHER_CTX_init(aeskey);
 	AES_KEY_CTX* aes_key_tmp = aeskey;
 #endif
-
 	int (*initfct)(EVP_CIPHER_CTX*, const EVP_CIPHER*, ENGINE*, const unsigned char*, const unsigned char*);
 
 	if (encrypt)
@@ -215,6 +223,8 @@ void crypto::seed_aes_key(AES_KEY_CTX* aeskey, uint32_t symbits, uint8_t* seed, 
 	case ECB:
 		if (symbits <= 128) {
 			initfct(aes_key_tmp, EVP_aes_128_ecb(), NULL, seed, iv);
+		} else if(symbits == 192) {
+			initfct(aes_key_tmp, EVP_aes_192_ecb(), NULL, seed, iv);
 		} else {
 			initfct(aes_key_tmp, EVP_aes_256_ecb(), NULL, seed, iv);
 		}
@@ -222,6 +232,8 @@ void crypto::seed_aes_key(AES_KEY_CTX* aeskey, uint32_t symbits, uint8_t* seed, 
 	case CBC:
 		if (symbits <= 128) {
 			initfct(aes_key_tmp, EVP_aes_128_cbc(), NULL, seed, iv);
+		} else if(symbits == 192) {
+			initfct(aes_key_tmp, EVP_aes_192_cbc(), NULL, seed, iv);
 		} else {
 			initfct(aes_key_tmp, EVP_aes_256_cbc(), NULL, seed, iv);
 		}
@@ -229,6 +241,8 @@ void crypto::seed_aes_key(AES_KEY_CTX* aeskey, uint32_t symbits, uint8_t* seed, 
 	default:
 		if (symbits <= 128) {
 			initfct(aes_key_tmp, EVP_aes_128_ecb(), NULL, seed, iv);
+		} else if(symbits == 192) {
+			initfct(aes_key_tmp, EVP_aes_192_ecb(), NULL, seed, iv);
 		} else {
 			initfct(aes_key_tmp, EVP_aes_256_ecb(), NULL, seed, iv);
 		}
@@ -360,6 +374,46 @@ void crypto::free_prf_state(prf_state_ctx* prf_state) {
 	free(prf_state->ctr);
 	clean_aes_key(&(prf_state->aes_key));
 }
+
+void des_encrypt(uint8_t* resbuf, uint8_t* inbuf, uint8_t* key, bool encrypt) {
+	DES_cblock      keyblock;
+	DES_cblock		msgblock;
+	DES_cblock		outblock;
+	DES_key_schedule schedule;
+
+	memcpy(msgblock, inbuf, 8);
+	memcpy( keyblock, key,8);
+	DES_set_key( &keyblock, &schedule );
+
+	/* Encryption occurs here */
+	DES_ecb_encrypt(&msgblock, &outblock, &schedule, (int) encrypt);
+
+	memcpy(resbuf, outblock, 8);
+}
+
+
+void des3_encrypt(uint8_t* resbuf, uint8_t* inbuf, uint8_t* key, bool encrypt) {
+	DES_cblock      keyblock1, keyblock2, keyblock3;
+	DES_cblock		msgblock;
+	DES_cblock		outblock;
+	DES_key_schedule schedule1, schedule2, schedule3;
+
+	memcpy(msgblock, inbuf, 8);
+
+	memcpy( keyblock1, key,8);
+	memcpy( keyblock2, key+8,8);
+	memcpy( keyblock2, key+16,8);
+
+	DES_set_key( &keyblock1, &schedule1 );
+	DES_set_key( &keyblock2, &schedule2 );
+	DES_set_key( &keyblock3, &schedule3 );
+
+	/* Encryption occurs here */
+	DES_ecb3_encrypt(&msgblock, &outblock, &schedule1, &schedule2, &schedule2, (int) encrypt);
+
+	memcpy(resbuf, outblock, 8);
+}
+
 
 void sha1_hash(uint8_t* resbuf, uint32_t noutbytes, uint8_t* inbuf, uint32_t ninbytes, uint8_t* hash_buf) {
 	SHA_CTX sha;

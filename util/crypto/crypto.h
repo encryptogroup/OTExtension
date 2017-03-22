@@ -1,7 +1,18 @@
 /**
  \file 		crypto.h
  \author 	michael.zohner@ec-spride.de
- \copyright __________________
+ \copyright	ABY - A Framework for Efficient Mixed-protocol Secure Two-party Computation
+			Copyright (C) 2015 Engineering Cryptographic Protocols Group, TU Darmstadt
+			This program is free software: you can redistribute it and/or modify
+			it under the terms of the GNU Affero General Public License as published
+			by the Free Software Foundation, either version 3 of the License, or
+			(at your option) any later version.
+			This program is distributed in the hope that it will be useful,
+			but WITHOUT ANY WARRANTY; without even the implied warranty of
+			MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+			GNU Affero General Public License for more details.
+			You should have received a copy of the GNU Affero General Public License
+			along with this program. If not, see <http://www.gnu.org/licenses/>.
  \brief		Crypto primitive class
  */
 
@@ -10,9 +21,12 @@
 
 #include <openssl/evp.h>
 #include <openssl/sha.h>
+#include <openssl/des.h>
 #include <fstream>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <iostream>
+#include <iomanip>
 
 #include "../typedefs.h"
 #include "../constants.h"
@@ -25,7 +39,8 @@
 
 const uint8_t ZERO_IV[AES_BYTES] = { 0 };
 
-const uint8_t const_seed[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF };
+const uint8_t const_seed[2][16] = {{ 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF },
+		{0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00 } };
 
 enum bc_mode {
 	ECB, CBC
@@ -35,7 +50,6 @@ enum bc_mode {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	#define OPENSSL_OPAQUE_EVP_CIPHER_CTX
 #endif
-
 
 #ifdef OPENSSL_OPAQUE_EVP_CIPHER_CTX
 typedef EVP_CIPHER_CTX* AES_KEY_CTX;
@@ -90,7 +104,7 @@ public:
 
 	//External encryption routines
 	void init_aes_key(AES_KEY_CTX* aes_key, uint8_t* seed, bc_mode mode = ECB, const uint8_t* iv = ZERO_IV);
-	void init_aes_key(AES_KEY_CTX* aes_key, uint32_t symbits, uint8_t* seed, bc_mode mode = ECB, const uint8_t* iv = ZERO_IV);
+	void init_aes_key(AES_KEY_CTX* aes_key, uint32_t symbits, uint8_t* seed, bc_mode mode = ECB, const uint8_t* iv = ZERO_IV, bool encrypt = true);
 	void clean_aes_key(AES_KEY_CTX* aeskey);
 	uint32_t get_aes_key_bytes();
 	void encrypt(AES_KEY_CTX* enc_key, uint8_t* resbuf, uint8_t* inbuf, uint32_t ninbytes);
@@ -105,7 +119,6 @@ public:
 	uint32_t get_hash_bytes();
 
 	void gen_common_seed(prf_state_ctx* aes_key, CSocket& sock);
-
 	void init_prf_state(prf_state_ctx* prf_state, uint8_t* seed);
 	void free_prf_state(prf_state_ctx* prf_state);
 private:
@@ -131,6 +144,9 @@ private:
 };
 
 //Some functions that should be useable without the class
+void des_encrypt(uint8_t* resbuf, uint8_t* inbuf, uint8_t* key, bool encrypt);
+void des3_encrypt(uint8_t* resbuf, uint8_t* inbuf, uint8_t* key, bool encrypt);
+
 void sha1_hash(uint8_t* resbuf, uint32_t noutbytes, uint8_t* inbuf, uint32_t ninbytes, uint8_t* hash_buf);
 void sha256_hash(uint8_t* resbuf, uint32_t noutbytes, uint8_t* inbuf, uint32_t ninbytes, uint8_t* hash_buf);
 void sha512_hash(uint8_t* resbuf, uint32_t noutbytes, uint8_t* inbuf, uint32_t ninbytes, uint8_t* hash_buf);
@@ -139,7 +155,5 @@ void gen_rnd_bytes(prf_state_ctx* prf_state, uint8_t* resbuf, uint32_t nbytes);
 
 seclvl get_sec_lvl(uint32_t symsecbits); //TODO pick a more elegant name (see crypto->get_seclvl())
 
-//static const uint32_t m_nCodeWordBits = 256;
-//static const uint32_t m_nCodeWordBytes = m_nCodeWordBits / 8;
 
 #endif /* CRYPTO_H_ */

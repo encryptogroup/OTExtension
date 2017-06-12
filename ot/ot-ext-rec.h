@@ -16,7 +16,14 @@ class OTExtRec : public OTExt {
 public:
 
 	OTExtRec(){};
-	virtual ~OTExtRec(){};
+	virtual ~OTExtRec(){
+		uint32_t nsndvals = 2;
+		for(uint32_t i = 0; i < m_tBaseOTKeys.size(); i++) {
+			for(uint32_t j = 0; j < m_nBaseOTs * nsndvals; j++) {
+				m_cCrypt->clean_aes_key(&m_tBaseOTKeys[i][j]);
+			}
+		}
+	};
 	BOOL receive(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector* choices, CBitVector* ret,
 			snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct);
 

@@ -13,7 +13,7 @@
 class OTExtSnd : public OTExt {
 
 public:
-	OTExtSnd() {};
+	OTExtSnd() : m_vValues(nullptr) {};
 
 	virtual ~OTExtSnd() {
 		//for(uint32_t i = 0; i < m_tBaseOTChoices.size(); i++)

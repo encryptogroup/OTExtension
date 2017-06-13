@@ -16,9 +16,9 @@ public:
 	OTExtSnd() : m_vValues(nullptr) {};
 
 	virtual ~OTExtSnd() {
-		//for(uint32_t i = 0; i < m_tBaseOTChoices.size(); i++)
-		//	m_tBaseOTChoices[i]->delCBitVector();
-		m_tBaseOTChoices.clear();
+		for(size_t i = 0; i < m_tBaseOTChoices.size(); i++) {
+			delete m_tBaseOTChoices[i];
+		}
 		for(uint32_t i = 0; i < m_tBaseOTKeys.size(); i++) {
 			for(uint32_t j = 0; j < m_nBaseOTs; j++) {
 				m_cCrypt->clean_aes_key(&m_tBaseOTKeys[i][j]);

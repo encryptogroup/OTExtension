@@ -103,8 +103,9 @@ class OTExt {
 public:
 	OTExt(){};
 	virtual ~OTExt() {
-		for(uint32_t i = 0; i < m_tBaseOTKeys.size(); i++)
+		for(uint32_t i = 0; i < m_tBaseOTKeys.size(); i++) {
 			free(m_tBaseOTKeys[i]);
+		}
 		m_tBaseOTKeys.clear();
 #ifdef FIXED_KEY_AES_HASHING
 		free(m_kCRFKey);

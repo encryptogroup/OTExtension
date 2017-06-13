@@ -17,6 +17,9 @@ public:
 
 	OTExtRec(){};
 	virtual ~OTExtRec(){
+		// TODO: nsndvals is currently hardcoeded in OTExtRec::ComputePKBaseOTs()
+		// maybe add it as a private attribute to class OTExt and move the
+		// following loop to its destructor?
 		uint32_t nsndvals = 2;
 		for(uint32_t i = 0; i < m_tBaseOTKeys.size(); i++) {
 			for(uint32_t j = 0; j < m_nBaseOTs * nsndvals; j++) {

@@ -19,10 +19,13 @@ public:
 		for(size_t i = 0; i < m_tBaseOTChoices.size(); i++) {
 			delete m_tBaseOTChoices[i];
 		}
+		// TODO: This could be done in OTExt destructor;
+		// see also comment in OTExtSnd destructor
 		for(uint32_t i = 0; i < m_tBaseOTKeys.size(); i++) {
 			for(uint32_t j = 0; j < m_nBaseOTs; j++) {
 				m_cCrypt->clean_aes_key(&m_tBaseOTKeys[i][j]);
 			}
+			free(m_tBaseOTKeys[i]);
 		}
 		free(m_vValues);
 	};

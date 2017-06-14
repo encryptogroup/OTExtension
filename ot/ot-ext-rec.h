@@ -25,6 +25,7 @@ public:
 			for(uint32_t j = 0; j < m_nBaseOTs * nsndvals; j++) {
 				m_cCrypt->clean_aes_key(&m_tBaseOTKeys[i][j]);
 			}
+			free(m_tBaseOTKeys[i]);
 		}
 	};
 	BOOL receive(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector* choices, CBitVector* ret,

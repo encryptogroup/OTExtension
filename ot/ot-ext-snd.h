@@ -13,7 +13,7 @@
 class OTExtSnd : public OTExt {
 
 public:
-	OTExtSnd() : m_vValues(nullptr) {};
+	OTExtSnd() {};
 
 	virtual ~OTExtSnd() {
 		for(size_t i = 0; i < m_tBaseOTChoices.size(); i++) {
@@ -27,7 +27,7 @@ public:
 			}
 			free(m_tBaseOTKeys[i]);
 		}
-		free(m_vValues);
+		// do not free(m_vValues), since it is passed from the outside to send()
 	};
 
 	BOOL send(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector** X, snd_ot_flavor stype,

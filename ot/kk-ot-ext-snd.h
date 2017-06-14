@@ -27,7 +27,7 @@ public:
 	;
 
 
-	~KKOTExtSnd() {
+	virtual ~KKOTExtSnd() {
 	}
 	;
 

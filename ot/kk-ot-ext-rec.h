@@ -30,7 +30,7 @@ public:
 	;
 
 
-	~KKOTExtRec() {
+	virtual ~KKOTExtRec() {
 		//TODO
 		//free(m_vKeySeedMtx);
 	}

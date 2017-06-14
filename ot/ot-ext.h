@@ -104,6 +104,7 @@ public:
 	OTExt(){};
 	virtual ~OTExt() {
 #ifdef FIXED_KEY_AES_HASHING
+		m_cCrypt->clean_aes_key(m_kCRFKey);
 		free(m_kCRFKey);
 #endif
 	};

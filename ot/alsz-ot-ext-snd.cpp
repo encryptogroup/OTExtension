@@ -413,7 +413,7 @@ BOOL ALSZOTExtSnd::CheckConsistency(queue<alsz_snd_check_t>* check_buf_q, channe
 	free(check_buf.perm);
 	free(check_buf.rcv_chk_buf);
 	free(check_buf.seed_chk_buf);
-	delete(check_buf.choices);
+	// do not delete(check_buf.choices): all choices vectors are freed in ~OTExtSnd()
 
 	return TRUE;
 }

@@ -35,7 +35,7 @@ An example implementation of OT extension can be found in `mains/otmain.cpp`.
 
 OT related source code is found in `ot/`.
 
-Different compilation flags can be set in `util/constants.h`.
+Some compilation flags can be set in `ot/OTconstants.h`.
 
 
 ###REFERENCES

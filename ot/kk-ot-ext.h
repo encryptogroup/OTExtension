@@ -5,7 +5,9 @@
  *      Author: mzohner
  */
 
-#include "../util/typedefs.h"
+#include "../ENCRYPTO_utils/typedefs.h"
+#include "../ENCRYPTO_utils/codewords.h"
+#include <cfloat>
 
 #ifndef KK_OT_EXT_H_
 #define KK_OT_EXT_H_

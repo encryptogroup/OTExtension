@@ -10,7 +10,6 @@
 #define KK_OT_EXTENSION_RECEIVER_H_
 
 #include "ot-ext-rec.h"
-#include "../util/codewords.h"
 #include "kk-ot-ext.h"
 
 class KKOTExtRec : public OTExtRec, public KKOTExt {

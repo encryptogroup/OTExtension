@@ -9,7 +9,6 @@
 #define KK_OT_EXT_SENDER_H_
 
 #include "ot-ext-snd.h"
-#include "../util/codewords.h"
 #include "kk-ot-ext.h"
 
 class KKOTExtSnd : public OTExtSnd, public KKOTExt {

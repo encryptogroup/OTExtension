@@ -28,20 +28,18 @@
 //#define DEBUG_KK_OTBREAKDOWN
 
 
-#include "../util/typedefs.h"
-#include "../util/socket.h"
-#include "../util/thread.h"
-#include "../util/cbitvector.h"
-#include "../util/crypto/crypto.h"
+#include "../ENCRYPTO_utils/typedefs.h"
+#include "../ENCRYPTO_utils/socket.h"
+#include "../ENCRYPTO_utils/thread.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
+#include "../ENCRYPTO_utils/crypto/crypto.h"
 #include "maskingfunction.h"
-#include "../util/constants.h"
-#include "../util/channel.h"
-#include "../util/rcvthread.h"
-#include "../util/sndthread.h"
+#include "../ENCRYPTO_utils/constants.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/rcvthread.h"
+#include "../ENCRYPTO_utils/sndthread.h"
 #include "naor-pinkas.h"
-
-
-
+#include "OTconstants.h"
 
 #ifdef USE_PIPELINED_AES_NI
 	typedef ROUND_KEYS OT_AES_KEY_CTX;

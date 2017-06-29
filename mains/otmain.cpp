@@ -132,7 +132,7 @@ listen_failure:
 void InitOTSender(const char* address, int port, crypto* crypt)
 {
 #ifdef OTTiming
-	timeval np_begin, np_end;
+	timespec np_begin, np_end;
 #endif
 	m_nPort = (USHORT) port;
 	m_nAddr = address;
@@ -201,13 +201,12 @@ BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndval
 
 	m_vSocket->ResetSndCnt();
 	m_vSocket->ResetRcvCnt();
-	timeval ot_begin, ot_end;
+	timespec ot_begin, ot_end;
 
-	
-	gettimeofday(&ot_begin, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &ot_begin);
 	// Execute OT sender routine 	
 	success = sender->send(numOTs, bitlength, nsndvals, X, stype, rtype, m_nNumOTThreads, m_fMaskFct);
-	gettimeofday(&ot_end, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &ot_end);
 
 #ifndef BATCH
 	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
@@ -230,11 +229,11 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 	m_vSocket->ResetRcvCnt();
 
 
-	timeval ot_begin, ot_end;
-	gettimeofday(&ot_begin, NULL);
+	timespec ot_begin, ot_end;
+	clock_gettime(CLOCK_MONOTONIC, &ot_begin);
 	// Execute OT receiver routine 	
 	success = receiver->receive(numOTs, bitlength, nsndvals, choices, ret, stype, rtype, m_nNumOTThreads, m_fMaskFct);
-	gettimeofday(&ot_end, NULL);
+	clock_gettime(CLOCK_MONOTONIC, &ot_end);
 
 #ifndef BATCH
 	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
@@ -381,22 +380,22 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 	bool printhelp = false;
 
 	parsing_ctx options[] = {
-			{ (void*) role, T_NUM, 'r', "Role: 0/1", true, false },
-			{ (void*) numots, T_NUM, 'n', "Number of OTs, default 10^6", false, false },
-			{ (void*) bitlen, T_NUM, 'b', "Bit-length of elements in OTs, default 8", false, false },
-			{ (void*) secparam, T_NUM, 's', "Symmetric Security Bits, default: 128", false, false },
-			{ (void*) address, T_STR, 'a', "IP-address, default: localhost", false, false },
-			{ (void*) &int_port, T_NUM, 'p', "Port, default: 7766", false, false },
-			{ (void*) &int_prot, T_NUM, 'o', "Protocol, 0: IKNP, 1: ALSZ, 2: NNOB, 3: KK, default: IKNP", false, false },
-			{ (void*) &int_snd_flav, T_NUM, 'f', "Sender OT Functionality, 0: OT, 1: C_OT, 2: Snd_R_OT, 3: GC_OT, default: OT", false, false },
-			{ (void*) &int_rec_flav, T_NUM, 'v', "Receiver OT Functionality, 0: OT, 1: Rec_R_OT, default: OT", false, false },
-			{ (void*) nthreads, T_NUM, 't', "Number of threads, default 1", false, false },
-			{ (void*) nbaseots, T_NUM, 'e', "Number of baseots for ALSZ, default 190", false, false },
-			{ (void*) nchecks, T_NUM, 'c', "Number of checks for ALSZ, default 380", false, false },
-			{ (void*) usemecr, T_FLAG, 'm', "Use Min-Entropy Correlation-Robustness Assumption, default: false", false, false },
-			{ (void*) runs, T_NUM, 'u', "Number of repetitions, default: 1", false, false },
-			{ (void*) N, T_NUM, 'N', "1-oo-N OT extension. Only works in combination with KK13 and needs to be a power of two, default: 2", false, false },
-			{ (void*) &printhelp, T_FLAG, 'h', "Print help", false, false }
+			{ (void*) role, T_NUM, "r", "Role: 0/1", true, false },
+			{ (void*) numots, T_NUM, "n", "Number of OTs, default 10^6", false, false },
+			{ (void*) bitlen, T_NUM, "b", "Bit-length of elements in OTs, default 8", false, false },
+			{ (void*) secparam, T_NUM, "s", "Symmetric Security Bits, default: 128", false, false },
+			{ (void*) address, T_STR, "a", "IP-address, default: localhost", false, false },
+			{ (void*) &int_port, T_NUM, "p", "Port, default: 7766", false, false },
+			{ (void*) &int_prot, T_NUM, "o", "Protocol, 0: IKNP, 1: ALSZ, 2: NNOB, 3: KK, default: IKNP", false, false },
+			{ (void*) &int_snd_flav, T_NUM, "f", "Sender OT Functionality, 0: OT, 1: C_OT, 2: Snd_R_OT, 3: GC_OT, default: OT", false, false },
+			{ (void*) &int_rec_flav, T_NUM, "v", "Receiver OT Functionality, 0: OT, 1: Rec_R_OT, default: OT", false, false },
+			{ (void*) nthreads, T_NUM, "t", "Number of threads, default 1", false, false },
+			{ (void*) nbaseots, T_NUM, "e", "Number of baseots for ALSZ, default 190", false, false },
+			{ (void*) nchecks, T_NUM, "c", "Number of checks for ALSZ, default 380", false, false },
+			{ (void*) usemecr, T_FLAG, "m", "Use Min-Entropy Correlation-Robustness Assumption, default: false", false, false },
+			{ (void*) runs, T_NUM, "u", "Number of repetitions, default: 1", false, false },
+			{ (void*) N, T_NUM, "N", "1-oo-N OT extension. Only works in combination with KK13 and needs to be a power of two, default: 2", false, false },
+			{ (void*) &printhelp, T_FLAG, "h", "Print help", false, false }
 	};
 
 	if (!parse_options(argcp, argvp, options, sizeof(options) / sizeof(parsing_ctx))) {

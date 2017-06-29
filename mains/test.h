@@ -1,20 +1,21 @@
 #ifndef _MPC_H_
 #define _MPC_H_
 
-#include "../util/typedefs.h"
-#include "../util/crypto/crypto.h"
-#include "../util/socket.h"
+#include "../ENCRYPTO_utils/typedefs.h"
+#include "../ENCRYPTO_utils/crypto/crypto.h"
+#include "../ENCRYPTO_utils/socket.h"
 #include "../ot/iknp-ot-ext-snd.h"
 #include "../ot/iknp-ot-ext-rec.h"
 #include "../ot/alsz-ot-ext-snd.h"
 #include "../ot/alsz-ot-ext-rec.h"
 #include "../ot/nnob-ot-ext-snd.h"
 #include "../ot/nnob-ot-ext-rec.h"
-#include "../util/cbitvector.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
 #include "../ot/xormasking.h"
-#include "../util/rcvthread.h"
-#include "../util/sndthread.h"
-#include "../util/channel.h"
+#include "../ENCRYPTO_utils/rcvthread.h"
+#include "../ENCRYPTO_utils/sndthread.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/timer.h"
 
 #include <vector>
 #include <sys/time.h>

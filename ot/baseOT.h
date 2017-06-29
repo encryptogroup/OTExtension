@@ -8,11 +8,11 @@
 #ifndef BASEOT_H_
 #define BASEOT_H_
 
-#include "../util/typedefs.h"
-#include "../util/cbitvector.h"
-#include "../util/socket.h"
-#include "../util/crypto/crypto.h"
-#include "../util/channel.h"
+#include "../ENCRYPTO_utils/typedefs.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
+#include "../ENCRYPTO_utils/socket.h"
+#include "../ENCRYPTO_utils/crypto/crypto.h"
+#include "../ENCRYPTO_utils/channel.h"
 #include <ctime>
 
 #include <iostream>

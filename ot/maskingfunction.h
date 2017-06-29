@@ -8,8 +8,9 @@
 #ifndef MASKINGFUNCTION_H_
 #define MASKINGFUNCTION_H_
 
-#include "../util/cbitvector.h"
-#include "../util/typedefs.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
+#include "../ENCRYPTO_utils/typedefs.h"
+#include "OTconstants.h"
 
 class MaskingFunction {
 

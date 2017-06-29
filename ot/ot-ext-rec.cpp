@@ -394,6 +394,8 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 						vRcvX[k].Print(i * m_nBitLength, (i+1) * m_nBitLength);
 					}
 
+					cout << (dec);
+					
 					resp = 0x00;
 					chan->send(&resp, 1);
 

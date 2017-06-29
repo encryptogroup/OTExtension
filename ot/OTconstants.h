@@ -33,10 +33,6 @@
 #define OT_ADMIN_CHANNEL MAX_NUM_COMM_CHANNELS-2
 #define OT_BASE_CHANNEL 0
 
-
-#define OT_WINDOW_SIZE		(AES_BITS*4)
-#define OT_WINDOW_SIZE_BYTES	(AES_BYTES*4)
-
 /**
  \enum 	ot_ext_prot
  \brief	Specifies the different underlying OT extension protocols that are available

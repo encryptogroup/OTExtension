@@ -13,9 +13,15 @@
 #include "socket.h"
 #include "thread.h"
 
+typedef struct {
+	uint8_t *buf;
+	uint64_t rcvbytes;
+} rcv_ctx;
+
 //A receive task listens to a particular id and writes incoming data on that id into rcv_buf and triggers event
 struct rcv_task {
-	std::queue<uint8_t*> *rcv_buf;
+	std::queue<rcv_ctx*>* rcv_buf;
+	//std::queue<uint64_t> rcvbytes;
 	CEvent* rcv_event;
 	CEvent* fin_event;
 	BOOL inuse;
@@ -30,21 +36,26 @@ public:
 		rcvlock = new CLock();
 		listeners = (rcv_task*) calloc(MAX_NUM_COMM_CHANNELS, sizeof(rcv_task));
 		for(uint32_t i = 0; i < MAX_NUM_COMM_CHANNELS; i++) {
-			listeners[i].rcv_buf = new queue<uint8_t*>;
+			listeners[i].rcv_buf = new queue<rcv_ctx*>;
 		}
 		listeners[ADMIN_CHANNEL].inuse = true;
 	}
 	;
 	~RcvThread() {
-		this->Kill();
-		delete rcvlock;
+		this->Wait();
+		for(uint32_t i = 0; i < MAX_NUM_COMM_CHANNELS; i++) {
+			flush_queue(i);
+			delete listeners[i].rcv_buf;
+		}
 		free(listeners);
+		delete rcvlock;
 	}
 	;
 
 	void flush_queue(uint8_t channelid) {
 		while(!listeners[channelid].rcv_buf->empty()) {
-			uint8_t* tmp = listeners[channelid].rcv_buf->front();
+			rcv_ctx* tmp = listeners[channelid].rcv_buf->front();
+			free(tmp->buf);
 			free(tmp);
 			listeners[channelid].rcv_buf->pop();
 		}
@@ -65,7 +76,7 @@ public:
 		rcvlock->Unlock();
 
 	}
-	queue<uint8_t*>* add_listener(uint8_t channelid, CEvent* rcv_event, CEvent* fin_event) {
+	queue<rcv_ctx*>* add_listener(uint8_t channelid, CEvent* rcv_event, CEvent* fin_event) {
 		rcvlock->Lock();
 #ifdef DEBUG_RECEIVE_THREAD
 		cout << "Registering listener on channel " << (uint32_t) channelid << endl;
@@ -122,17 +133,19 @@ public:
 #ifdef DEBUG_RECEIVE_THREAD
 					cout << "Receiver thread is being killed" << endl;
 #endif
-					m_bRunning = false;
 					return;//continue;
 				}
 
 				if(rcvbytelen == 0) {
 					remove_listener(channelid);
 				} else {
-					tmprcvbuf = (uint8_t*) malloc(rcvbytelen);
-					mysock->Receive(tmprcvbuf, rcvbytelen);
+					rcv_ctx* rcv_buf = (rcv_ctx*) malloc(sizeof(rcv_ctx));
+					rcv_buf->buf = (uint8_t*) malloc(rcvbytelen);
+					rcv_buf->rcvbytes = rcvbytelen;
 
-					listeners[channelid].rcv_buf->push(tmprcvbuf);
+					mysock->Receive(rcv_buf->buf, rcvbytelen);
+					listeners[channelid].rcv_buf->push(rcv_buf);
+
 					if(listeners[channelid].inuse)
 						listeners[channelid].rcv_event->Set();
 				}

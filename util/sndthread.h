@@ -28,10 +28,14 @@ public:
 		send = new CEvent();
 	}
 	;
+
+	void stop() {
+		kill_task();
+	}
+
 	~SndThread() {
 		kill_task();
-		delete sndlock;
-		delete send;
+		this->Wait();
 	}
 	;
 
@@ -80,7 +84,7 @@ public:
 		snd_task* task = (snd_task*) malloc(sizeof(snd_task));
 		task->channelid = ADMIN_CHANNEL;
 		task->bytelen = 1;
-		task->snd_buf = (uint8_t*) malloc(1);
+		task->snd_buf = (uint8_t*) calloc(1, 1);
 
 		sndlock->Lock();
 		send_tasks.push(task);
@@ -95,8 +99,8 @@ public:
 		uint8_t channelid;
 		uint32_t iters;
 		snd_task* task;
-		while(true) {
-			//cout << "Starting to send" << endl;
+		bool run = true;
+		while(run) {
 			if(send_tasks.empty())
 				send->Wait();
 			//cout << "Awoken" << endl;
@@ -105,7 +109,7 @@ public:
 			iters = send_tasks.size();
 			sndlock->Unlock();
 
-			while(iters--) {
+			while((iters--) && run) {
 				task = send_tasks.front();
 				send_tasks.pop();
 				channelid = task->channelid;
@@ -122,8 +126,11 @@ public:
 				free(task->snd_buf);
 				free(task);
 
-				if(channelid == ADMIN_CHANNEL)
-					continue;
+				if(channelid == ADMIN_CHANNEL) {
+					delete sndlock;
+					delete send;
+					run = false;
+				}
 			}
 		}
 	}

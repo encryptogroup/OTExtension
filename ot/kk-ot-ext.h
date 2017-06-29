@@ -11,6 +11,14 @@
 #define KK_OT_EXT_H_
 
 class KKOTExt {
+public:
+	virtual ~KKOTExt() {
+		for(size_t i = 0; i < m_nCodeWordBits; i++) {
+			free(m_vCodeWords[i]);
+		}
+		free(m_vCodeWords);
+	}
+
 protected:
 	void set_internal_sndvals(uint32_t ext_sndvals, uint32_t bitlen) {
 		uint32_t min_int;

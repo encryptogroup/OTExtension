@@ -16,11 +16,18 @@ public:
 	OTExtSnd() {};
 
 	virtual ~OTExtSnd() {
-		//for(uint32_t i = 0; i < m_tBaseOTChoices.size(); i++)
-		//	m_tBaseOTChoices[i]->delCBitVector();
-		m_tBaseOTChoices.clear();
-
-		free(m_vValues);
+		for(size_t i = 0; i < m_tBaseOTChoices.size(); i++) {
+			delete m_tBaseOTChoices[i];
+		}
+		// TODO: This could be done in OTExt destructor;
+		// see also comment in OTExtSnd destructor
+		for(uint32_t i = 0; i < m_tBaseOTKeys.size(); i++) {
+			for(uint32_t j = 0; j < m_nBaseOTs; j++) {
+				m_cCrypt->clean_aes_key(&m_tBaseOTKeys[i][j]);
+			}
+			free(m_tBaseOTKeys[i]);
+		}
+		// do not free(m_vValues), since it is passed from the outside to send()
 	};
 
 	BOOL send(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector** X, snd_ot_flavor stype,

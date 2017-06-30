@@ -352,7 +352,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	uint32_t nsndvals = m_nSndVals;
 	uint32_t choicecodebits = ceil_log2(m_nSndVals);
 
-	CBitVector* vRcvX = new CBitVector[nsndvals];//(CBitVector*) malloc(sizeof(CBitVector)*m_nSndVals);
+	CBitVector* vRcvX = new CBitVector[nsndvals];
 	CBitVector *Xc, *Xn;
 	uint64_t processedOTBlocks, otlen, otstart;
 	uint32_t bytelen = ceil_divide(m_nBitLength, 8);

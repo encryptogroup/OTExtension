@@ -21,7 +21,7 @@ INCLUDE=-I..
 
 ARCHITECTURE = $(shell uname -m)
 ifeq (${ARCHITECTURE},x86_64)
-MIRACL_MAKE:=linux64
+MIRACL_MAKE:=linux64_cpp
 else
 MIRACL_MAKE:=linux
 endif
@@ -59,6 +59,12 @@ ${OBJECTS_OT}: ${SOURCES_OT}
 
 ${OBJECTS_CRYPTO}: ${SOURCES_CRYPTO}
 	@cd ENCRYPTO_utils/crypto; ${CC} -c ${INCLUDE} ${CFLAGS} ${BATCH} ${COMPILER_OPTIONS} ${DEBUG_OPTIONS} *.cpp
+
+%.o:%.cpp %.h
+	${CC} $< ${COMPILER_OPTIONS} -c ${INCLUDE} ${CFLAGS} ${BATCH} -o $@
+
+%.o:%.cpp
+	${CC} $< ${COMPILER_OPTIONS} -c ${INCLUDE} ${CFLAGS} ${BATCH} -o $@
 
 clean:
 	rm -rf ot.exe test.exe ${OBJECTS_UTIL} ${OBJECTS_OTMAIN} ${OBJECTS_OT} ${OBJECTS_CRYPTO} ${OBJECTS_TEST}

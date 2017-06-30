@@ -354,9 +354,9 @@ void run_test_sender(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype, r
 	//X2.PrintHex();
 
 	for(uint32_t i = 0; i < nsndvals; i++) {
-		X[i]->delCBitVector();
+		delete(X[i]);
 	}
-	//free(X);
+	free(X);
 	//X1.delCBitVector();
 	//X2.delCBitVector();
 	delta.delCBitVector();

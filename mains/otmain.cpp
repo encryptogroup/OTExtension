@@ -1,5 +1,6 @@
 #include "otmain.h"
 
+//pthread_mutex_t CLock::share_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 BOOL Init(crypto* crypt)
 {
@@ -129,7 +130,7 @@ listen_failure:
 
 
 
-void InitOTSender(const char* address, int port, crypto* crypt)
+void InitOTSender(const char* address, int port, crypto* crypt, CLock *glock)
 {
 #ifdef OTTiming
 	timespec np_begin, np_end;
@@ -143,8 +144,8 @@ void InitOTSender(const char* address, int port, crypto* crypt)
 	//Server listen
 	Listen();
 
-	sndthread = new SndThread(m_vSocket);
-	rcvthread = new RcvThread(m_vSocket);
+	sndthread = new SndThread(m_vSocket, glock);
+	rcvthread = new RcvThread(m_vSocket, glock);
 
 	rcvthread->Start();
 	sndthread->Start();
@@ -162,7 +163,7 @@ void InitOTSender(const char* address, int port, crypto* crypt)
 	sender->ComputeBaseOTs(m_eFType);
 }
 
-void InitOTReceiver(const char* address, int port, crypto* crypt)
+void InitOTReceiver(const char* address, int port, crypto* crypt, CLock *glock)
 {
 	m_nPort = (USHORT) port;
 	m_nAddr = address;
@@ -173,8 +174,8 @@ void InitOTReceiver(const char* address, int port, crypto* crypt)
 	//Client connect
 	Connect();
 
-	sndthread = new SndThread(m_vSocket);
-	rcvthread = new RcvThread(m_vSocket);
+	sndthread = new SndThread(m_vSocket, glock);
+	rcvthread = new RcvThread(m_vSocket, glock);
 	
 	rcvthread->Start();
 	sndthread->Start();
@@ -293,36 +294,37 @@ int main(int argc, char** argv)
 			rec_ot_flavor* rcvflav, uint32_t* nthreads, uint32_t* nbaseots, uint32_t* nchecks, bool* usemecr, uint32_t* runs) {*/
 
 	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);
+    CLock *glock = new CLock(); // pass this to sender and receiver constructors
 
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
-		InitOTSender(addr->c_str(), port, crypt);
+		InitOTSender(addr->c_str(), port, crypt, glock);
 
-		CBitVector delta;
-		CBitVector** X = (CBitVector**) malloc(sizeof(CBitVector*) * nsndvals);
+	//	CBitVector delta;
+	//	CBitVector** X = (CBitVector**) malloc(sizeof(CBitVector*) * nsndvals);
 
 
-		//The masking function with which the values that are sent in the last communication step are processed
-		m_fMaskFct = new XORMasking(bitlength, delta);
+	//	//The masking function with which the values that are sent in the last communication step are processed
+	//	m_fMaskFct = new XORMasking(bitlength, delta);
 
-		//creates delta as an array with "numOTs" entries of "bitlength" bit-values and fills delta with random values
-		delta.Create(numOTs, bitlength, crypt);
+	//	//creates delta as an array with "numOTs" entries of "bitlength" bit-values and fills delta with random values
+	//	delta.Create(numOTs, bitlength, crypt);
 
-		//Create the X values as two arrays with "numOTs" entries of "bitlength" bit-values and resets them to 0
-		for(uint32_t i = 0; i < nsndvals; i++) {
-			X[i] = new CBitVector();
-			X[i]->Create(numOTs, bitlength);
-		}
+	//	//Create the X values as two arrays with "numOTs" entries of "bitlength" bit-values and resets them to 0
+	//	for(uint32_t i = 0; i < nsndvals; i++) {
+	//		X[i] = new CBitVector();
+	//		X[i]->Create(numOTs, bitlength);
+	//	}
 
-#ifndef BATCH
-		cout << getProt(m_eProt) << " Sender performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
-				getRecFlavor(rtype) << " extensions on " << bitlength << " bit elements with " <<	m_nNumOTThreads << " threads, " <<
-				getFieldType(m_eFType) << " and" << (m_bUseMinEntCorAssumption ? "": " no" ) << " min-ent-corr-robustness " <<
-				runs << " times" << endl;
-#endif
-		for(uint32_t i = 0; i < runs; i++) {
-			ObliviouslySend(X, numOTs, bitlength, nsndvals, stype, rtype, crypt);
-		}
+//#ifndef BATCH
+	//	cout << getProt(m_eProt) << " Sender performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
+	//			getRecFlavor(rtype) << " extensions on " << bitlength << " bit elements with " <<	m_nNumOTThreads << " threads, " <<
+	//			getFieldType(m_eFType) << " and" << (m_bUseMinEntCorAssumption ? "": " no" ) << " min-ent-corr-robustness " <<
+	//			runs << " times" << endl;
+//#endif
+	//	for(uint32_t i = 0; i < runs; i++) {
+	//		ObliviouslySend(X, numOTs, bitlength, nsndvals, stype, rtype, crypt);
+	//	}
 		/*for(uint32_t i = 0; i < nsndvals; i++) {
 			cout << "X" << i << ": ";
 			X[i]->PrintHex(0, numOTs);
@@ -330,33 +332,33 @@ int main(int argc, char** argv)
 	}
 	else //Play as OT receiver
 	{
-		InitOTReceiver(addr->c_str(), port, crypt);
+		InitOTReceiver(addr->c_str(), port, crypt, glock);
 
-		CBitVector choices, response;
+	//	CBitVector choices, response;
 
-		//The masking function with which the values that are sent in the last communication step are processed
-		m_fMaskFct = new XORMasking(bitlength);
+	//	//The masking function with which the values that are sent in the last communication step are processed
+	//	m_fMaskFct = new XORMasking(bitlength);
 
-		//Create the bitvector choices as a bitvector with numOTs entries
-		choices.Create(numOTs * ceil_log2(nsndvals), crypt);
+	//	//Create the bitvector choices as a bitvector with numOTs entries
+	//	choices.Create(numOTs * ceil_log2(nsndvals), crypt);
 
-		//Pre-generate the respose vector for the results
-		response.Create(numOTs, bitlength);
-		response.Reset();
+	//	//Pre-generate the respose vector for the results
+	//	response.Create(numOTs, bitlength);
+	//	response.Reset();
 
 		/* 
 		 * The inputs of the receiver in G_OT, C_OT and R_OT are the same. The only difference is the version
 		 * variable that has to match the version of the sender. 
 		*/
 #ifndef BATCH
-		cout << getProt(m_eProt) << " Receiver performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
-				getRecFlavor(rtype) << " extensions on " << bitlength << " bit elements with " <<	m_nNumOTThreads << " threads, " <<
-				getFieldType(m_eFType) << " and" << (m_bUseMinEntCorAssumption ? "": " no" ) << " min-ent-corr-robustness " <<
-				runs << " times" << endl;
+	//	cout << getProt(m_eProt) << " Receiver performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
+	//			getRecFlavor(rtype) << " extensions on " << bitlength << " bit elements with " <<	m_nNumOTThreads << " threads, " <<
+	//			getFieldType(m_eFType) << " and" << (m_bUseMinEntCorAssumption ? "": " no" ) << " min-ent-corr-robustness " <<
+	//			runs << " times" << endl;
 #endif
-		for(uint32_t i = 0; i < runs; i++) {
-			ObliviouslyReceive(&choices, &response, numOTs, bitlength, nsndvals, stype, rtype, crypt);
-		}
+	//	for(uint32_t i = 0; i < runs; i++) {
+	//		ObliviouslyReceive(&choices, &response, numOTs, bitlength, nsndvals, stype, rtype, crypt);
+	//	}
 		/*cout << "C: ";
 		choices.PrintHex(0, numOTs);
 		cout << "R: ";
@@ -364,8 +366,9 @@ int main(int argc, char** argv)
 
 	}
 
-	//Cleanup();
+	Cleanup();
 	delete crypt;
+    delete glock;
 
 	return 1;
 }

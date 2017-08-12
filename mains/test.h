@@ -57,8 +57,8 @@ BOOL Cleanup();
 BOOL Connect();
 BOOL Listen();
 
-void InitSender(const char* address, int port);
-void InitReceiver(const char* address, int port);
+void InitSender(const char* address, int port, CLock *glock);
+void InitReceiver(const char* address, int port, CLock *glock);
 
 OTExtSnd* InitOTExtSnd(ot_ext_prot m_eProt, uint32_t nbaseots, uint32_t nchecks, bool enablemecr, field_type ftype, crypto* crypt);
 OTExtRec* InitOTExtRec(ot_ext_prot m_eProt, uint32_t nbaseots, uint32_t nchecks, bool enablemecr, field_type ftype, crypto* crypt);

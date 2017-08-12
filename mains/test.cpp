@@ -1,7 +1,7 @@
 #include "test.h"
 
-ot_ext_prot test_prots[] = {IKNP, KK, ALSZ, NNOB};
-//ot_ext_prot test_prots[] = {IKNP};
+//ot_ext_prot test_prots[] = {IKNP, KK, ALSZ, NNOB};
+ot_ext_prot test_prots[] = {IKNP};
 snd_ot_flavor test_sflavor[] = {Snd_OT, Snd_C_OT, Snd_GC_OT, Snd_R_OT};
 rec_ot_flavor test_rflavor[] = {Rec_OT, Rec_R_OT};
 uint64_t test_numots[] = {128, 3215, 100000};
@@ -191,7 +191,7 @@ listen_failure:
 
 
 
-void InitSender(const char* address, int port) {
+void InitSender(const char* address, int port, CLock *glock) {
 	m_nPort = (USHORT) port;
 	m_nAddr = address;
 	
@@ -201,14 +201,14 @@ void InitSender(const char* address, int port) {
 	//Server listen
 	Listen();
 
-	sndthread = new SndThread(m_vSocket);
-	rcvthread = new RcvThread(m_vSocket);
+	sndthread = new SndThread(m_vSocket, glock);
+	rcvthread = new RcvThread(m_vSocket, glock);
 
 	sndthread->Start();
 	rcvthread->Start();
 }
 
-void InitReceiver(const char* address, int port) {
+void InitReceiver(const char* address, int port, CLock *glock) {
 	m_nPort = (USHORT) port;
 	m_nAddr = address;
 
@@ -218,8 +218,8 @@ void InitReceiver(const char* address, int port) {
 	//Client connect
 	Connect();
 
-	sndthread = new SndThread(m_vSocket);
-	rcvthread = new RcvThread(m_vSocket);
+	sndthread = new SndThread(m_vSocket, glock);
+	rcvthread = new RcvThread(m_vSocket, glock);
 	
 	sndthread->Start();
 	rcvthread->Start();
@@ -279,13 +279,14 @@ int main(int argc, char** argv)
 	uint32_t m_nSecParam = 128;
 
 	crypto *crypt = new crypto(m_nSecParam, (uint8_t*)  m_cConstSeed[m_nPID]);
+	CLock *glock = new CLock(); // pass this to sender and receiver constructors
 
 	uint32_t m_nBaseOTs = 190;
 	uint32_t m_nChecks = 380;
 
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
-		InitSender(addr, port);
+		InitSender(addr, port, glock);
 
 		OTExtSnd* sender = NULL;
 		for(uint32_t i = 0; i < m_nTests; i++) {
@@ -303,7 +304,7 @@ int main(int argc, char** argv)
 	}
 	else //Play as OT receiver
 	{
-		InitReceiver(addr, port);
+		InitReceiver(addr, port, glock);
 
 		OTExtRec* receiver = NULL;
 		for(uint32_t i = 0; i < m_nTests; i++) {

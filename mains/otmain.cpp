@@ -155,6 +155,8 @@ void InitOTSender(const char* address, int port, crypto* crypt, CLock *glock)
 		case IKNP: sender = new IKNPOTExtSnd(crypt, rcvthread, sndthread); break;
 		case NNOB: sender = new NNOBOTExtSnd(crypt, rcvthread, sndthread); break;
 		case KK: sender = new KKOTExtSnd(crypt, rcvthread, sndthread); break;
+		case KOS: sender = new KOSOTExtSnd(crypt, rcvthread, sndthread); break;
+		case OOS: sender = new OOSOTExtSnd(crypt, rcvthread, sndthread); break;
 		default: sender = new ALSZOTExtSnd(crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 
@@ -185,6 +187,8 @@ void InitOTReceiver(const char* address, int port, crypto* crypt, CLock *glock)
 		case IKNP: receiver = new IKNPOTExtRec(crypt, rcvthread, sndthread); break;
 		case NNOB: receiver = new NNOBOTExtRec(crypt, rcvthread, sndthread); break;
 		case KK: receiver = new KKOTExtRec(crypt, rcvthread, sndthread); break;
+		case KOS: receiver = new KOSOTExtRec(crypt, rcvthread, sndthread); break;
+		case OOS: receiver = new OOSOTExtRec(crypt, rcvthread, sndthread); break;
 		default: receiver = new ALSZOTExtRec(crypt, rcvthread, sndthread, m_nBaseOTs, m_nChecks); break;
 	}
 
@@ -389,7 +393,7 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 			{ (void*) secparam, T_NUM, "s", "Symmetric Security Bits, default: 128", false, false },
 			{ (void*) address, T_STR, "a", "IP-address, default: localhost", false, false },
 			{ (void*) &int_port, T_NUM, "p", "Port, default: 7766", false, false },
-			{ (void*) &int_prot, T_NUM, "o", "Protocol, 0: IKNP, 1: ALSZ, 2: NNOB, 3: KK, default: IKNP", false, false },
+			{ (void*) &int_prot, T_NUM, "o", "Protocol, 0: IKNP, 1: ALSZ, 2: NNOB, 3: KK, 4: KOS, 5: OOS, default: IKNP", false, false },
 			{ (void*) &int_snd_flav, T_NUM, "f", "Sender OT Functionality, 0: OT, 1: C_OT, 2: Snd_R_OT, 3: GC_OT, default: OT", false, false },
 			{ (void*) &int_rec_flav, T_NUM, "v", "Receiver OT Functionality, 0: OT, 1: Rec_R_OT, default: OT", false, false },
 			{ (void*) nthreads, T_NUM, "t", "Number of threads, default 1", false, false },
@@ -435,8 +439,8 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 		*rcvflav = (rec_ot_flavor) int_rec_flav;
 	}
 
-	if(*N != 2 && (*protocol) != KK) {
-		cout << "The N option can only be used in combination with the KK13 OT. Resetting to N=2" << endl;
+	if(*N != 2 && (*protocol) != KK && (*protocol) != OOS) {
+		cout << "The N option can only be used in combination with the KK13 OT or the OOS16 OT. Resetting to N=2" << endl;
 		*N = 2;
 	}
 

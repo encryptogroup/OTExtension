@@ -40,7 +40,7 @@
  \brief	Specifies the different underlying OT extension protocols that are available
  */
 enum ot_ext_prot {
-	IKNP, ALSZ, NNOB, KK, PROT_LAST
+	IKNP, ALSZ, NNOB, KK, KOS, OOS, PROT_LAST
 };
 
 /**
@@ -84,6 +84,8 @@ static const char* getProt(ot_ext_prot prot) {
 	case ALSZ: return "ALSZ";
 	case NNOB: return "NNOB";
 	case KK: return "KK";
+	case KOS: return "KOS";
+	case OOS: return "OOS";
 	default: return "unknown protocol";
 	}
 }

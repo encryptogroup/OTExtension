@@ -324,6 +324,7 @@ int main(int argc, char** argv)
 
 	Cleanup();
 	delete crypt;
+	delete glock;
 
 	return 1;
 }

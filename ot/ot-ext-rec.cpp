@@ -4,6 +4,8 @@
  *  Created on: Mar 4, 2015
  *      Author: mzohner
  */
+#include <memory>
+#include <vector>
 #include "ot-ext-rec.h"
 
 BOOL OTExtRec::receive(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector* choices, CBitVector* ret,
@@ -352,16 +354,15 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	uint32_t nsndvals = m_nSndVals;
 	uint32_t choicecodebits = ceil_log2(m_nSndVals);
 
-	CBitVector* vRcvX = new CBitVector[nsndvals];
-	CBitVector *Xc, *Xn;
+	std::vector<CBitVector> vRcvX(nsndvals);
 	uint64_t processedOTBlocks, otlen, otstart;
 	uint32_t bytelen = ceil_divide(m_nBitLength, 8);
-	uint8_t* tempXc = (uint8_t*) malloc(bytelen);
+	std::vector<uint8_t> tempXc(bytelen);
 	//uint8_t* tempXn = (uint8_t*) malloc(bytelen);
 	//uint8_t** tmpXn = (uint8_t**) malloc(nsndvals-1);
-	uint8_t* tempRet = (uint8_t*) malloc(bytelen);
-	uint8_t** buf = (uint8_t**) malloc(sizeof(uint8_t*) * nsndvals);
-	channel* chan = new channel(OT_ADMIN_CHANNEL, m_cRcvThread, m_cSndThread);
+	std::vector<uint8_t> tempRet(bytelen);
+	std::vector<uint8_t*> buf(nsndvals);
+	std::unique_ptr<channel> chan = std::make_unique<channel>(OT_ADMIN_CHANNEL, m_cRcvThread, m_cSndThread);
 	uint8_t *tmpbuf;
 	BYTE resp;
 	uint64_t tmpchoice;
@@ -380,11 +381,10 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 		for (uint64_t j = 0; j < otlen && i < NumOTs; j++, i++) {
 			tmpchoice = m_vChoices->Get<uint32_t>(i * choicecodebits, choicecodebits);
 
-			Xc = &vRcvX[tmpchoice];
-			Xc->GetBits(tempXc, j * m_nBitLength, m_nBitLength);
+			vRcvX[tmpchoice].GetBits(tempXc.data(), j * m_nBitLength, m_nBitLength);
 
 			//Xn->GetBits(tempXn, j * m_nBitLength, m_nBitLength);
-			m_vRet->GetBits(tempRet, i * m_nBitLength, m_nBitLength);
+			m_vRet->GetBits(tempRet.data(), i * m_nBitLength, m_nBitLength);
 			for (uint64_t k = 0; k < bytelen; k++) {
 				if (tempXc[k] != tempRet[k]) {
 					cout << "Error at position i = " << i << ", k = " << k << ", with X" << (hex) << tmpchoice <<
@@ -400,6 +400,9 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 					chan->send(&resp, 1);
 
 					chan->synchronize_end();
+					for(uint64_t j = 0; j < nsndvals; j++) {
+						vRcvX[j].DetachBuf();
+					}
 					return false;
 				}
 			}
@@ -421,13 +424,8 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	chan->synchronize_end();
 	//cout << "synchronized done" << endl;
 
-	delete chan;
-	free(tempXc);
 	//free(tempXn);
-	free(tempRet);
-	free(buf);
 
-	delete[] vRcvX;
 	return true;
 }
 

@@ -5,6 +5,7 @@
  *      Author: mzohner
  */
 
+#include <memory>
 #include "ot-ext-snd.h"
 
 BOOL OTExtSnd::send(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector** X, snd_ot_flavor stype,
@@ -289,7 +290,7 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 	uint64_t nSnd;
 	uint8_t* resp;
 
-	channel* chan = new channel(OT_ADMIN_CHANNEL, m_cRcvThread, m_cSndThread);
+	std::unique_ptr<channel> chan = std::make_unique<channel>(OT_ADMIN_CHANNEL, m_cRcvThread, m_cSndThread);
 
 	for (uint64_t i = 0; i < NumOTs; i += OTsPerIteration) {
 		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(NumOTs - i, AES_BITS));
@@ -313,8 +314,6 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 
 	cout << "OT Verification successful" << flush << endl;
 	chan->synchronize_end();
-
-	delete chan;
 
 	return true;
 }

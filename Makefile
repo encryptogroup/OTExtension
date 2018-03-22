@@ -14,7 +14,7 @@ SOURCES_CRYPTO=ENCRYPTO_utils/crypto/*.cpp
 OBJECTS_CRYPTO=ENCRYPTO_utils/crypto/*.o
 SOURCES_OT=ot/*.cpp
 OBJECTS_OT=ot/*.o
-COMPILER_OPTIONS=-O2# -mavx -maes  -mpclmul -DRDTSC -DTEST=AES128
+COMPILER_OPTIONS=-std=c++14 -O2# -mavx -maes  -mpclmul -DRDTSC -DTEST=AES128
 DEBUG_OPTIONS=#-g3 -ggdb
 BATCH=
 INCLUDE=-I..

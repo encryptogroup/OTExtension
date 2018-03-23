@@ -21,7 +21,7 @@ public:
 		init(bitlength);
 	}
 	;
-	~XORMasking() {
+	virtual ~XORMasking() {
 	}
 	;
 

@@ -262,7 +262,7 @@ void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choi
 	sock->Send(pBuf, nBufSize);
 	
 	free(pBuf);//delete pBuf;
-	nBufSize = 3*nOTs*febytelen;//*(coordSize + 1);
+	nBufSize = 3*nOTs*febytelen;// *(coordSize + 1);
 	pBuf = (uint8_t*) malloc(nBufSize);//new BYTE[nBufSize];
 	
 	bx = m_cPKCrypto->get_brick(x);//Miracl_InitBrick(&bx, &x);
@@ -325,7 +325,7 @@ void NaorPinkasNoRO::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choi
 
 		//compute w_sigma^b
 		//ecurve2_mult(b[k].getbig(), w.get_point(), w.get_point());
-		//*(fe2ec2(w)) *= *(num2Big(b[k]));
+		// *(fe2ec2(w)) *= *(num2Big(b[k]));
 		w->set_pow(tmp, b[k]);//w *= b[k];
 		//w->print();
 		//export result and hash

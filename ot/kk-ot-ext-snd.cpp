@@ -306,9 +306,10 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 	uint32_t ext_choicecodebits = ceil_log2(m_nSndVals);
 	uint32_t diff_choicecodes = int_choicecodebits / ext_choicecodebits;
 	uint64_t valsize = bits_in_bytes(OT_len * m_nBitLength * diff_choicecodes);
-	uint64_t bufsize;
-	uint8_t* buf;
-	uint32_t startval, endval;
+	uint64_t bufsize = 0;
+	uint8_t* buf = nullptr;
+	uint32_t startval = 0;
+	uint32_t endval = 0;
 	uint32_t offset = m_nint_sndvals;
 
 

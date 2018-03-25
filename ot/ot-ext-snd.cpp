@@ -267,7 +267,7 @@ void OTExtSnd::MaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len
 		return;
 
 	uint64_t bufsize = bits_in_bytes(OT_len * m_nBitLength);
-	uint8_t* buf;
+	uint8_t* buf = nullptr;
 	if (m_eSndOTFlav == Snd_OT) {
 		buf = (uint8_t*) malloc(2*bufsize);
 		memcpy(buf, snd_buf[0].GetArr(), bufsize);

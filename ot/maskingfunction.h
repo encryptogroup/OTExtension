@@ -18,7 +18,7 @@ public:
 	MaskingFunction() {
 	}
 	;
-	~MaskingFunction() {
+	virtual ~MaskingFunction() {
 	}
 	;
 

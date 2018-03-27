@@ -1,6 +1,6 @@
 #include "pvwddh.h"
 
-void PVWDDH::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, channel* chan, uint8_t* retbuf) {
+void PVWDDH::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* retbuf) {
 
 	fe *g[2], *h[2], *pkg, *pkh, *u, *zkcommit[2];
 	num *y, *alpha, *r[nOTs], *zkr, *zkchallenge, *zkproof;
@@ -75,8 +75,8 @@ void PVWDDH::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, cha
 	for(i = 0; i < nOTs; i++) {
 		//generate r_i at random and compute g_i = g_sigma_i ^ r_i and h_i = h_sigma_i ^ r_i
 		r[i] = m_cPKCrypto->get_rnd_num();
-		bg[choices.GetBit(i)]->pow(pkg, r[i]);
-		bh[choices.GetBit(i)]->pow(pkh, r[i]);
+		bg[choices->GetBit(i)]->pow(pkg, r[i]);
+		bh[choices->GetBit(i)]->pow(pkh, r[i]);
 
 		//convert elements to bytes
 		pkg->export_to_bytes(sndbufptr);
@@ -117,7 +117,7 @@ void PVWDDH::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector& choices, cha
 
 	for (i = 0; i < nOTs; i++, rcvbufptr+=(2 * fe_bytes), retbufptr+=hash_bytes) {
 		//convert the received bytes to a field element, compute u_i ^ r_i, and convert u_i^r_i back to bytes
-		u->import_from_bytes(rcvbufptr + (choices.GetBit(i) * fe_bytes));
+		u->import_from_bytes(rcvbufptr + (choices->GetBit(i) * fe_bytes));
 		u->set_pow(u, r[i]);
 		u->export_to_bytes(tmpbuf);
 

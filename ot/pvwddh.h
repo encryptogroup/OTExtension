@@ -16,7 +16,6 @@ class PVWDDH : public BaseOT
 	
 	PVWDDH(crypto* crypt, field_type ftype):
 		BaseOT(crypt, ftype) {
-		std::cout << "PVWDDH\n";
 	}
 	;
 

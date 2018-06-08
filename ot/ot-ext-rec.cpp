@@ -11,8 +11,8 @@
 #include <vector>
 #include "ot-ext-rec.h"
 #include "baseOT.h"
-#include "../ENCRYPTO_utils/channel.h"
-#include "../ENCRYPTO_utils/cbitvector.h"
+#include <ENCRYPTO_utils/channel.h>
+#include <ENCRYPTO_utils/cbitvector.h>
 
 BOOL OTExtRec::receive(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector* choices, CBitVector* ret,
 		snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* unmaskfct) {

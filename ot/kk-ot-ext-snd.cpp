@@ -7,8 +7,8 @@
 
 #include "kk-ot-ext-snd.h"
 #include "naor-pinkas.h"
-#include "../ENCRYPTO_utils/channel.h"
-#include "../ENCRYPTO_utils/cbitvector.h"
+#include <ENCRYPTO_utils/channel.h>
+#include <ENCRYPTO_utils/cbitvector.h>
 
 BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	assert(m_eSndOTFlav != Snd_GC_OT); //not working for GC_OT

@@ -8,10 +8,10 @@
 #ifndef BASEOT_H_
 #define BASEOT_H_
 
-#include "../ENCRYPTO_utils/constants.h"
-#include "../ENCRYPTO_utils/typedefs.h"
-#include "../ENCRYPTO_utils/crypto/crypto.h"
-#include "../ENCRYPTO_utils/crypto/pk-crypto.h"
+#include <ENCRYPTO_utils/constants.h>
+#include <ENCRYPTO_utils/typedefs.h>
+#include <ENCRYPTO_utils/crypto/crypto.h>
+#include <ENCRYPTO_utils/crypto/pk-crypto.h>
 
 #ifdef DEBUG_BASE_OT_HASH_RET
 #include <iostream>

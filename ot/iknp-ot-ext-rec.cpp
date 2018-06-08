@@ -7,8 +7,8 @@
 
 #include "iknp-ot-ext-rec.h"
 #include "naor-pinkas.h"
-#include "../ENCRYPTO_utils/channel.h"
-#include "../ENCRYPTO_utils/cbitvector.h"
+#include <ENCRYPTO_utils/channel.h>
+#include <ENCRYPTO_utils/cbitvector.h>
 
 
 BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {

@@ -9,8 +9,8 @@
 #include <openssl/sha.h>
 #include "nnob-ot-ext-snd.h"
 #include "simpleot.h"
-#include "../ENCRYPTO_utils/channel.h"
-#include "../ENCRYPTO_utils/cbitvector.h"
+#include <ENCRYPTO_utils/channel.h>
+#include <ENCRYPTO_utils/cbitvector.h>
 
 BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;

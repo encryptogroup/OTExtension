@@ -19,7 +19,7 @@
 #ifndef _OT_CONSTANTS_H_
 #define _OT_CONSTANTS_H_
 
-#include "../ENCRYPTO_utils/constants.h"
+#include <ENCRYPTO_utils/constants.h>
 
 #ifndef ABY_OT
 #define BATCH

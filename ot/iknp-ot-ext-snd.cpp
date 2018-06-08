@@ -7,8 +7,8 @@
 
 #include "iknp-ot-ext-snd.h"
 #include "naor-pinkas.h"
-#include "../ENCRYPTO_utils/channel.h"
-#include "../ENCRYPTO_utils/cbitvector.h"
+#include <ENCRYPTO_utils/channel.h>
+#include <ENCRYPTO_utils/cbitvector.h>
 
 //BOOL OTsender(int nSndVals, int nOTs, int startpos, CSocket& sock, CBitVector& U, AES_KEY* vKeySeeds, CBitVector* values, BYTE* seed)
 BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {

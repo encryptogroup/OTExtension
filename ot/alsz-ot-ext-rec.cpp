@@ -11,8 +11,8 @@
 #include "alsz-ot-ext-snd.h"
 #include "simpleot.h"
 #include "xormasking.h"
-#include "../ENCRYPTO_utils/channel.h"
-#include "../ENCRYPTO_utils/cbitvector.h"
+#include <ENCRYPTO_utils/channel.h>
+#include <ENCRYPTO_utils/cbitvector.h>
 
 
 BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {

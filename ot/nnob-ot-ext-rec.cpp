@@ -9,8 +9,8 @@
 #include <openssl/sha.h>
 #include "nnob-ot-ext-rec.h"
 #include "simpleot.h"
-#include "../ENCRYPTO_utils/channel.h"
-#include "../ENCRYPTO_utils/cbitvector.h"
+#include <ENCRYPTO_utils/channel.h>
+#include <ENCRYPTO_utils/cbitvector.h>
 
 
 BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {

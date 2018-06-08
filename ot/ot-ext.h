@@ -29,10 +29,10 @@
 
 
 #include "maskingfunction.h"
-#include "../ENCRYPTO_utils/rcvthread.h"
-#include "../ENCRYPTO_utils/sndthread.h"
-#include "../ENCRYPTO_utils/utils.h"
-#include "../ENCRYPTO_utils/crypto/crypto.h"
+#include <ENCRYPTO_utils/rcvthread.h>
+#include <ENCRYPTO_utils/sndthread.h>
+#include <ENCRYPTO_utils/utils.h>
+#include <ENCRYPTO_utils/crypto/crypto.h>
 #include "OTconstants.h"
 
 class BaseOT;

@@ -12,8 +12,8 @@
 #include <vector>
 #include "ot-ext-snd.h"
 #include "baseOT.h"
-#include "../ENCRYPTO_utils/channel.h"
-#include "../ENCRYPTO_utils/cbitvector.h"
+#include <ENCRYPTO_utils/channel.h>
+#include <ENCRYPTO_utils/cbitvector.h>
 
 BOOL OTExtSnd::send(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector** X, snd_ot_flavor stype,
 		rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct) {

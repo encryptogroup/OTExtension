@@ -16,9 +16,9 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t internal_numOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	uint64_t lim = myStartPos + internal_numOTs;
 
-	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(internal_numOTs, wd_size_bits));
+	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(internal_numOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
-	uint64_t OTwindow = NUMOTBLOCKS * wd_size_bits;
+	uint64_t OTwindow = num_ot_blocks * wd_size_bits;
 	uint64_t** rndmat;
 	bool use_mat_chan = (m_eSndOTFlav == Snd_GC_OT || m_bUseMinEntCorRob);
 	uint32_t nchans = 2;
@@ -73,7 +73,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 
 	while (otid < lim) {
-		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - otid, wd_size_bits));
+		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - otid, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 		//nSize = bits_in_bytes(m_nBaseOTs * OTsPerIteration);
 
@@ -447,7 +447,7 @@ void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
 		m_tBaseOTQ.push_back(tmp);*/
 	} else {
 		ALSZOTExtSnd* snd = new ALSZOTExtSnd(m_cCrypt, m_cRcvThread, m_cSndThread, m_nBaseOTs, m_nChecks);
-		uint32_t numots = BUFFER_OT_KEYS * m_nBaseOTs;
+		uint32_t numots = buffer_ot_keys * m_nBaseOTs;
 		XORMasking* m_fMaskFct = new XORMasking(m_cCrypt->get_seclvl().symbits);
 		CBitVector** X = (CBitVector**) malloc(sizeof(CBitVector*) * nsndvals);//new CBitVector[nsndvals];
 		uint32_t secparambytes = bits_in_bytes(m_cCrypt->get_seclvl().symbits);
@@ -468,7 +468,7 @@ void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
 		buf = (uint8_t*) malloc(secparambytes * nsndvals * m_nBaseOTs);
 
 		OT_AES_KEY_CTX* tmp_keys;
-		for(uint32_t i = 0; i < BUFFER_OT_KEYS; i++) {
+		for(uint32_t i = 0; i < buffer_ot_keys; i++) {
 			//base_ots_snd_t* tmp = (base_ots_snd_t*) malloc(sizeof(base_ots_snd_t));
 			tmp_keys = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs * nsndvals);
 			/*for(uint32_t j = 0; j < m_nBaseOTs; j++) {

@@ -22,8 +22,8 @@
 class IKNPOTExtRec : public OTExtRec {
 
 public:
-	IKNPOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool verify_ot=true, bool use_fixed_key_aes_hashing=false)
-		: OTExtRec(verify_ot, use_fixed_key_aes_hashing) {
+	IKNPOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint64_t num_ot_blocks=4096, bool verify_ot=true, bool use_fixed_key_aes_hashing=false)
+		: OTExtRec(num_ot_blocks, verify_ot, use_fixed_key_aes_hashing) {
 		InitRec(crypt, rcvthread, sndthread, crypt->get_seclvl().symbits);
 	}
 	;

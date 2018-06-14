@@ -33,9 +33,9 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	}
 
 
-	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
+	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
-	uint64_t OTwindow = NUMOTBLOCKS * wd_size_bits;
+	uint64_t OTwindow = num_ot_blocks * wd_size_bits;
 	uint64_t** rndmat;
 	uint64_t processedOTs;
 	channel* chan = new channel(OT_BASE_CHANNEL+id, m_cRcvThread, m_cSndThread);
@@ -82,7 +82,7 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 
 	while (otid < lim) {
-		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - otid, wd_size_bits));
+		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - otid, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 		processedOTs = min(lim - otid, OTsPerIteration);
 		//nSize = bits_in_bytes(m_nBaseOTs * OTsPerIteration);

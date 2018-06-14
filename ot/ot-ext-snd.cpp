@@ -294,7 +294,7 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 	std::unique_ptr<channel> chan = std::make_unique<channel>(OT_ADMIN_CHANNEL, m_cRcvThread, m_cSndThread);
 
 	for (uint64_t i = 0; i < NumOTs; i += OTsPerIteration) {
-		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(NumOTs - i, AES_BITS));
+		processedOTBlocks = min(num_ot_blocks, ceil_divide(NumOTs - i, AES_BITS));
 		OTsPerIteration = min(processedOTBlocks * AES_BITS, NumOTs - i);
 		nSnd = ceil_divide(OTsPerIteration * m_nBitLength, 8);
 

@@ -26,8 +26,6 @@
 //#define USE_PIPELINED_AES_NI
 //#define SIMPLE_TRANSPOSE //activate the simple transpose, only required for benchmarking, not recommended
 
-#define NUMOTBLOCKS 4096
-#define BUFFER_OT_KEYS NUMOTBLOCKS
 #endif
 
 #define OT_ADMIN_CHANNEL MAX_NUM_COMM_CHANNELS-2

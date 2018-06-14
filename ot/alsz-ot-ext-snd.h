@@ -30,7 +30,8 @@ class ALSZOTExtSnd : public OTExtSnd {
 
 public:
 	ALSZOTExtSnd(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseots,
-			uint32_t nchecks) {
+			uint32_t nchecks, bool use_fixed_key_aes_hashing=false)
+		: OTExtSnd(use_fixed_key_aes_hashing) {
 		InitSnd(crypt, rcvthread, sndthread, nbaseots);
 		m_nChecks = nchecks;
 		m_bDoBaseOTs = false;

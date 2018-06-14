@@ -213,14 +213,14 @@ void OTExtSnd::HashValues(CBitVector* Q, CBitVector* seedbuf, CBitVector* snd_bu
 #endif
 
 			if(m_eSndOTFlav != Snd_GC_OT) {
-#ifdef FIXED_KEY_AES_HASHING
-				FixedKeyHashing(m_kCRFKey, sbp[u], (BYTE*) Qptr, hash_buf, i, ceil_divide(m_nSymSecParam, 8), m_cCrypt);
-#else
-				memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
-				memcpy(inbuf+sizeof(uint64_t), Q->GetArr() + i * wd_size_bytes, rowbytelen);
-				m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
-				memcpy(sbp[u], resbuf, aes_key_bytes);
-#endif
+				if (use_fixed_key_aes_hashing) {
+					FixedKeyHashing(m_kCRFKey, sbp[u], (BYTE*) Qptr, hash_buf, i, ceil_divide(m_nSymSecParam, 8), m_cCrypt);
+				} else {
+					memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
+					memcpy(inbuf+sizeof(uint64_t), Q->GetArr() + i * wd_size_bytes, rowbytelen);
+					m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
+					memcpy(sbp[u], resbuf, aes_key_bytes);
+				}
 			} else {
 
 				BitMatrixMultiplication(tmpbufb, bits_in_bytes(m_nBitLength), Q->GetArr() + i * wd_size_bytes, m_nBaseOTs, mat_mul, tmpbuf);

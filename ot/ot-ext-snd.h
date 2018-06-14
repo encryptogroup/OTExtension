@@ -13,7 +13,8 @@
 class OTExtSnd : public OTExt {
 
 public:
-	OTExtSnd() {};
+	OTExtSnd(bool use_fixed_key_aes_hashing)
+		: OTExt(use_fixed_key_aes_hashing) {};
 
 	virtual ~OTExtSnd() {
 		for(size_t i = 0; i < m_tBaseOTChoices.size(); i++) {

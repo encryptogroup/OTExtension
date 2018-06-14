@@ -238,14 +238,15 @@ void OTExtRec::HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbu
 
 #endif
 
-#ifdef FIXED_KEY_AES_HASHING
-			FixedKeyHashing(m_kCRFKey, bufptr, Tptr, hash_buf, i, ceil_divide(m_nSymSecParam, 8), m_cCrypt);
-#else
-			memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
-			memcpy(inbuf+sizeof(uint64_t), Tptr, rowbytelen);
-			m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
-			memcpy(bufptr, resbuf, aes_key_bytes);
-#endif
+			if (use_fixed_key_aes_hashing)
+			{
+				FixedKeyHashing(m_kCRFKey, bufptr, Tptr, hash_buf, i, ceil_divide(m_nSymSecParam, 8), m_cCrypt);
+			} else {
+				memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
+				memcpy(inbuf+sizeof(uint64_t), Tptr, rowbytelen);
+				m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
+				memcpy(bufptr, resbuf, aes_key_bytes);
+			}
 
 
 #ifdef DEBUG_OT_HASH_OUT

@@ -22,7 +22,8 @@
 class IKNPOTExtRec : public OTExtRec {
 
 public:
-	IKNPOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread) {
+	IKNPOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool use_fixed_key_aes_hashing=false)
+		: OTExtRec(use_fixed_key_aes_hashing) {
 		InitRec(crypt, rcvthread, sndthread, crypt->get_seclvl().symbits);
 	}
 	;

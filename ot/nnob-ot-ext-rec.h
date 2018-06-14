@@ -24,8 +24,8 @@ typedef struct nnob_rcv_check_ctx {
 class NNOBOTExtRec : public OTExtRec {
 
 public:
-	NNOBOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool dobaseots=true, bool use_fixed_key_aes_hashing=false)
-		: OTExtRec(use_fixed_key_aes_hashing) {
+	NNOBOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool dobaseots=true, bool verify_ot=true, bool use_fixed_key_aes_hashing=false)
+		: OTExtRec(verify_ot, use_fixed_key_aes_hashing) {
 		uint32_t nbaseots = ceil_divide(crypt->get_seclvl().symbits * 8, 3);
 		InitRec(crypt, rcvthread, sndthread, nbaseots);
 		m_nChecks = nbaseots/2;

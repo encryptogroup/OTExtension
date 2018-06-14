@@ -23,7 +23,6 @@
 
 #ifndef ABY_OT
 #define BATCH
-#define VERIFY_OT
 //#define USE_PIPELINED_AES_NI
 //#define SIMPLE_TRANSPOSE //activate the simple transpose, only required for benchmarking, not recommended
 

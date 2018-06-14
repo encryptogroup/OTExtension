@@ -67,10 +67,10 @@ BOOL OTExtRec::start_receive(uint32_t numThreads) {
 	//	m_nRet.Copy(m_vTempOTMasks.GetArr(), 0, ceil_divide(m_nOTs * m_nBitLength, 8));
 	//}
 	//m_vTempOTMasks.delCBitVector();
-#ifdef VERIFY_OT
+	if (verify_ot) {
 	//Wait for the signal of the corresponding sender thread
-	verifyOT(m_nOTs);
-#endif
+		verifyOT(m_nOTs);
+	}
 
 	return true;
 }

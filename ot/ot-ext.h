@@ -97,8 +97,8 @@ typedef struct mask_buf_ctx {
 class OTExt {
 
 public:
-	OTExt(bool use_fixed_key_aes_hashing)
-		: use_fixed_key_aes_hashing(use_fixed_key_aes_hashing) {};
+	OTExt(bool verify_ot, bool use_fixed_key_aes_hashing)
+		: verify_ot(verify_ot), use_fixed_key_aes_hashing(use_fixed_key_aes_hashing) {};
 	virtual ~OTExt() {
 		if (use_fixed_key_aes_hashing) {
 			m_cCrypt->clean_aes_key(m_kCRFKey);
@@ -174,6 +174,7 @@ protected:
 	BaseOT* m_cBaseOT;
 
 	// (previously compile time options)
+	const bool verify_ot;
 	const bool use_fixed_key_aes_hashing;
 
 	AES_KEY_CTX* m_kCRFKey;

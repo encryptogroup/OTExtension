@@ -13,8 +13,8 @@
 class IKNPOTExtSnd : public OTExtSnd {
 
 public:
-	IKNPOTExtSnd(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool use_fixed_key_aes_hashing=false)
-		: OTExtSnd(use_fixed_key_aes_hashing) {
+	IKNPOTExtSnd(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool verify_ot=true, bool use_fixed_key_aes_hashing=false)
+		: OTExtSnd(verify_ot, use_fixed_key_aes_hashing) {
 		InitSnd(crypt, rcvthread, sndthread, crypt->get_seclvl().symbits);
 	}
 	;

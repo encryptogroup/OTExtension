@@ -15,8 +15,8 @@ class OTExtRec : public OTExt {
 
 public:
 
-	OTExtRec(bool use_fixed_key_aes_hashing)
-		: OTExt(use_fixed_key_aes_hashing) {};
+	OTExtRec(bool verify_ot, bool use_fixed_key_aes_hashing)
+		: OTExt(verify_ot, use_fixed_key_aes_hashing) {};
 	virtual ~OTExtRec(){
 		// TODO: nsndvals is currently hardcoeded in OTExtRec::ComputePKBaseOTs()
 		// maybe add it as a private attribute to class OTExt and move the

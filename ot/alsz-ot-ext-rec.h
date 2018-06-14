@@ -27,8 +27,8 @@ class ALSZOTExtRec : public OTExtRec {
 
 public:
 	ALSZOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread,
-			uint32_t nbaseots, uint32_t nchecks, bool use_fixed_key_aes_hashing=false)
-		: OTExtRec(use_fixed_key_aes_hashing) {
+			uint32_t nbaseots, uint32_t nchecks, bool verify_ot=true, bool use_fixed_key_aes_hashing=false)
+		: OTExtRec(verify_ot, use_fixed_key_aes_hashing) {
 		InitRec(crypt, rcvthread, sndthread, nbaseots);
 		m_nChecks = nchecks;
 		m_bDoBaseOTs=false;

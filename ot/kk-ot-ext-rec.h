@@ -15,8 +15,8 @@
 class KKOTExtRec : public OTExtRec, public KKOTExt {
 
 public:
-	KKOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool use_fixed_key_aes_hashing=false)
-		: OTExtRec(use_fixed_key_aes_hashing) {
+	KKOTExtRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, bool verify_ot=true, bool use_fixed_key_aes_hashing=false)
+		: OTExtRec(verify_ot, use_fixed_key_aes_hashing) {
 		uint32_t numbaseots = 2*crypt->get_seclvl().symbits;//, pad_to_power_of_two(nSndVals));
 
 		//assert(pad_to_power_of_two(nSndVals) == nSndVals); //TODO right now only supports power of two nSndVals

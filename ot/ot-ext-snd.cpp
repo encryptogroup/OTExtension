@@ -56,9 +56,10 @@ BOOL OTExtSnd::start_send(uint32_t numThreads) {
 		delete sThreads[i];
 	}
 
-#ifdef VERIFY_OT
-	verifyOT(m_nOTs);
-#endif
+	if (verify_ot) {
+		verifyOT(m_nOTs);
+	}
+
 	return true;
 }
 

@@ -67,10 +67,10 @@ BOOL OTExtRec::start_receive(uint32_t numThreads) {
 	//	m_nRet.Copy(m_vTempOTMasks.GetArr(), 0, ceil_divide(m_nOTs * m_nBitLength, 8));
 	//}
 	//m_vTempOTMasks.delCBitVector();
-#ifdef VERIFY_OT
+	if (verify_ot) {
 	//Wait for the signal of the corresponding sender thread
-	verifyOT(m_nOTs);
-#endif
+		verifyOT(m_nOTs);
+	}
 
 	return true;
 }
@@ -238,14 +238,15 @@ void OTExtRec::HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbu
 
 #endif
 
-#ifdef FIXED_KEY_AES_HASHING
-			FixedKeyHashing(m_kCRFKey, bufptr, Tptr, hash_buf, i, ceil_divide(m_nSymSecParam, 8), m_cCrypt);
-#else
-			memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
-			memcpy(inbuf+sizeof(uint64_t), Tptr, rowbytelen);
-			m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
-			memcpy(bufptr, resbuf, aes_key_bytes);
-#endif
+			if (use_fixed_key_aes_hashing)
+			{
+				FixedKeyHashing(m_kCRFKey, bufptr, Tptr, hash_buf, i, ceil_divide(m_nSymSecParam, 8), m_cCrypt);
+			} else {
+				memcpy(inbuf, &global_OT_ptr, sizeof(uint64_t));
+				memcpy(inbuf+sizeof(uint64_t), Tptr, rowbytelen);
+				m_cCrypt->hash_buf(resbuf, aes_key_bytes, inbuf, hashinbytelen, hash_buf);
+				memcpy(bufptr, resbuf, aes_key_bytes);
+			}
 
 
 #ifdef DEBUG_OT_HASH_OUT

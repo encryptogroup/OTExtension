@@ -50,10 +50,8 @@
 #else
 	typedef AES_KEY_CTX OT_AES_KEY_CTX;
 
-#ifdef FIXED_KEY_AES_HASHING
 static const uint8_t fixed_key_aes_seed[32] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
 		0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF };
-#endif
 
 	static void InitAESKey(OT_AES_KEY_CTX* ctx, uint8_t* keybytes, uint32_t numkeys, crypto* crypt) {
 		BYTE* pBufIdx = keybytes;
@@ -99,12 +97,15 @@ typedef struct mask_buf_ctx {
 class OTExt {
 
 public:
-	OTExt(){};
+	OTExt(uint64_t num_ot_blocks, bool verify_ot, bool use_fixed_key_aes_hashing)
+		: num_ot_blocks(num_ot_blocks), buffer_ot_keys(num_ot_blocks),
+		  verify_ot(verify_ot),
+		  use_fixed_key_aes_hashing(use_fixed_key_aes_hashing) {};
 	virtual ~OTExt() {
-#ifdef FIXED_KEY_AES_HASHING
-		m_cCrypt->clean_aes_key(m_kCRFKey);
-		free(m_kCRFKey);
-#endif
+		if (use_fixed_key_aes_hashing) {
+			m_cCrypt->clean_aes_key(m_kCRFKey);
+			free(m_kCRFKey);
+		}
 	};
 
 	virtual void ComputeBaseOTs(field_type ftype) = 0;
@@ -142,10 +143,10 @@ protected:
 	void InitPRFKeys(OT_AES_KEY_CTX* base_ot_keys, uint8_t* keybytes, uint32_t nbasekeys) {
 		InitAESKey(base_ot_keys, keybytes, nbasekeys, m_cCrypt);
 
-#ifdef FIXED_KEY_AES_HASHING
-		m_kCRFKey = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX));
-		m_cCrypt->init_aes_key(m_kCRFKey, (uint8_t*) fixed_key_aes_seed);
-#endif
+		if (use_fixed_key_aes_hashing) {
+			m_kCRFKey = (AES_KEY_CTX*) malloc(sizeof(AES_KEY_CTX));
+			m_cCrypt->init_aes_key(m_kCRFKey, (uint8_t*) fixed_key_aes_seed);
+		}
 	}
 
 	snd_ot_flavor m_eSndOTFlav;
@@ -174,9 +175,13 @@ protected:
 
 	BaseOT* m_cBaseOT;
 
-#ifdef FIXED_KEY_AES_HASHING
+	// (previously compile time options)
+	const uint64_t num_ot_blocks;
+	const uint64_t buffer_ot_keys;
+	const bool verify_ot;
+	const bool use_fixed_key_aes_hashing;
+
 	AES_KEY_CTX* m_kCRFKey;
-#endif
 };
 
 static void fillRndMatrix(uint8_t* seed, uint64_t** mat, uint64_t cols, uint64_t rows, crypto* crypt) {
@@ -232,7 +237,6 @@ static void BitMatrixMultiplication(uint8_t* resbuf, uint64_t resbytelen, uint8_
 
 
 
-#ifdef FIXED_KEY_AES_HASHING
 inline void FixedKeyHashing(AES_KEY_CTX* aeskey, BYTE* outbuf, BYTE* inbuf, BYTE* tmpbuf, uint64_t id, uint32_t bytessecparam, crypto* crypt) {
 	assert(bytessecparam <= AES_BYTES);
 #ifdef HIGH_SPEED_ROT_LT
@@ -258,7 +262,6 @@ inline void FixedKeyHashing(AES_KEY_CTX* aeskey, BYTE* outbuf, BYTE* inbuf, BYTE
 	}
 #endif
 }
-#endif
 
 
 

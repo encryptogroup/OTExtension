@@ -14,7 +14,8 @@
 class KKOTExtSnd : public OTExtSnd, public KKOTExt {
 
 public:
-	KKOTExtSnd(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread) {
+	KKOTExtSnd(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint64_t num_ot_blocks=4096, bool verify_ot=true, bool use_fixed_key_aes_hashing=false)
+		: OTExtSnd(num_ot_blocks, verify_ot, use_fixed_key_aes_hashing) {
 		uint32_t numbaseots = 2*crypt->get_seclvl().symbits;
 
 		//assert(pad_to_power_of_two(nSndVals) == nSndVals); //TODO right now only supports power of two nSndVals

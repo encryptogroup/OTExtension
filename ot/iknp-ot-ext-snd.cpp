@@ -11,7 +11,7 @@
 BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t wd_size_bits = m_nBlockSizeBits;
-	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
+	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	channel* chan = new channel(OT_BASE_CHANNEL+id, m_cRcvThread, m_cSndThread);
 	uint64_t tmpctr, tmpotlen;
@@ -65,7 +65,7 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	while (otid < lim) //do while there are still transfers missing
 	{
-		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - otid, wd_size_bits));
+		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - otid, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 
 #ifdef ZDEBUG

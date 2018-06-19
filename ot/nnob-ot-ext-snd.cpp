@@ -11,7 +11,7 @@
 BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t wd_size_bits = m_nBlockSizeBits;
-	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
+	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	uint64_t tmpctr, tmpotlen;
 	uint32_t nchans = 2;
@@ -78,7 +78,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	while (OT_ptr < lim) //do while there are still transfers missing
 	{
-		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - OT_ptr, wd_size_bits));
+		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - OT_ptr, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 
 #ifdef ZDEBUG
@@ -244,7 +244,7 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 	uint8_t *idbtmpbuf = (BYTE*) malloc(sizeof(BYTE) * rowbytelen);
 	uint8_t *seedptr, *rcvptr;
 
-	//uint32_t blockoffset = ceil_divide(otid, NUMOTBLOCKS * m_nBlockSizeBits);
+	//uint32_t blockoffset = ceil_divide(otid, num_ot_blocks * m_nBlockSizeBits);
 	uint32_t blockid = 0; //TODO bring in as soon as 3-step OT is implemented
 
 	check_buf->otid = otid;

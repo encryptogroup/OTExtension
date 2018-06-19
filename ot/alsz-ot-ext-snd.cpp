@@ -11,7 +11,7 @@
 BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t wd_size_bits = m_nBlockSizeBits;
-	uint64_t processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(myNumOTs, wd_size_bits));
+	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	uint64_t tmpctr, tmpotlen;
 	uint32_t nchans = 2;
@@ -83,7 +83,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	while (OT_ptr < lim) //do while there are still transfers missing
 	{
-		processedOTBlocks = min((uint64_t) NUMOTBLOCKS, ceil_divide(lim - OT_ptr, wd_size_bits));
+		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - OT_ptr, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 
 #ifdef ZDEBUG
@@ -369,7 +369,7 @@ BOOL ALSZOTExtSnd::CheckConsistency(queue<alsz_snd_check_t>* check_buf_q, channe
 	assert(check_buf.otid == tmpid);
 	assert(check_buf.numblocks == tmpnblocks);
 
-	uint32_t blockoffset = ceil_divide(check_buf.otid, NUMOTBLOCKS * m_nBlockSizeBytes);
+	uint32_t blockoffset = ceil_divide(check_buf.otid, num_ot_blocks * m_nBlockSizeBytes);
 	uint32_t offset = 0 ;//m_nBaseOTs * blockoffset;//TODO, put offset in again when 3-stop ot is implemented
 
 	rcvhashbufptr = rcvhashbuf;
@@ -463,7 +463,7 @@ void ALSZOTExtSnd::ComputeBaseOTs(field_type ftype) {
 		m_tBaseOTQ.push_back(tmp);*/
 	} else {
 		ALSZOTExtRec* rec = new ALSZOTExtRec(m_cCrypt, m_cRcvThread, m_cSndThread, m_nBaseOTs, m_nChecks);
-		uint32_t numots = BUFFER_OT_KEYS * m_nBaseOTs;
+		uint32_t numots = buffer_ot_keys * m_nBaseOTs;
 		XORMasking* m_fMaskFct = new XORMasking(m_cCrypt->get_seclvl().symbits);
 		CBitVector U, resp;
 		uint32_t secparambytes = bits_in_bytes(m_cCrypt->get_seclvl().symbits);
@@ -480,7 +480,7 @@ void ALSZOTExtSnd::ComputeBaseOTs(field_type ftype) {
 		CBitVector* tmp_choices;
 		OT_AES_KEY_CTX* tmp_keys;
 		//assign keys to base OT queue
-		for(uint32_t i = 0; i < BUFFER_OT_KEYS; i++) {
+		for(uint32_t i = 0; i < buffer_ot_keys; i++) {
 			tmp_choices = new CBitVector();
 			tmp_choices->Create(m_nBaseOTs);
 			for (uint32_t j = 0; j < m_nBaseOTs; j++)
@@ -511,7 +511,7 @@ void ALSZOTExtSnd::ComputeBaseOTs(field_type ftype) {
 	//}
 
 	//Extend OTs further and pack into m_tBaseOTQ
-	uint32_t numkeys = BUFFER_OT_KEYS;
+	uint32_t numkeys = buffer_ot_keys;
 	base_ots_t** extended_keys;// = (base_ots_t**) malloc(sizeof(base_ots_t*) * numkeys);
 	for(uint32_t i = 0; i < numkeys; i++) {
 		keys[i] = m_tBaseOTQ.front();
@@ -530,8 +530,8 @@ void ALSZOTExtSnd::ComputeBaseOTs(field_type ftype) {
 /*uint32_t ALSZOTExtSnd::ExtendBaseKeys(uint32_t id, uint64_t nbasekeys, base_ots_t*** out_keys) {
 	assert(m_tBaseOTQ.size() > 0);
 	//+1 to have some offset for future OTs
-	uint32_t req_key_sets = ceil_divide(nbasekeys, NUMOTBLOCKS) + BUFFER_OT_KEYS;
-	if(req_key_sets > m_tBaseOTQ.size()*NUMOTBLOCKS) {
+	uint32_t req_key_sets = ceil_divide(nbasekeys, num_ot_blocks) + buffer_ot_keys;
+	if(req_key_sets > m_tBaseOTQ.size()*num_ot_blocks) {
 		uint32_t numkeys = req_key_sets - m_tBaseOTQ.size();
 		base_ots_t** keys = (base_ots_t**) malloc(sizeof(base_ots_t*) * numkeys);
 		for(uint32_t i = 0; i < numkeys; i++) {

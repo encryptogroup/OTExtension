@@ -17,14 +17,33 @@ Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10].
 
 ## COMPILING
 
-1. Clone a copy of the main OTExtension git repository and the Miracl submodule by running:
+1. Clone a copy of the OTExtension git repository:
 	```
-	git clone --recursive https://github.com/encryptogroup/OTExtension.git
+	git clone https://github.com/encryptogroup/OTExtension.git
 	```
 
 2. Enter the Framework directory: `cd OTExtension/`
 
-3. Call `make` in the root directory to compile all the code and create the corresponding executables.
+3. Create and enter a build directory: `mkdir build && cd build`
+
+4. Use CMake to create build files. Use
+
+	```
+    cmake ..
+	```
+
+	The following options are available:
+
+	* `-DCMAKE_INSTALL_PREFIX=/path/to/installation`
+	* `-DOTEXTENSION_BUILD_EXE=On` to build executables
+
+In case [ENCRYPTO_utils](https://github.com/encryptogroup/ENCRYPTO_utils)
+cannot be found on your system, it will automatically be compiled.  If it is
+installed in a non-standard location, the path can be provided via
+`-DCMAKE_PREFIX_PATH=/some/path`.
+
+5. Call `make` in the build directory to compile.
+
 
 ## USE
 To start OT extension, open two terminals on the same PC and call `ot.exe -r 0` in one terminal to start OT extension as sender and call `ot.exe -r 1` in the second terminal to start OT extension as receiver. This will invoke the passive secure IKNP 1-out-of-2 OT extension protocol for 1 million OTs on 8-bit strings. The result of the OT will be checked for correctness and the times (in ms) for the base-OTs, for the OT extensions, the number of bytes sent and the number of bytes received will be printed on the terminals.

@@ -6,16 +6,19 @@
  */
 
 #include "iknp-ot-ext-rec.h"
+#include "naor-pinkas.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
 
 
 BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t wd_size_bits = m_nBlockSizeBits;
 
-	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
+	myNumOTs = std::min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	uint64_t lim = myStartPos + myNumOTs;
 
-	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
+	uint64_t processedOTBlocks = std::min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	uint64_t OTwindow = num_ot_blocks * wd_size_bits;
 	uint64_t** rndmat;
@@ -40,7 +43,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 	uint64_t otid = myStartPos;
 
-	queue<mask_block*> mask_queue;
+	std::queue<mask_block*> mask_queue;
 
 	CBitVector maskbuf;
 	maskbuf.Create(m_nBitLength * OTwindow);
@@ -58,13 +61,13 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 
 	while (otid < lim) {
-		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - otid, wd_size_bits));
+		processedOTBlocks = std::min(num_ot_blocks, ceil_divide(lim - otid, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 		//nSize = bits_in_bytes(m_nBaseOTs * OTsPerIteration);
 
 #ifdef ZDEBUG
-		cout << "Receiver thread " << id << " processing block " << otid <<
-				" with length: " << OTsPerIteration << ", and limit: " << lim << endl;
+		std::cout << "Receiver thread " << id << " processing block " << otid <<
+				" with length: " << OTsPerIteration << ", and limit: " << lim << std::endl;
 #endif
 
 
@@ -89,7 +92,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(&T, &seedbuf, &maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
+		HashValues(&T, &seedbuf, &maskbuf, otid, std::min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -103,8 +106,8 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 		SetOutput(&maskbuf, otid, OTsPerIteration, &mask_queue, chan);//ReceiveAndUnMask(chan);
 
-		//counter += min(lim - OT_ptr, OTsPerIteration);
-		otid += min(lim - otid, OTsPerIteration);
+		//counter += std::min(lim - OT_ptr, OTsPerIteration);
+		otid += std::min(lim - otid, OTsPerIteration);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalRcvTime += getMillies(tempStart, tempEnd);
@@ -127,7 +130,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	}
 
 #ifdef ZDEBUG
-	cout << "Receiver thread " << id << " finished " << endl;
+	std::cout << "Receiver thread " << id << " finished " << std::endl;
 #endif
 
 
@@ -136,14 +139,14 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	if(m_eSndOTFlav==Snd_GC_OT)
 		freeRndMatrix(rndmat, m_nBaseOTs);
 #ifdef OTTiming
-	cout << "Receiver time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
-	cout << "Time needed for: " << endl;
-	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
-	cout << "\t Base OT Masking:\t" << totalMaskTime << " ms" << endl;
-	cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << endl;
-	cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << endl;
-	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
-	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
+	std::cout << "Receiver time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << std::endl;
+	std::cout << "Time needed for: " << std::endl;
+	std::cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << std::endl;
+	std::cout << "\t Base OT Masking:\t" << totalMaskTime << " ms" << std::endl;
+	std::cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << std::endl;
+	std::cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << std::endl;
+	std::cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << std::endl;
+	std::cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << std::endl;
 #endif
 
 	T.delCBitVector();

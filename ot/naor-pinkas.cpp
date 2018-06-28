@@ -6,6 +6,11 @@
  */
 
 #include "naor-pinkas.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/crypto/ecc-pk-crypto.h"
+#include "../ENCRYPTO_utils/crypto/pk-crypto.h"
+#include <cstdlib>
 
 void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* ret) {
 

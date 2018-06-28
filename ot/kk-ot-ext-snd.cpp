@@ -6,6 +6,9 @@
  */
 
 #include "kk-ot-ext-snd.h"
+#include "naor-pinkas.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
 
 BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	assert(m_eSndOTFlav != Snd_GC_OT); //not working for GC_OT
@@ -20,19 +23,19 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos1ooN = ceil_divide(myStartPos, diff_choicecodes);
 
 	uint64_t wd_size_bits = m_nBlockSizeBits;
-	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
+	uint64_t processedOTBlocks = std::min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	channel* chan = new channel(OT_BASE_CHANNEL+id, m_cRcvThread, m_cSndThread);
 	uint64_t tmpctr, tmpotlen;
 	uint64_t** rndmat;
 	uint64_t processedOTs;
 
-	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
+	myNumOTs = std::min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	//TODO some re-formating of myNumOTs due to 1ooN OT
 	uint64_t lim = myStartPos1ooN + ceil_divide(myNumOTs, diff_choicecodes);
 
 	if(myStartPos1ooN * diff_choicecodes> m_nOTs) {
-		cerr << "Thread " << id << " not doing any work to align to window size " << endl;
+		std::cerr << "Thread " << id << " not doing any work to align to window size " << std::endl;
 		return true;
 	}
 
@@ -50,7 +53,7 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	for (uint32_t u = 0; u < m_nint_sndvals; u++)
 		seedbuf[u].Create(OTsPerIteration * m_cCrypt->get_aes_key_bytes() * 8);
 #ifdef ZDEBUG
-	cout << "seedbuf size = " <<OTsPerIteration * AES_KEY_BITS << endl;
+	std::cout << "seedbuf size = " <<OTsPerIteration * AES_KEY_BITS << std::endl;
 #endif
 	vSnd = new CBitVector[m_nint_sndvals];
 	for (uint32_t i = 0; i < m_nint_sndvals; i++) {
@@ -80,12 +83,12 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	while (otid < lim) //do while there are still transfers missing
 	{
-		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - otid, wd_size_bits));
+		processedOTBlocks = std::min(num_ot_blocks, ceil_divide(lim - otid, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
-		processedOTs = min(lim - otid, OTsPerIteration);
+		processedOTs = std::min(lim - otid, OTsPerIteration);
 
 #ifdef ZDEBUG
-		cout << "Processing block " << nProgress << " with length: " << OTsPerIteration << ", and limit: " << lim << endl;
+		std::cout << "Processing block " << nProgress << " with length: " << OTsPerIteration << ", and limit: " << lim << std::endl;
 #endif
 
 #ifdef OTTiming
@@ -148,15 +151,15 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		freeRndMatrix(rndmat, m_nBaseOTs);
 
 #ifdef OTTiming
-	cout << "Sender time benchmark for performing " << myNumOTs << " OTs (" << lim-myStartPos1ooN <<
-			" 1ooN) on " << m_nBitLength << " bit strings" << endl;
-	cout << "Time needed for: " << endl;
-	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
-	cout << "\t Unmasking values:\t" << totalUnMaskTime << " ms" << endl;
-	cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << endl;
-	cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << endl;
-	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
-	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
+	std::cout << "Sender time benchmark for performing " << myNumOTs << " OTs (" << lim-myStartPos1ooN <<
+			" 1ooN) on " << m_nBitLength << " bit strings" << std::endl;
+	std::cout << "Time needed for: " << std::endl;
+	std::cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << std::endl;
+	std::cout << "\t Unmasking values:\t" << totalUnMaskTime << " ms" << std::endl;
+	std::cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << std::endl;
+	std::cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << std::endl;
+	std::cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << std::endl;
+	std::cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << std::endl;
 #endif
 
 	delete chan;
@@ -244,11 +247,11 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 			mask.XORBytes(Q.GetArr() + i * rowbytelen, rowbytelen);
 
 #ifdef DEBUG_OT_HASH_IN
-			cout << "Hash-In for i = " << global_OT_ptr << ", u = " << u << ": " << (hex);
+			std::cout << "Hash-In for i = " << global_OT_ptr << ", u = " << u << ": " << (std::hex);
 			for(uint32_t p = 0; p < rowbytelen; p++)
-				cout << setw(2) << setfill('0') << (uint32_t) mask.GetArr()[p];
-			cout << (dec) << endl;
-			//cout << "Using codeword " << (hex) << m_vCodeWords[u][0] << m_vCodeWords[u][1] << (hex) << m_vCodeWords[u][2] << m_vCodeWords[u][3] << (dec) << endl;
+				std::cout << std::setw(2) << std::setfill('0') << (uint32_t) mask.GetArr()[p];
+			std::cout << (std::dec) << std::endl;
+			//std::cout << "Using codeword " << (std::hex) << m_vCodeWords[u][0] << m_vCodeWords[u][1] << (std::hex) << m_vCodeWords[u][2] << m_vCodeWords[u][3] << (std::dec) << std::endl;
 
 #endif
 
@@ -270,10 +273,10 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 			}
 
 #ifdef DEBUG_OT_HASH_OUT
-			cout << "Hash-Out for i = " << global_OT_ptr << ", u = " << u << ": " << (hex);
+			std::cout << "Hash-Out for i = " << global_OT_ptr << ", u = " << u << ": " << (std::hex);
 			for(uint32_t p = 0; p < aes_key_bytes; p++)
-				cout << setw(2) << setfill('0') << (uint32_t) sbp[u][p];
-			cout << (dec) << endl;
+				std::cout << std::setw(2) << std::setfill('0') << (uint32_t) sbp[u][p];
+			std::cout << (std::dec) << std::endl;
 #endif
 			sbp[u]+=m_cCrypt->get_aes_key_bytes();
 		}
@@ -283,7 +286,7 @@ void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* sn
 	//TODO: difference is in here!! (could be solved by giving the bit-length as parameter in the function call)
 	for (uint32_t u = 0; u < m_nint_sndvals; u++) {
 		m_fMaskFct->expandMask(&snd_buf[u], seedbuf[u].GetArr(), 0, OT_len, m_nBitLength * diff_choicecodes, m_cCrypt);
-		//cout << "Mask " << u << ": ";
+		//std::cout << "Mask " << u << ": ";
 		//snd_buf[u].PrintHex();
 	}
 
@@ -346,9 +349,9 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 	//m_vValues[1]->SetBytes(snd_buf[m_nint_sndvals-1].GetArr(), bits_in_bytes(OT_ptr * choicecodebits * m_nBitLength), valsize);
 
 #ifdef DEBUG_KK_OTBREAKDOWN
-	cout << endl;
+	std::cout << std::endl;
 	for(uint32_t i = 0; i < m_nSndVals; i++) {
-		cout << "X" << i<< ": ";
+		std::cout << "X" << i<< ": ";
 		m_vValues[i]->PrintHex(0, valsize);
 	}
 #endif
@@ -362,7 +365,7 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 				//write the value of snd_buf[0] or snd_buf[1] in every choicecodebits position
 				valaddr = ((i>>(j*ext_choicecodebits)) & (m_nSndVals-1));
 				snd_buf_ptr = m_vValues[valaddr];
-				//cout << "Taking value " << ((i>>(j*ext_choicecodebits)) & (m_nSndVals-1)) << " for i = " << i << endl;
+				//std::cout << "Taking value " << ((i>>(j*ext_choicecodebits)) & (m_nSndVals-1)) << " for i = " << i << std::endl;
 
 				for(uint32_t o = 0; o < OT_len; o++) { //iterations over all OTs
 					//reset tmpbuf
@@ -374,14 +377,14 @@ void KKOTExtSnd::KKMaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT
 				}
 			}
 #ifdef DEBUG_KK_OTBREAKDOWN
-			cout << "Val " << i << ": ";
+			std::cout << "Val " << i << ": ";
 			tmpmask.PrintHex(0, valsize);
-			cout << "Mask " << i << ": ";
+			std::cout << "Mask " << i << ": ";
 			snd_buf[i].PrintHex(0, valsize);
 #endif
 			tmpmask.XORBytes(snd_buf[i].GetArr(), 0, valsize);
 #ifdef DEBUG_KK_OTBREAKDOWN
-			cout << "Res " << i << ": ";
+			std::cout << "Res " << i << ": ";
 			tmpmask.PrintHex(0, valsize);
 #endif
 

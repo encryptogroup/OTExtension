@@ -10,6 +10,8 @@
 
 #include "ot-ext.h"
 
+class channel;
+class CBitVector;
 
 class OTExtRec : public OTExt {
 
@@ -49,8 +51,8 @@ protected:
 	void MaskBaseOTs(CBitVector* T, CBitVector* SndBuf, uint64_t OTid, uint64_t numblocks);
 	void SendMasks(CBitVector* Sndbuf, channel* chan, uint64_t OTid, uint64_t processedOTs, uint64_t rem_row = 1);
 	void HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbuf, uint64_t ctr, uint64_t lim, uint64_t** mat);
-	void SetOutput(CBitVector* maskbuf, uint64_t otid, uint64_t otlen, queue<mask_block*>* mask_queue, channel* chan);
-	void ReceiveAndUnMask(channel* chan, queue<mask_block*>* mask_queue);
+	void SetOutput(CBitVector* maskbuf, uint64_t otid, uint64_t otlen, std::queue<mask_block*>* mask_queue, channel* chan);
+	void ReceiveAndUnMask(channel* chan, std::queue<mask_block*>* mask_queue);
 	void ReceiveAndXORCorRobVector(CBitVector* T, uint64_t OT_len, channel* chan);
 	BOOL verifyOT(uint64_t myNumOTs);
 

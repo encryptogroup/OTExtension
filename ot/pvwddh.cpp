@@ -1,4 +1,6 @@
 #include "pvwddh.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
 
 void PVWDDH::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* retbuf) {
 
@@ -256,11 +258,11 @@ void PVWDDH::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* re
 
 		//if(gchk != zkchk) {
 		if(!gchk->eq(zkchk)) {
-			cout << "Zero-knowledge proof for base-OTs failed!" << endl;
+			std::cout << "Zero-knowledge proof for base-OTs failed!" << std::endl;
 			gchk->print();
-			cout << ", vs. ";
+			std::cout << ", vs. ";
 			zkchk->print();
-			cout << endl;
+			std::cout << std::endl;
 			exit(0);
 		}
 	}

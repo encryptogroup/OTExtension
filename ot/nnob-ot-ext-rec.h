@@ -11,7 +11,6 @@
 #define NNOB_OT_EXT_REC_H_
 
 #include "ot-ext-rec.h"
-#include "simpleot.h"
 
 
 
@@ -43,7 +42,7 @@ public:
 
 private:
 	nnob_rcv_check_t EnqueueSeed(uint8_t* T0, uint64_t otid, uint64_t numblocks);
-	void ComputeOWF(queue<nnob_rcv_check_t>* check_buf_q, channel* check_chan);
+	void ComputeOWF(std::queue<nnob_rcv_check_t>* check_buf_q, channel* check_chan);
 	void ReceiveAndFillMatrix(uint64_t** rndmat, channel* mat_chan);
 	bool m_bDoBaseOTs;
 };

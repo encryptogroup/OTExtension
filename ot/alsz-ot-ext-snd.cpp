@@ -6,12 +6,18 @@
  */
 
 
+#include <openssl/sha.h>
 #include "alsz-ot-ext-snd.h"
+#include "alsz-ot-ext-rec.h"
+#include "simpleot.h"
+#include "xormasking.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
 
 BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t wd_size_bits = m_nBlockSizeBits;
-	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
+	uint64_t processedOTBlocks = std::min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	uint64_t tmpctr, tmpotlen;
 	uint32_t nchans = 2;
@@ -27,7 +33,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		mat_chan = new channel(nchans*id+2, m_cRcvThread, m_cSndThread);
 	}
 
-	uint64_t internal_numOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
+	uint64_t internal_numOTs = std::min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	uint64_t lim = myStartPos + internal_numOTs;
 	uint64_t** rndmat;
 
@@ -43,7 +49,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	for (uint32_t u = 0; u < m_nSndVals; u++)
 		seedbuf[u].Create(OTsPerIteration * m_cCrypt->get_aes_key_bytes() * 8);
 #ifdef ZDEBUG
-	cout << "seedbuf size = " <<OTsPerIteration * AES_KEY_BITS << endl;
+	std::cout << "seedbuf size = " <<OTsPerIteration * AES_KEY_BITS << std::endl;
 #endif
 	vSnd = new CBitVector[numsndvals];
 	for (uint32_t i = 0; i < numsndvals; i++) {
@@ -58,8 +64,8 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	uint8_t *rcvbuftmpptr, *rcvbufptr;
 
-	queue<alsz_snd_check_t> check_queue;
-	queue<mask_buf_t> mask_queue;
+	std::queue<alsz_snd_check_t> check_queue;
+	std::queue<mask_buf_t> mask_queue;
 
 	OT_AES_KEY_CTX* tmp_base_keys;
 	CBitVector* tmp_base_choices;
@@ -83,11 +89,11 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	while (OT_ptr < lim) //do while there are still transfers missing
 	{
-		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - OT_ptr, wd_size_bits));
+		processedOTBlocks = std::min(num_ot_blocks, ceil_divide(lim - OT_ptr, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 
 #ifdef ZDEBUG
-		cout << "Processing block " << nProgress << " with length: " << OTsPerIteration << ", and limit: " << lim << endl;
+		std::cout << "Processing block " << nProgress << " with length: " << OTsPerIteration << ", and limit: " << lim << std::endl;
 #endif
 
 #ifdef OTTiming
@@ -135,7 +141,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(&Q, seedbuf, vSnd, tmp_base_choices, OT_ptr, min(lim - OT_ptr, OTsPerIteration), rndmat);
+		HashValues(&Q, seedbuf, vSnd, tmp_base_choices, OT_ptr, std::min(lim - OT_ptr, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -144,7 +150,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 		//TODO: outsource into method
 		tmpmaskbuf.otid = OT_ptr;
-		tmpmaskbuf.otlen = min(lim - OT_ptr, OTsPerIteration);
+		tmpmaskbuf.otlen = std::min(lim - OT_ptr, OTsPerIteration);
 		tmpmaskbuf.maskbuf = new CBitVector[numsndvals];
 		for(uint32_t i = 0; i < numsndvals; i++)
 			tmpmaskbuf.maskbuf[i].Copy(vSnd[i]);
@@ -167,7 +173,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		gettimeofday(&tempEnd, NULL);
 		totalSndTime += getMillies(tempStart, tempEnd);
 #endif
-		OT_ptr += min(lim - OT_ptr, OTsPerIteration);
+		OT_ptr += std::min(lim - OT_ptr, OTsPerIteration);
 		base_ot_block_ctr++;
 
 		//free(tmp_base_keys);
@@ -182,7 +188,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		gettimeofday(&tempStart, NULL);
 #endif
 			if(!CheckConsistency(&check_queue, check_chan)) {
-				cerr << "OT extension consistency check failed. Aborting program" << endl;
+				std::cerr << "OT extension consistency check failed. Aborting program\n";
 				exit(0);
 			}
 			//assert(CheckConsistency(&check_queue, check_chan));
@@ -228,16 +234,16 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		freeRndMatrix(rndmat, m_nBaseOTs);
 	}
 #ifdef OTTiming
-	cout << "Sender time benchmark for performing " << internal_numOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
-	cout << "Time needed for: " << endl;
-	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
-	cout << "\t BaseOT Unmasking:\t" << totalUnMaskTime << " ms" << endl;
-	cout << "\t Check Hashing: \t" << totalHashCheckTime << " ms" << endl;
-	cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << endl;
-	cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << endl;
-	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
-	cout << "\t Checking Consistency:\t" << totalChkCompTime << " ms" << endl;
-	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
+	std::cout << "Sender time benchmark for performing " << internal_numOTs << " OTs on " << m_nBitLength << " bit strings" << std::endl;
+	std::cout << "Time needed for: " << std::endl;
+	std::cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << std::endl;
+	std::cout << "\t BaseOT Unmasking:\t" << totalUnMaskTime << " ms" << std::endl;
+	std::cout << "\t Check Hashing: \t" << totalHashCheckTime << " ms" << std::endl;
+	std::cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << std::endl;
+	std::cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << std::endl;
+	std::cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << std::endl;
+	std::cout << "\t Checking Consistency:\t" << totalChkCompTime << " ms" << std::endl;
+	std::cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << std::endl;
 #endif
 
 
@@ -283,14 +289,14 @@ alsz_snd_check_t ALSZOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* toc
 	//right now the rowbytelen needs to be a multiple of AES_BYTES
 	assert(ceil_divide(rowbytelen, OWF_BYTES) * OWF_BYTES == rowbytelen);
 #ifdef DEBUG_ALSZ_CHECKS
-	cout << "rowbytelen = " << rowbytelen << endl;
+	std::cout << "rowbytelen = " << rowbytelen << std::endl;
 	choices->PrintHex();
 #endif
 	uint8_t *pas, *pbs, *par, *pbr;
 	for(uint64_t i = 0; i < m_nChecks; i++, seedcheckbufptr+=OWF_BYTES, rcvcheckbufptr+=OWF_BYTES) {
 		//memset(tmpbuf, 0, rowbytelen);
 #ifdef DEBUG_ALSZ_CHECKS
-		cout << i << "-th check between " << check_buf.perm[i].ida << " and " << check_buf.perm[i].idb << ": " << endl;
+		std::cout << i << "-th check between " << check_buf.perm[i].ida << " and " << check_buf.perm[i].idb << ": " << std::endl;
 #endif
 		pas = tocheckseed + check_buf.perm[i].ida * rowbytelen;
 		pbs = tocheckseed + check_buf.perm[i].idb * rowbytelen;
@@ -328,11 +334,11 @@ void ALSZOTExtSnd::XORandOWF(uint8_t* idaptr, uint8_t* idbptr, uint64_t rowbytel
 	}
 
 #ifdef DEBUG_ALSZ_CHECKS_INPUT
-		cout << "\t" << (hex);
+		std::cout << "\t" << (std::hex);
 		for(uint32_t t = 0; t < rowbytelen; t++) {
-			cout << setw(2) << setfill('0') << (uint32_t) tmpbuf[t];
+			std::cout << std::setw(2) << std::setfill('0') << (uint32_t) tmpbuf[t];
 		}
-		cout << (dec) << endl;
+		std::cout << (std::dec) << std::endl;
 #endif
 #ifdef AES_OWF
 		owf(&aesowfkey, rowbytelen, tmpbuf, resbuf);
@@ -346,15 +352,15 @@ void ALSZOTExtSnd::XORandOWF(uint8_t* idaptr, uint8_t* idbptr, uint64_t rowbytel
 	//m_cCrypt->hash_buf(resbuf, OWF_BYTES, tmpbuf, rowbytelen, hash_buf);//hash_buf, rowbytelen, tmpbuf, resbuf, hash_buf);
 #endif
 #ifdef DEBUG_ALSZ_CHECKS_OUTPUT
-		cout << "\t" << (hex);
+		std::cout << "\t" << (std::hex);
 		for(uint32_t t = 0; t < OWF_BYTES; t++) {
-			cout << (uint32_t) resbuf[t];
+			std::cout << (uint32_t) resbuf[t];
 		}
-		cout << (dec) << endl;
+		std::cout << (std::dec) << std::endl;
 #endif
 }
 
-BOOL ALSZOTExtSnd::CheckConsistency(queue<alsz_snd_check_t>* check_buf_q, channel* check_chan) {
+BOOL ALSZOTExtSnd::CheckConsistency(std::queue<alsz_snd_check_t>* check_buf_q, channel* check_chan) {
 	uint8_t *rcvhashbufptr, *seedbufsrvptr, *rcvbufsrvptr, *rcvhashbuf;
 	uint32_t ida, idb, receiver_hashes = 4;
 	uint64_t checkbytelen= receiver_hashes * OWF_BYTES, tmpid, tmpnblocks, seedhashcli, rcvhashcli;
@@ -396,13 +402,13 @@ BOOL ALSZOTExtSnd::CheckConsistency(queue<alsz_snd_check_t>* check_buf_q, channe
 
 			if(seedhashcli != *((uint64_t*) seedbufsrvptr) || rcvhashcli != *((uint64_t*) rcvbufsrvptr)) {
 #ifdef DEBUG_ALSZ_CHECKS
-				cout << "Error in " << i <<"-th consistency check between " << ida << " and " << idb <<" : " << endl;
-				cout << "Receiver seed = " << (hex) << ((uint64_t*) (rcvhashbufptr+((2*ca+cb) * OWF_BYTES)))[0] <<
+				std::cout << "Error in " << i <<"-th consistency check between " << ida << " and " << idb <<" : " << std::endl;
+				std::cout << "Receiver seed = " << (std::hex) << ((uint64_t*) (rcvhashbufptr+((2*ca+cb) * OWF_BYTES)))[0] <<
 						((uint64_t*) (rcvhashbufptr+((2*ca+cb) * OWF_BYTES) + j))[1] << ", my seed: " <<
-						((uint64_t*) seedbufsrvptr)[0] << ((uint64_t*) seedbufsrvptr)[1] << (dec) << endl;
-				cout << "Receiver sndval = " << (hex) << ((uint64_t*) (rcvhashbufptr+((2*(ca^1)+(cb^1)) * OWF_BYTES) + j))[0] <<
+						((uint64_t*) seedbufsrvptr)[0] << ((uint64_t*) seedbufsrvptr)[1] << (std::dec) << std::endl;
+				std::cout << "Receiver sndval = " << (std::hex) << ((uint64_t*) (rcvhashbufptr+((2*(ca^1)+(cb^1)) * OWF_BYTES) + j))[0] <<
 						((uint64_t*) (rcvhashbufptr+((2*(ca^1)+(cb^1)) * OWF_BYTES) + j))[1] << ", my snd val = " <<
-						((uint64_t*) rcvbufsrvptr)[0] << ((uint64_t*) rcvbufsrvptr)[1] << (dec) << endl;
+						((uint64_t*) rcvbufsrvptr)[0] << ((uint64_t*) rcvbufsrvptr)[1] << (std::dec) << std::endl;
 #endif
 				return false;
 			}
@@ -439,7 +445,7 @@ void ALSZOTExtSnd::genRandomPermutation(linking_t* outperm, uint32_t nids, uint3
 		m_cCrypt->gen_rnd_uniform(&outperm[i].idb, nids);
 		//outperm[i].idb = 0;
 		//if(outperm[i].idb == 0) outperm[i].idb++;
-		//cout << "Permutation " << i << ": " << outperm[i].ida << " <-> " << outperm[i].idb << endl;
+		//std::cout << "Permutation " << i << ": " << outperm[i].ida << " <-> " << outperm[i].idb << std::endl;
 	}
 
 	rndstring.delCBitVector();

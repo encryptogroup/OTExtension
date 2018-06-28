@@ -11,9 +11,6 @@
 #define ALSZ_OT_EXT_SND_H_
 
 #include "ot-ext-snd.h"
-#include "alsz-ot-ext-rec.h"
-#include "xormasking.h"
-#include "simpleot.h"
 
 
 typedef struct alsz_snd_check_ctx {
@@ -57,7 +54,7 @@ private:
 	alsz_snd_check_t UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* tocheckrcv, uint64_t otid, uint64_t numblocks, CBitVector* choices, channel* check_chan);
 	void XORandOWF(uint8_t* idaptr, uint8_t* idbptr, uint64_t rowbytelen, uint8_t* tmpbuf, uint8_t* resbuf, uint8_t* hash_buf);
 	void genRandomPermutation(linking_t* outperm, uint32_t nids, uint32_t nperms);
-	BOOL CheckConsistency(queue<alsz_snd_check_t>* check_buf_q, channel* check_chan);
+	BOOL CheckConsistency(std::queue<alsz_snd_check_t>* check_buf_q, channel* check_chan);
 	void FillAndSendRandomMatrix(uint64_t **rndmat, channel* chan);
 
 	bool m_bDoBaseOTs;

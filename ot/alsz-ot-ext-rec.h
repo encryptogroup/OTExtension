@@ -11,9 +11,6 @@
 #define ALSZ_OT_EXT_REC_H_
 
 #include "ot-ext-rec.h"
-#include "alsz-ot-ext-snd.h"
-#include "xormasking.h"
-#include "simpleot.h"
 
 
 typedef struct alsz_rcv_check_ctx {
@@ -52,7 +49,7 @@ public:
 
 private:
 	alsz_rcv_check_t EnqueueSeed(uint8_t* T0, uint8_t* T1, uint64_t otid, uint64_t numblocks);
-	void ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* check_chan);
+	void ComputeOWF(std::queue<alsz_rcv_check_t>* check_buf_q, channel* check_chan);
 	void ReceiveAndFillMatrix(uint64_t** rndmat, channel* mat_chan);
 
 	//vector<base_ots_snd_t*> m_tBaseOTQ;

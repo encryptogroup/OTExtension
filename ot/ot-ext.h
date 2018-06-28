@@ -28,18 +28,15 @@
 //#define DEBUG_KK_OTBREAKDOWN
 
 
-#include "../ENCRYPTO_utils/typedefs.h"
-#include "../ENCRYPTO_utils/socket.h"
-#include "../ENCRYPTO_utils/thread.h"
-#include "../ENCRYPTO_utils/cbitvector.h"
-#include "../ENCRYPTO_utils/crypto/crypto.h"
 #include "maskingfunction.h"
-#include "../ENCRYPTO_utils/constants.h"
-#include "../ENCRYPTO_utils/channel.h"
 #include "../ENCRYPTO_utils/rcvthread.h"
 #include "../ENCRYPTO_utils/sndthread.h"
-#include "naor-pinkas.h"
+#include "../ENCRYPTO_utils/utils.h"
+#include "../ENCRYPTO_utils/crypto/crypto.h"
 #include "OTconstants.h"
+
+class BaseOT;
+class CBitVector;
 
 #ifdef USE_PIPELINED_AES_NI
 	typedef ROUND_KEYS OT_AES_KEY_CTX;
@@ -169,7 +166,7 @@ protected:
 	SndThread* m_cSndThread;
 	RcvThread* m_cRcvThread;
 
-	vector<OT_AES_KEY_CTX*> m_tBaseOTKeys;
+    std::vector<OT_AES_KEY_CTX*> m_tBaseOTKeys;
 
 	MaskingFunction* m_fMaskFct;
 

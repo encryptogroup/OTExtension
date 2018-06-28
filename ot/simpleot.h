@@ -7,6 +7,9 @@
 
 #include "baseOT.h"
 
+class channel;
+class CBitVector;
+
 class SimpleOT : public BaseOT
 {
 

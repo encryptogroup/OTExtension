@@ -5,8 +5,15 @@
  *      Author: mzohner
  */
 
+#include <algorithm>
 #include <memory>
+#include <iostream>
+#include <sys/time.h>
+#include <vector>
 #include "ot-ext-snd.h"
+#include "baseOT.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
 
 BOOL OTExtSnd::send(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector** X, snd_ot_flavor stype,
 		rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct) {
@@ -31,15 +38,15 @@ BOOL OTExtSnd::start_send(uint32_t numThreads) {
 		return true;
 
 	if(numThreads * m_nBlockSizeBits > m_nOTs && numThreads > 1) {
-		cerr << "Decreasing nthreads from " << numThreads << " to " << max(m_nOTs / m_nBlockSizeBits, (uint64_t) 1) << " to fit window size" << endl;
-		numThreads = max(m_nOTs / m_nBlockSizeBits, (uint64_t) 1);
+		std::cerr << "Decreasing nthreads from " << numThreads << " to " << std::max(m_nOTs / m_nBlockSizeBits, (uint64_t) 1) << " to fit window size\n";
+		numThreads = std::max(m_nOTs / m_nBlockSizeBits, (uint64_t) 1);
 	}
 
 	//The total number of OTs that is performed has to be a multiple of numThreads*Z_REGISTER_BITS
 	uint32_t wd_size_bits = m_nBlockSizeBits;//pad_to_power_of_two(m_nBaseOTs);//1 << (ceil_log2(m_nBaseOTs));
 	//uint64_t numOTs = ceil_divide(PadToMultiple(m_nOTs, wd_size_bits), numThreads);
 	uint64_t internal_numOTs = PadToMultiple(ceil_divide(m_nOTs, numThreads), wd_size_bits);
-	vector<OTSenderThread*> sThreads(numThreads);
+	std::vector<OTSenderThread*> sThreads(numThreads);
 
 	for (uint32_t i = 0; i < numThreads; i++) {
 		sThreads[i] = new OTSenderThread(i, internal_numOTs, this);
@@ -87,15 +94,15 @@ void OTExtSnd::BuildQMatrix(CBitVector* T, uint64_t OT_ptr, uint64_t numblocks, 
 		for (b = 0; b < iters; b++, (*counter)++, Tptr += AES_BYTES) {
 			m_cCrypt->encrypt(seedkeyptr + k, Tptr, ctr_buf, AES_BYTES);
 #ifdef DEBUG_MALICIOUS
-			cout << "k = " << k << ": "<< (hex) << ((uint64_t*) Tptr)[0] << ((uint64_t*) Tptr)[1] << (hex) << endl;
+			std::cout << "k = " << k << ": "<< (std::hex) << ((uint64_t*) Tptr)[0] << ((uint64_t*) Tptr)[1] << (std::hex) << std::endl;
 #endif
 		}
 #ifdef DEBUG_OT_SEED_EXPANSION
-		cout << "Xs[" << k << "]: " << (hex);
+		std::cout << "Xs[" << k << "]: " << (std::hex);
 		for(uint64_t i = 0; i < AES_BYTES * iters; i++) {
-			cout  << setw(2) << setfill('0') << (uint32_t) (Tptr-AES_BYTES*iters)[i];
+			std::cout  << std::setw(2) << std::setfill('0') << (uint32_t) (Tptr-AES_BYTES*iters)[i];
 		}
-		cout << (dec) << " (" << (*counter)-iters << ")" <<endl;
+		std::cout << (std::dec) << " (" << (*counter)-iters << ")" <<std::endl;
 #endif
 	}
 #endif
@@ -207,10 +214,10 @@ void OTExtSnd::HashValues(CBitVector* Q, CBitVector* seedbuf, CBitVector* snd_bu
 #endif
 
 #ifdef DEBUG_OT_HASH_IN
-			cout << "Hash-In for i = " << global_OT_ptr << ", u = " << u << ": " << (hex);
+			std::cout << "Hash-In for i = " << global_OT_ptr << ", u = " << u << ": " << (std::hex);
 			for(uint32_t p = 0; p < rowbytelen; p++)
-				cout << setw(2) << setfill('0') << (uint32_t) (Q.GetArr() + i * wd_size_bytes)[p];
-			cout << (dec) << endl;
+				std::cout << std::setw(2) << std::setfill('0') << (uint32_t) (Q.GetArr() + i * wd_size_bytes)[p];
+			std::cout << (std::dec) << std::endl;
 #endif
 
 			if(m_eSndOTFlav != Snd_GC_OT) {
@@ -233,10 +240,10 @@ void OTExtSnd::HashValues(CBitVector* Q, CBitVector* seedbuf, CBitVector* snd_bu
 			}
 
 #ifdef DEBUG_OT_HASH_OUT
-			cout << "Hash-Out for i = " << global_OT_ptr << ", u = " << u << ": " << (hex);
+			std::cout << "Hash-Out for i = " << global_OT_ptr << ", u = " << u << ": " << (std::hex);
 			for(uint32_t p = 0; p < aes_key_bytes; p++)
-				cout << setw(2) << setfill('0') << (uint32_t) sbp[u][p];
-			cout << (dec) << endl;
+				std::cout << std::setw(2) << std::setfill('0') << (uint32_t) sbp[u][p];
+			std::cout << (std::dec) << std::endl;
 #endif
 			sbp[u] += aes_key_bytes;
 
@@ -285,7 +292,7 @@ void OTExtSnd::MaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len
 
 
 BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
-	cout << "Verifying 1oo"<< m_nSndVals << " OT" << endl;
+	std::cout << "Verifying 1oo"<< m_nSndVals << " OT" << std::endl;
 	uint64_t processedOTBlocks, OTsPerIteration;
 	uint32_t bytelen = ceil_divide(m_nBitLength, 8);
 	uint64_t nSnd;
@@ -294,8 +301,8 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 	std::unique_ptr<channel> chan = std::make_unique<channel>(OT_ADMIN_CHANNEL, m_cRcvThread, m_cSndThread);
 
 	for (uint64_t i = 0; i < NumOTs; i += OTsPerIteration) {
-		processedOTBlocks = min(num_ot_blocks, ceil_divide(NumOTs - i, AES_BITS));
-		OTsPerIteration = min(processedOTBlocks * AES_BITS, NumOTs - i);
+		processedOTBlocks = std::min(num_ot_blocks, ceil_divide(NumOTs - i, AES_BITS));
+		OTsPerIteration = std::min(processedOTBlocks * AES_BITS, NumOTs - i);
 		nSnd = ceil_divide(OTsPerIteration * m_nBitLength, 8);
 
 		for(uint64_t j = 0; j < m_nSndVals; j++) {
@@ -305,7 +312,7 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 		resp = chan->blocking_receive();
 
 		if (*resp == 0x00) {
-			cout << "OT verification unsuccessful" << endl;
+			std::cout << "OT verification unsuccessful" << std::endl;
 			free(resp);
 			chan->synchronize_end();
 			return false;
@@ -313,7 +320,7 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 		free(resp);
 	}
 
-	cout << "OT Verification successful" << flush << endl;
+	std::cout << "OT Verification successful" << std::flush << std::endl;
 	chan->synchronize_end();
 
 	return true;

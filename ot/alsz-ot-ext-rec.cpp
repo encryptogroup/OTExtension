@@ -6,17 +6,23 @@
  */
 
 
+#include <openssl/sha.h>
 #include "alsz-ot-ext-rec.h"
+#include "alsz-ot-ext-snd.h"
+#include "simpleot.h"
+#include "xormasking.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
 
 
 BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t wd_size_bits = m_nBlockSizeBits;
 
-	uint64_t internal_numOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
+	uint64_t internal_numOTs = std::min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	uint64_t lim = myStartPos + internal_numOTs;
 
-	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(internal_numOTs, wd_size_bits));
+	uint64_t processedOTBlocks = std::min(num_ot_blocks, ceil_divide(internal_numOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	uint64_t OTwindow = num_ot_blocks * wd_size_bits;
 	uint64_t** rndmat;
@@ -47,9 +53,9 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	CBitVector seedbuf(OTwindow * m_cCrypt->get_aes_key_bytes() * 8);
 
 	uint64_t otid = myStartPos;
-	queue<alsz_rcv_check_t> check_buf;
+	std::queue<alsz_rcv_check_t> check_buf;
 
-	queue<mask_block*> mask_queue;
+	std::queue<mask_block*> mask_queue;
 	CBitVector maskbuf;
 	maskbuf.Create(m_nBitLength * OTwindow);
 
@@ -73,7 +79,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 
 	while (otid < lim) {
-		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - otid, wd_size_bits));
+		processedOTBlocks = std::min(num_ot_blocks, ceil_divide(lim - otid, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 		//nSize = bits_in_bytes(m_nBaseOTs * OTsPerIteration);
 
@@ -116,7 +122,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-			HashValues(&T, &seedbuf, &maskbuf, otid, min(lim - otid, OTsPerIteration), rndmat);
+			HashValues(&T, &seedbuf, &maskbuf, otid, std::min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -132,7 +138,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 			if(m_bUseMinEntCorRob) {
 				ReceiveAndXORCorRobVector(&Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
 				Ttmp.Transpose(wd_size_bits, OTsPerIteration);
-				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
+				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, std::min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
 			}
 #ifdef OTTiming
 			gettimeofday(&tempEnd, NULL);
@@ -143,7 +149,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 		SetOutput(&maskbuf, otid, OTsPerIteration, &mask_queue, ot_chan);
 
-		otid += min(lim - otid, OTsPerIteration);
+		otid += std::min(lim - otid, OTsPerIteration);
 		base_ot_block_ctr++;
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
@@ -174,7 +180,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 			if(m_bUseMinEntCorRob) {
 				ReceiveAndXORCorRobVector(&Ttmp, check_tmp.numblocks * wd_size_bits, mat_chan);
 				Ttmp.Transpose(wd_size_bits, OTsPerIteration);
-				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
+				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, std::min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
 			}
 		}
 	}
@@ -220,17 +226,17 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	}
 
 #ifdef OTTiming
-	cout << "Receiver time benchmark for performing " << internal_numOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
-	cout << "Time needed for: " << endl;
-	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
-	cout << "\t Enqueuing Seeds:\t" << totalEnqueueTime << " ms" << endl;
-	cout << "\t Base OT Masking:\t" << totalMaskTime << " ms" << endl;
-	cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << endl;
-	cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << endl;
-	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
-	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
-	cout << "\t Checking OWF:  \t" << totalChkTime << " ms" << endl;
-	cout << "\t Setting Output:\t" << totalOutputSetTime << " ms" << endl;
+	std::cout << "Receiver time benchmark for performing " << internal_numOTs << " OTs on " << m_nBitLength << " bit strings" << std::endl;
+	std::cout << "Time needed for: " << std::endl;
+	std::cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << std::endl;
+	std::cout << "\t Enqueuing Seeds:\t" << totalEnqueueTime << " ms" << std::endl;
+	std::cout << "\t Base OT Masking:\t" << totalMaskTime << " ms" << std::endl;
+	std::cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << std::endl;
+	std::cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << std::endl;
+	std::cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << std::endl;
+	std::cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << std::endl;
+	std::cout << "\t Checking OWF:  \t" << totalChkTime << " ms" << std::endl;
+	std::cout << "\t Setting Output:\t" << totalOutputSetTime << " ms" << std::endl;
 #endif
 
 	return TRUE;
@@ -263,7 +269,7 @@ alsz_rcv_check_t ALSZOTExtRec::EnqueueSeed(uint8_t* T0, uint8_t* T1, uint64_t ot
 
 
 
-void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* check_chan) {//linking_t* permbits, int nchecks, int otid, int processedOTs, BYTE* outhashes) {
+void ALSZOTExtRec::ComputeOWF(std::queue<alsz_rcv_check_t>* check_buf_q, channel* check_chan) {//linking_t* permbits, int nchecks, int otid, int processedOTs, BYTE* outhashes) {
 
 	//Obtain T0 and T1 from the SeedPointers
 	BOOL found = false;
@@ -327,11 +333,11 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 
 		kb[0] = T0 + perm[i].idb * bufrowbytelen;
 		kb[1] = T1 + perm[i].idb * bufrowbytelen;
-		//cout << "ida = " << perm[i].ida <<", idb= " <<  perm[i].idb << endl;
+		//std::cout << "ida = " << perm[i].ida <<", idb= " <<  perm[i].idb << std::endl;
 
 		//XOR all four possibilities
 #ifdef DEBUG_ALSZ_CHECKS
-		cout << i << "-th check: between " << perm[i].ida << ", and " << perm[i].idb << ": " << endl;
+		std::cout << i << "-th check: between " << perm[i].ida << ", and " << perm[i].idb << ": " << std::endl;
 #endif
 
 		for(k = 0; k < iters; k++) {
@@ -376,11 +382,11 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 				((uint64_t*) tmpbuf)[k] = ((uint64_t*) kaptr)[k] ^ ((uint64_t*) kbptr)[k];
 			}
 #ifdef DEBUG_ALSZ_CHECKS_INPUT
-			cout << (hex)  <<  "\t";
+			std::cout << (std::hex)  <<  "\t";
 			for(uint32_t t = 0; t < bufrowbytelen; t++) {
-				cout << setw(2) << setfill('0') << (uint32_t) tmpbuf[t];
+				std::cout << std::setw(2) << std::setfill('0') << (uint32_t) tmpbuf[t];
 			}
-			cout << (dec) << endl;
+			std::cout << (std::dec) << std::endl;
 #endif
 
 #ifdef AES_OWF
@@ -400,19 +406,19 @@ void ALSZOTExtRec::ComputeOWF(queue<alsz_rcv_check_t>* check_buf_q, channel* che
 	#endif
 #endif
 #ifdef DEBUG_ALSZ_CHECKS_OUTPUT
-			cout << (hex) << "\t";
+			std::cout << (std::hex) << "\t";
 			for(uint32_t t = 0; t < OWF_BYTES; t++) {
-				cout << (uint32_t) outptr[t];
+				std::cout << (uint32_t) outptr[t];
 			}
-			cout << (dec) << endl;
+			std::cout << (std::dec) << std::endl;
 #endif
 		}*/
 	}
 
 	check_chan->send_id_len(outhashes, outhashbytelen, check_buf.otid, check_buf.numblocks);
 #ifdef OTTiming_PRECISE
-	cout << "Total XOR Time:\t" << total_xortime << " ms"<< endl;
-	cout << "Total Hash Time:\t" << total_hashtime << " ms"<< endl;
+	std::cout << "Total XOR Time:\t" << total_xortime << " ms"<< std::endl;
+	std::cout << "Total Hash Time:\t" << total_hashtime << " ms"<< std::endl;
 #endif
 
 	free(rcv_buf);

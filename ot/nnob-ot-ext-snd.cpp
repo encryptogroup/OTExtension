@@ -6,12 +6,16 @@
  */
 
 
+#include <openssl/sha.h>
 #include "nnob-ot-ext-snd.h"
+#include "simpleot.h"
+#include "../ENCRYPTO_utils/channel.h"
+#include "../ENCRYPTO_utils/cbitvector.h"
 
 BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t myStartPos = id * myNumOTs;
 	uint64_t wd_size_bits = m_nBlockSizeBits;
-	uint64_t processedOTBlocks = min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
+	uint64_t processedOTBlocks = std::min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	uint64_t tmpctr, tmpotlen;
 	uint32_t nchans = 2;
@@ -27,7 +31,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		mat_chan = new channel(nchans*id+2, m_cRcvThread, m_cSndThread);
 	}
 
-	myNumOTs = min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
+	myNumOTs = std::min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
 	uint64_t lim = myStartPos + myNumOTs;
 	uint64_t** rndmat;
 
@@ -43,7 +47,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	for (uint32_t u = 0; u < m_nSndVals; u++)
 		seedbuf[u].Create(OTsPerIteration * m_cCrypt->get_aes_key_bytes() * 8);
 #ifdef ZDEBUG
-	cout << "seedbuf size = " <<OTsPerIteration * AES_KEY_BITS << endl;
+	std::cout << "seedbuf size = " <<OTsPerIteration * AES_KEY_BITS << std::endl;
 #endif
 	vSnd = new CBitVector[numsndvals];
 	for (uint32_t i = 0; i < numsndvals; i++) {
@@ -58,8 +62,8 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	uint8_t *rcvbuftmpptr, *rcvbufptr;
 
-	queue<nnob_snd_check_t*> check_queue;
-	queue<mask_buf_t> mask_queue;
+	std::queue<nnob_snd_check_t*> check_queue;
+	std::queue<mask_buf_t> mask_queue;
 
 	uint32_t startpos = 0;
 	if(m_eRecOTFlav==Rec_R_OT) {
@@ -78,11 +82,11 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 	while (OT_ptr < lim) //do while there are still transfers missing
 	{
-		processedOTBlocks = min(num_ot_blocks, ceil_divide(lim - OT_ptr, wd_size_bits));
+		processedOTBlocks = std::min(num_ot_blocks, ceil_divide(lim - OT_ptr, wd_size_bits));
 		OTsPerIteration = processedOTBlocks * wd_size_bits;
 
 #ifdef ZDEBUG
-		cout << "Processing block " << nProgress << " with length: " << OTsPerIteration << ", and limit: " << lim << endl;
+		std::cout << "Processing block " << nProgress << " with length: " << OTsPerIteration << ", and limit: " << lim << std::endl;
 #endif
 
 #ifdef OTTiming
@@ -126,7 +130,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		totalTnsTime += getMillies(tempStart, tempEnd);
 		gettimeofday(&tempStart, NULL);
 #endif
-		HashValues(&Q, seedbuf, vSnd, m_tBaseOTChoices.front(), OT_ptr, min(lim - OT_ptr, OTsPerIteration), rndmat);
+		HashValues(&Q, seedbuf, vSnd, m_tBaseOTChoices.front(), OT_ptr, std::min(lim - OT_ptr, OTsPerIteration), rndmat);
 #ifdef OTTiming
 		gettimeofday(&tempEnd, NULL);
 		totalHshTime += getMillies(tempStart, tempEnd);
@@ -135,7 +139,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 		//TODO: outsource into method
 		tmpmaskbuf.otid = OT_ptr;
-		tmpmaskbuf.otlen = min(lim - OT_ptr, OTsPerIteration);
+		tmpmaskbuf.otlen = std::min(lim - OT_ptr, OTsPerIteration);
 		tmpmaskbuf.maskbuf = new CBitVector[numsndvals];
 		for(uint32_t i = 0; i < numsndvals; i++)
 			tmpmaskbuf.maskbuf[i].Copy(vSnd[i]);
@@ -154,7 +158,7 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		gettimeofday(&tempEnd, NULL);
 		totalSndTime += getMillies(tempStart, tempEnd);
 #endif
-		OT_ptr += min(lim - OT_ptr, OTsPerIteration);
+		OT_ptr += std::min(lim - OT_ptr, OTsPerIteration);
 		Q.Reset();
 
 		//free(rcvbufptr);
@@ -198,15 +202,15 @@ BOOL NNOBOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		freeRndMatrix(rndmat, m_nBaseOTs);
 	}
 #ifdef OTTiming
-	cout << "Sender time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << endl;
-	cout << "Time needed for: " << endl;
-	cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << endl;
-	cout << "\t BaseOT Unmasking:\t" << totalUnMaskTime << " ms" << endl;
-	cout << "\t Check Hashing:\t" << totalHashCheckTime << " ms" << endl;
-	cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << endl;
-	cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << endl;
-	cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << endl;
-	cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << endl;
+	std::cout << "Sender time benchmark for performing " << myNumOTs << " OTs on " << m_nBitLength << " bit strings" << std::endl;
+	std::cout << "Time needed for: " << std::endl;
+	std::cout << "\t Matrix Generation:\t" << totalMtxTime << " ms" << std::endl;
+	std::cout << "\t BaseOT Unmasking:\t" << totalUnMaskTime << " ms" << std::endl;
+	std::cout << "\t Check Hashing:\t" << totalHashCheckTime << " ms" << std::endl;
+	std::cout << "\t Sending Matrix:\t" << totalSndTime << " ms" << std::endl;
+	std::cout << "\t Transposing Matrix:\t" << totalTnsTime << " ms" << std::endl;
+	std::cout << "\t Hashing Matrix:\t" << totalHshTime << " ms" << std::endl;
+	std::cout << "\t Receiving Values:\t" << totalRcvTime << " ms" << std::endl;
 #endif
 
 
@@ -230,7 +234,7 @@ void NNOBOTExtSnd::FillAndSendRandomMatrix(uint64_t **rndmat, channel* mat_chan)
 
 nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* tocheckrcv, uint64_t otid, uint64_t numblocks, channel* check_chan) {
 	uint64_t rowbytelen = m_nBlockSizeBytes * numblocks;
-	uint64_t checkbytelen = min(rowbytelen, bits_in_bytes(m_nOTs - otid));
+	uint64_t checkbytelen = std::min(rowbytelen, bits_in_bytes(m_nOTs - otid));
 
 	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
 	uint8_t* tmpbuf = (uint8_t*) malloc(rowbytelen);
@@ -288,11 +292,11 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 		}
 
 	/*#ifdef DEBUG_NNOB_CHECKS
-		cout << "seedA: " <<  (hex) << ((uint64_t*) (tocheckseed + check_buf.perm[i].ida * rowbytelen))[0] <<
-				", rcvA: " << ((uint64_t*) (tocheckrcv + check_buf.perm[i].ida * rowbytelen))[0] << (dec) << endl;
-		cout << "seedB: " <<  (hex) << ((uint64_t*) (tocheckseed + check_buf.perm[i].idb * rowbytelen))[0] <<
-				", rcvB: " << ((uint64_t*) (tocheckrcv + check_buf.perm[i].idb * rowbytelen))[0] << (dec) << endl;
-		cout << "input to owf " <<  (hex) << ((uint64_t*) idatmpbuf)[0] << ", " << ((uint64_t*) idbtmpbuf)[0] << (dec) << endl;
+		std::cout << "seedA: " <<  (std::hex) << ((uint64_t*) (tocheckseed + check_buf.perm[i].ida * rowbytelen))[0] <<
+				", rcvA: " << ((uint64_t*) (tocheckrcv + check_buf.perm[i].ida * rowbytelen))[0] << (std::dec) << std::endl;
+		std::cout << "seedB: " <<  (std::hex) << ((uint64_t*) (tocheckseed + check_buf.perm[i].idb * rowbytelen))[0] <<
+				", rcvB: " << ((uint64_t*) (tocheckrcv + check_buf.perm[i].idb * rowbytelen))[0] << (std::dec) << std::endl;
+		std::cout << "input to owf " <<  (std::hex) << ((uint64_t*) idatmpbuf)[0] << ", " << ((uint64_t*) idbtmpbuf)[0] << (std::dec) << std::endl;
 	#endif*/
 
 		memset(tmpbuf, 0, rowbytelen);
@@ -302,11 +306,11 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 		}
 
 #ifdef DEBUG_NNOB_CHECKS_INPUT
-		cout << "XOR-OWF Input:\t" << (hex);
+		std::cout << "XOR-OWF Input:\t" << (std::hex);
 		for(uint32_t t = 0; t < checkbytelen; t++) {
-			cout << setw(2) << setfill('0') << (uint32_t) tmpbuf[t];
+			std::cout << std::setw(2) << std::setfill('0') << (uint32_t) tmpbuf[t];
 		}
-		cout << (dec) << endl;
+		std::cout << (std::dec) << std::endl;
 #endif
 #ifdef AES_OWF
 			owf(&aesowfkey, rowbytelen, tmpbuf, resbuf);
@@ -315,11 +319,11 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 		sha512_hash(chk_buf_ptr, OWF_BYTES, tmpbuf, checkbytelen, hash_buf);
 #endif
 #ifdef DEBUG_NNOB_CHECKS_OUTPUT
-		cout << "XOR-OWF Output:\t" << (hex);
+		std::cout << "XOR-OWF Output:\t" << (std::hex);
 		for(uint32_t t = 0; t < OWF_BYTES; t++) {
-			cout << (uint32_t) chk_buf_ptr[t];
+			std::cout << (uint32_t) chk_buf_ptr[t];
 		}
-		cout << (dec) << endl;
+		std::cout << (std::dec) << std::endl;
 #endif
 		//XORandOWF(idatmpbuf, idbtmpbuf,	checkbytelen, tmpbuf, chk_buf_ptr, hash_buf);
 	}
@@ -327,7 +331,7 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 /*	for(uint64_t i = 0; i < m_nChecks; i++, seedcheckbufptr+=OWF_BYTES, rcvcheckbufptr+=OWF_BYTES) {
 		memset(tmpbuf, 0, rowbytelen);
 #ifdef DEBUG_ALSZ_CHECKS
-		cout << i << "-th check between " << check_buf.perm[i].ida << " and " << check_buf.perm[i].idb << ": " << endl;
+		std::cout << i << "-th check between " << check_buf.perm[i].ida << " and " << check_buf.perm[i].idb << ": " << std::endl;
 #endif
 		XORandOWF(tocheckseed + check_buf.perm[i].ida * rowbytelen, tocheckseed + check_buf.perm[i].idb * rowbytelen,
 				rowbytelen, tmpbuf, seedcheckbufptr, hash_buf);
@@ -357,11 +361,11 @@ void NNOBOTExtSnd::XORandOWF(uint8_t* idaptr, uint8_t* idbptr, uint64_t rowbytel
 	}
 
 #ifdef DEBUG_NNOB_CHECKS_INPUT
-	cout << "XOR-OWF Input:\t" << (hex);
+	std::cout << "XOR-OWF Input:\t" << (std::hex);
 	for(uint32_t t = 0; t < rowbytelen; t++) {
-		cout << setw(2) << setfill('0') << (uint32_t) tmpbuf[t];
+		std::cout << std::setw(2) << std::setfill('0') << (uint32_t) tmpbuf[t];
 	}
-	cout << (dec) << endl;
+	std::cout << (std::dec) << std::endl;
 #endif
 #ifdef AES_OWF
 		owf(&aesowfkey, rowbytelen, tmpbuf, resbuf);
@@ -369,15 +373,15 @@ void NNOBOTExtSnd::XORandOWF(uint8_t* idaptr, uint8_t* idbptr, uint64_t rowbytel
 	m_cCrypt->hash_buf(resbuf, OWF_BYTES, tmpbuf, rowbytelen, hash_buf);//hash_buf, rowbytelen, tmpbuf, resbuf, hash_buf);
 #endif
 #ifdef DEBUG_NNOB_CHECKS_OUTPUT
-	cout << "XOR-OWF Output:\t" << (hex);
+	std::cout << "XOR-OWF Output:\t" << (std::hex);
 	for(uint32_t t = 0; t < OWF_BYTES; t++) {
-		cout << (uint32_t) resbuf[t];
+		std::cout << (uint32_t) resbuf[t];
 	}
-	cout << (dec) << endl;
+	std::cout << (std::dec) << std::endl;
 #endif
 }
 
-BOOL NNOBOTExtSnd::CheckConsistency(queue<nnob_snd_check_t*>* check_buf_q, channel* check_chan) {
+BOOL NNOBOTExtSnd::CheckConsistency(std::queue<nnob_snd_check_t*>* check_buf_q, channel* check_chan) {
 	uint8_t *rcvhashbufptr, *rcvhashbuf;
 	uint64_t tmpid, tmpnblocks;
 
@@ -399,8 +403,8 @@ BOOL NNOBOTExtSnd::CheckConsistency(queue<nnob_snd_check_t*>* check_buf_q, chann
 		for(uint32_t j = 0; j < OWF_BYTES / sizeof(uint64_t); j++, rcvbufptr++, chkbufptr++) {
 			if(*rcvbufptr != *chkbufptr) {
 	#ifdef DEBUG_NNOB_CHECKS
-				cout << "Error in " << i <<"-th consistency check: " << endl;
-				cout << "Receiver hash = " << (hex) << *rcvbufptr << ", my hash: " << *chkbufptr << endl;
+				std::cout << "Error in " << i <<"-th consistency check: " << std::endl;
+				std::cout << "Receiver hash = " << (std::hex) << *rcvbufptr << ", my hash: " << *chkbufptr << std::endl;
 	#endif
 				return FALSE;
 			}
@@ -431,14 +435,14 @@ void NNOBOTExtSnd::genRandomMapping(linking_t* outperm, uint32_t nids) {
 	//shuffle content randomly using Knuths permutation algorithm
 	for(i = 0; i < nperms; i++) {
 		m_cCrypt->gen_rnd_uniform(&tmpidx, nperms);
-		swap(mapping[i], mapping[tmpidx]);
+		std::swap(mapping[i], mapping[tmpidx]);
 	}
 
 	for(i = 0; i < nperms; i++) {
 		outperm[i].ida = i;
 		outperm[i].idb = mapping[i];
 		assert(outperm[i].idb >= nperms && outperm[i].idb < nids);
-		//cout << i << " checked against " << outperm[i].idb << endl;
+		//std::cout << i << " checked against " << outperm[i].idb << std::endl;
 	}
 
 	free(mapping);

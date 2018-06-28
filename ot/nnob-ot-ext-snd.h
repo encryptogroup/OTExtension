@@ -11,7 +11,6 @@
 #define NNOB_OT_EXT_SND_H_
 
 #include "ot-ext-snd.h"
-#include "simpleot.h"
 
 typedef struct nnob_snd_check_ctx {
 	uint64_t otid;
@@ -46,7 +45,7 @@ private:
 	nnob_snd_check_t* UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* tocheckrcv, uint64_t otid, uint64_t numblocks, channel* check_chan);
 	void XORandOWF(uint8_t* idaptr, uint8_t* idbptr, uint64_t rowbytelen, uint8_t* tmpbuf, uint8_t* resbuf, uint8_t* hash_buf);
 	void genRandomMapping(linking_t* outperm, uint32_t nids);
-	BOOL CheckConsistency(queue<nnob_snd_check_t*>* check_buf_q, channel* check_chan);
+	BOOL CheckConsistency(std::queue<nnob_snd_check_t*>* check_buf_q, channel* check_chan);
 	void FillAndSendRandomMatrix(uint64_t **rndmat, channel* chan);
 
 	bool m_bDoBaseOTs;

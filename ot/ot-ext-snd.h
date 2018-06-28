@@ -9,6 +9,9 @@
 #define OT_EXTENSION_SENDER_H_
 
 #include "ot-ext.h"
+#include <vector>
+
+class channel;
 
 class OTExtSnd : public OTExt {
 
@@ -64,7 +67,7 @@ protected:
 
 	BYTE* m_vSeed;
 
-	vector<CBitVector*> m_tBaseOTChoices;
+    std::vector<CBitVector*> m_tBaseOTChoices;
 
 
 	class OTSenderThread: public CThread {

@@ -1,4 +1,5 @@
 #include "test.h"
+#include <cstdlib>
 
 //ot_ext_prot test_prots[] = {IKNP, KK, ALSZ, NNOB};
 ot_ext_prot test_prots[] = {IKNP};
@@ -71,7 +72,7 @@ void assign_param(uint32_t ctr, uint32_t depth, test_options* tops) {
 	case 6: tops->usemecr = test_usemecr[ctr]; break;
 	case 7: tops->ftype = test_ftype[ctr]; break;
 
-	default: cerr << "Test case not recognized, abort" << endl; exit(0);
+	default: cerr << "Test case not recognized, abort" << endl; std::exit(EXIT_FAILURE);
 	}
 }
 
@@ -267,7 +268,7 @@ int main(int argc, char** argv)
 	if(argc != 2)
 	{
 		cout << "Please call with 0 if acting as server or 1 if acting as client" << endl;
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	//Determines whether the program is executed in the sender or receiver role
@@ -326,7 +327,7 @@ int main(int argc, char** argv)
 	delete crypt;
 	delete glock;
 
-	return 1;
+	return EXIT_SUCCESS;
 }
 
 

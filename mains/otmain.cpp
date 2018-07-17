@@ -1,4 +1,5 @@
 #include "otmain.h"
+#include <cstdlib>
 
 //pthread_mutex_t CLock::share_mtx = PTHREAD_MUTEX_INITIALIZER;
 
@@ -370,7 +371,7 @@ int main(int argc, char** argv)
 	delete crypt;
     delete glock;
 
-	return 1;
+	return EXIT_SUCCESS;
 }
 
 
@@ -404,13 +405,13 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 	if (!parse_options(argcp, argvp, options, sizeof(options) / sizeof(parsing_ctx))) {
 		print_usage(*argvp[0], options, sizeof(options) / sizeof(parsing_ctx));
 		cout << "Exiting" << endl;
-		exit(0);
+		std::exit(EXIT_FAILURE);
 	}
 
 	if(printhelp) {
 		print_usage(*argvp[0], options, sizeof(options) / sizeof(parsing_ctx));
 		cout << "Exiting" << endl;
-		exit(0);
+		std::exit(EXIT_FAILURE);
 	}
 
 	assert(*role < 2);

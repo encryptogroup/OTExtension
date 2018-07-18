@@ -34,6 +34,7 @@
 #include <ENCRYPTO_utils/utils.h>
 #include <ENCRYPTO_utils/crypto/crypto.h>
 #include "OTconstants.h"
+#include <cstring>
 
 class BaseOT;
 class CBitVector;

@@ -1,6 +1,7 @@
 #include "pvwddh.h"
 #include <ENCRYPTO_utils/channel.h>
 #include <ENCRYPTO_utils/cbitvector.h>
+#include <iostream>
 
 void PVWDDH::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* retbuf) {
 

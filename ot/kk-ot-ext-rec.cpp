@@ -9,6 +9,7 @@
 #include "naor-pinkas.h"
 #include <ENCRYPTO_utils/channel.h>
 #include <ENCRYPTO_utils/cbitvector.h>
+#include <iostream>
 
 
 BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {

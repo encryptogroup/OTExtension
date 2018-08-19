@@ -40,7 +40,7 @@ add_library(otextension
 add_library(OTExtension::otextension ALIAS otextension)
 
 target_compile_features(otextension PUBLIC cxx_std_17)
-target_compile_options(otextension PRIVATE "-Wall" "-Wextra" "-Weffc++")
+target_compile_options(otextension PRIVATE "-Wall" "-Wextra")
 
 target_include_directories(otextension
     PUBLIC

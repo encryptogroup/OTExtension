@@ -24,8 +24,6 @@
 #include <iomanip>
 #include <string>
 
-using namespace std;
-
 USHORT		m_nPort = 7894;
 const char* m_nAddr ;// = "localhost";
 

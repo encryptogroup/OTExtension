@@ -1,5 +1,6 @@
 #include "test.h"
 #include <cstdlib>
+#include <iostream>
 
 //ot_ext_prot test_prots[] = {IKNP, KK, ALSZ, NNOB};
 ot_ext_prot test_prots[] = {IKNP};
@@ -34,7 +35,7 @@ BOOL Init()
 	for(uint32_t i = 0; i < nparams; i++) {
 		m_nTests *= ntestparams[i];
 	}
-	//cout << "ntests = " << m_nTests << endl;
+	//std::cout << "ntests = " << m_nTests << std::endl;
 	//Init test options
 	tests = (test_options*) malloc(sizeof(test_options) * (m_nTests+1));
 	test_options* test_ptr = tests;
@@ -52,7 +53,7 @@ void recursive_assign_test_params(uint32_t* max, uint32_t depth, test_options** 
 		if(depth == max_depth-1) {
 			memcpy((*tops)+1, *tops, sizeof(test_options));
 			(*tops)++;
-			//cout << "another " << gen_tests++ << ", total: " << m_nTests << endl;
+			//std::cout << "another " << gen_tests++ << ", total: " << m_nTests << std::endl;
 		} else {
 			recursive_assign_test_params(max, depth+1, tops, max_depth);
 		}
@@ -72,7 +73,7 @@ void assign_param(uint32_t ctr, uint32_t depth, test_options* tops) {
 	case 6: tops->usemecr = test_usemecr[ctr]; break;
 	case 7: tops->ftype = test_ftype[ctr]; break;
 
-	default: cerr << "Test case not recognized, abort" << endl; std::exit(EXIT_FAILURE);
+	default: std::cerr << "Test case not recognized, abort" << std::endl; std::exit(EXIT_FAILURE);
 	}
 }
 
@@ -92,7 +93,7 @@ BOOL Connect()
 	uint64_t lTO = CONNECT_TIMEO_MILISEC;
 
 #ifndef BATCH
-	cout << "Connecting to party "<< !m_nPID << ": " << m_nAddr << ", " << m_nPort << endl;
+	std::cout << "Connecting to party "<< !m_nPID << ": " << m_nAddr << ", " << m_nPort << std::endl;
 #endif
 	for(int k = 0; k >= 0 ; k--)
 	{
@@ -109,11 +110,11 @@ BOOL Connect()
 				// send pid when connected
 				m_vSocket->Send( &k, sizeof(int) );
 		#ifndef BATCH
-				cout << " (" << !m_nPID << ") (" << k << ") connected" << endl;
+				std::cout << " (" << !m_nPID << ") (" << k << ") connected" << std::endl;
 		#endif
 				if(k == 0) 
 				{
-					//cout << "connected" << endl;
+					//std::cout << "connected" << std::endl;
 					return TRUE;
 				}
 				else
@@ -131,7 +132,7 @@ BOOL Connect()
 server_not_available:
 	printf("Server not available: ");
 connect_failure:
-	cout << " (" << !m_nPID << ") connection failed" << endl;
+	std::cout << " (" << !m_nPID << ") connection failed" << std::endl;
 	return FALSE;
 }
 
@@ -140,7 +141,7 @@ connect_failure:
 BOOL Listen()
 {
 #ifndef BATCH
-	cout << "Listening: " << m_nAddr << ":" << m_nPort  << endl;
+	std::cout << "Listening: " << m_nAddr << ":" << m_nPort  << std::endl;
 #endif
 	if( !m_vSocket->Socket() )
 	{
@@ -154,10 +155,10 @@ BOOL Listen()
 	for( int i = 0; i<1; i++ ) //twice the actual number, due to double sockets for OT
 	{
 		CSocket sock;
-		//cout << "New round! " << endl;
+		//std::cout << "New round! " << std::endl;
 		if( !m_vSocket->Accept(sock) )
 		{
-			cerr << "Error in accept" << endl;
+			std::cerr << "Error in accept" << std::endl;
 			goto listen_failure;
 		}
 					
@@ -172,7 +173,7 @@ BOOL Listen()
 		}
 
 	#ifndef BATCH
-		cout <<  " (" << m_nPID <<") (" << threadID << ") connection accepted" << endl;
+		std::cout <<  " (" << m_nPID <<") (" << threadID << ") connection accepted" << std::endl;
 	#endif
 		// locate the socket appropriately
 		m_vSocket->AttachFrom(sock);
@@ -180,12 +181,12 @@ BOOL Listen()
 	}
 
 #ifndef BATCH
-	cout << "Listening finished"  << endl;
+	std::cout << "Listening finished"  << std::endl;
 #endif
 	return TRUE;
 
 listen_failure:
-	cout << "Listen failed" << endl;
+	std::cout << "Listen failed" << std::endl;
 	return FALSE;
 }
 
@@ -267,13 +268,13 @@ int main(int argc, char** argv)
 
 	if(argc != 2)
 	{
-		cout << "Please call with 0 if acting as server or 1 if acting as client" << endl;
+		std::cout << "Please call with 0 if acting as server or 1 if acting as client" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	//Determines whether the program is executed in the sender or receiver role
 	m_nPID = atoi(argv[1]);
-	cout << "Playing as role: " << m_nPID << endl;
+	std::cout << "Playing as role: " << m_nPID << std::endl;
 	assert(m_nPID >= 0 && m_nPID <= 1);
 
 	//The symmetric security parameter (80, 112, 128)
@@ -293,10 +294,10 @@ int main(int argc, char** argv)
 		for(uint32_t i = 0; i < m_nTests; i++) {
 			sender = InitOTExtSnd(tests[i].prot, m_nBaseOTs, m_nChecks, tests[i].usemecr, tests[i].ftype, crypt);
 
-			cout << "Test " << i << ": " << getProt(tests[i].prot) << " Sender " << tests[i].numots << " " <<
+			std::cout << "Test " << i << ": " << getProt(tests[i].prot) << " Sender " << tests[i].numots << " " <<
 					getSndFlavor(tests[i].sflavor) << " / " << getRecFlavor(tests[i].rflavor) << " on " <<
 					tests[i].bitlen << " bits with " <<	tests[i].nthreads << " threads, " <<
-					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " MECR"<< endl;
+					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " MECR"<< std::endl;
 
 			run_test_sender(tests[i].numots, tests[i].bitlen, tests[i].sflavor, tests[i].rflavor, tests[i].nthreads, crypt, sender);
 
@@ -311,10 +312,10 @@ int main(int argc, char** argv)
 		for(uint32_t i = 0; i < m_nTests; i++) {
 			receiver = InitOTExtRec(tests[i].prot, m_nBaseOTs, m_nChecks, tests[i].usemecr, tests[i].ftype, crypt);
 
-			cout << "Test " << i << ": " << getProt(tests[i].prot) << " Receiver " << tests[i].numots << " " <<
+			std::cout << "Test " << i << ": " << getProt(tests[i].prot) << " Receiver " << tests[i].numots << " " <<
 					getSndFlavor(tests[i].sflavor) << " / " << getRecFlavor(tests[i].rflavor) << " on " <<
 					tests[i].bitlen << " bits with " <<	tests[i].nthreads << " threads, " <<
-					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " MECR"<< endl;
+					getFieldType(tests[i].ftype) << " and" << (tests[i].usemecr ? "": " no" ) << " MECR"<< std::endl;
 
 			run_test_receiver(tests[i].numots, tests[i].bitlen, tests[i].sflavor, tests[i].rflavor, tests[i].nthreads, crypt, receiver);
 

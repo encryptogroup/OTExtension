@@ -18,9 +18,9 @@ BOOL Cleanup()
 
 	delete rcvthread;
 
-	//cout << "Cleaning" << endl;
+	//std::cout << "Cleaning" << std::endl;
 	delete m_vSocket;
-	//cout << "done" << endl;
+	//std::cout << "done" << std::endl;
 	return true;
 }
 
@@ -31,7 +31,7 @@ BOOL Connect()
 	uint64_t lTO = CONNECT_TIMEO_MILISEC;
 
 #ifndef BATCH
-	cout << "Connecting to party "<< !m_nPID << ": " << m_nAddr << ", " << m_nPort << endl;
+	std::cout << "Connecting to party "<< !m_nPID << ": " << m_nAddr << ", " << m_nPort << std::endl;
 #endif
 	for(int k = 0; k >= 0 ; k--)
 	{
@@ -48,11 +48,11 @@ BOOL Connect()
 				// send pid when connected
 				m_vSocket->Send( &k, sizeof(int) );
 		#ifndef BATCH
-				cout << " (" << !m_nPID << ") (" << k << ") connected" << endl;
+				std::cout << " (" << !m_nPID << ") (" << k << ") connected" << std::endl;
 		#endif
 				if(k == 0) 
 				{
-					//cout << "connected" << endl;
+					//std::cout << "connected" << std::endl;
 					return TRUE;
 				}
 				else
@@ -70,7 +70,7 @@ BOOL Connect()
 server_not_available:
 	printf("Server not available: ");
 connect_failure:
-	cout << " (" << !m_nPID << ") connection failed" << endl;
+	std::cout << " (" << !m_nPID << ") connection failed" << std::endl;
 	return FALSE;
 }
 
@@ -79,7 +79,7 @@ connect_failure:
 BOOL Listen()
 {
 #ifndef BATCH
-	cout << "Listening: " << m_nAddr << ":" << m_nPort << ", with size: " << m_nNumOTThreads << endl;
+	std::cout << "Listening: " << m_nAddr << ":" << m_nPort << ", with size: " << m_nNumOTThreads << std::endl;
 #endif
 	if( !m_vSocket->Socket() )
 	{
@@ -93,10 +93,10 @@ BOOL Listen()
 	for( int i = 0; i<1; i++ ) //twice the actual number, due to double sockets for OT
 	{
 		CSocket sock;
-		//cout << "New round! " << endl;
+		//std::cout << "New round! " << std::endl;
 		if( !m_vSocket->Accept(sock) )
 		{
-			cerr << "Error in accept" << endl;
+			std::cerr << "Error in accept" << std::endl;
 			goto listen_failure;
 		}
 					
@@ -111,7 +111,7 @@ BOOL Listen()
 		}
 
 	#ifndef BATCH
-		cout <<  " (" << m_nPID <<") (" << threadID << ") connection accepted" << endl;
+		std::cout <<  " (" << m_nPID <<") (" << threadID << ") connection accepted" << std::endl;
 	#endif
 		// locate the socket appropriately
 		m_vSocket->AttachFrom(sock);
@@ -119,12 +119,12 @@ BOOL Listen()
 	}
 
 #ifndef BATCH
-	cout << "Listening finished"  << endl;
+	std::cout << "Listening finished"  << std::endl;
 #endif
 	return TRUE;
 
 listen_failure:
-	cout << "Listen failed" << endl;
+	std::cout << "Listen failed" << std::endl;
 	return FALSE;
 }
 
@@ -212,10 +212,10 @@ BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndval
 
 #ifndef BATCH
 	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
-	cout << "Sent:\t\t" << m_vSocket->getSndCnt() << " bytes" << endl;
-	cout << "Received:\t" << m_vSocket->getRcvCnt() <<" bytes" << endl;
+	std::cout << "Sent:\t\t" << m_vSocket->getSndCnt() << " bytes" << std::endl;
+	std::cout << "Received:\t" << m_vSocket->getRcvCnt() <<" bytes" << std::endl;
 #else
-	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << endl;
+	std::cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << std::endl;
 #endif
 
 
@@ -240,10 +240,10 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 #ifndef BATCH
 	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
 
-	cout << "Sent:\t\t" << m_vSocket->getSndCnt() << " bytes" << endl;
-	cout << "Received:\t" << m_vSocket->getRcvCnt() <<" bytes" << endl;
+	std::cout << "Sent:\t\t" << m_vSocket->getSndCnt() << " bytes" << std::endl;
+	std::cout << "Received:\t" << m_vSocket->getRcvCnt() <<" bytes" << std::endl;
 #else
-	cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << endl;
+	std::cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << std::endl;
 #endif
 	
 
@@ -253,7 +253,7 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 
 int main(int argc, char** argv)
 {
-	string* addr = new string("127.0.0.1");
+	std::string* addr = new std::string("127.0.0.1");
 	uint16_t port = 7766;
 
 	//Determines whether the program is executed in the sender or receiver role
@@ -291,7 +291,7 @@ int main(int argc, char** argv)
 			&m_nNumOTThreads, &m_nBaseOTs, &m_nChecks, &nsndvals, &m_bUseMinEntCorAssumption, &runs);
 
 	/*int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_t* numots, uint32_t* bitlen,
-			uint32_t* secparam, string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
+			uint32_t* secparam, std::string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
 			rec_ot_flavor* rcvflav, uint32_t* nthreads, uint32_t* nbaseots, uint32_t* nchecks, bool* usemecr, uint32_t* runs) {*/
 
 	crypto *crypt = new crypto(m_nSecParam, (uint8_t*) m_cConstSeed[m_nPID]);
@@ -318,16 +318,16 @@ int main(int argc, char** argv)
 		}
 
 #ifndef BATCH
-		cout << getProt(m_eProt) << " Sender performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
+		std::cout << getProt(m_eProt) << " Sender performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
 				getRecFlavor(rtype) << " extensions on " << bitlength << " bit elements with " <<	m_nNumOTThreads << " threads, " <<
 				getFieldType(m_eFType) << " and" << (m_bUseMinEntCorAssumption ? "": " no" ) << " min-ent-corr-robustness " <<
-				runs << " times" << endl;
+				runs << " times" << std::endl;
 #endif
 		for(uint32_t i = 0; i < runs; i++) {
 			ObliviouslySend(X, numOTs, bitlength, nsndvals, stype, rtype, crypt);
 		}
 		/*for(uint32_t i = 0; i < nsndvals; i++) {
-			cout << "X" << i << ": ";
+			std::cout << "X" << i << ": ";
 			X[i]->PrintHex(0, numOTs);
 		}*/
 	}
@@ -352,17 +352,17 @@ int main(int argc, char** argv)
 		 * variable that has to match the version of the sender. 
 		*/
 #ifndef BATCH
-		cout << getProt(m_eProt) << " Receiver performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
+		std::cout << getProt(m_eProt) << " Receiver performing " << numOTs << " " << getSndFlavor(stype) << " / " <<
 				getRecFlavor(rtype) << " extensions on " << bitlength << " bit elements with " <<	m_nNumOTThreads << " threads, " <<
 				getFieldType(m_eFType) << " and" << (m_bUseMinEntCorAssumption ? "": " no" ) << " min-ent-corr-robustness " <<
-				runs << " times" << endl;
+				runs << " times" << std::endl;
 #endif
 		for(uint32_t i = 0; i < runs; i++) {
 			ObliviouslyReceive(&choices, &response, numOTs, bitlength, nsndvals, stype, rtype, crypt);
 		}
-		/*cout << "C: ";
+		/*std::cout << "C: ";
 		choices.PrintHex(0, numOTs);
-		cout << "R: ";
+		std::cout << "R: ";
 		response.PrintHex(0, numOTs);*/
 
 	}
@@ -376,7 +376,7 @@ int main(int argc, char** argv)
 
 
 int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_t* numots, uint32_t* bitlen,
-		uint32_t* secparam, string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
+		uint32_t* secparam, std::string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
 		rec_ot_flavor* rcvflav, uint32_t* nthreads, uint32_t* nbaseots, uint32_t* nchecks, uint32_t* N, bool* usemecr,
 		uint32_t* runs) {
 
@@ -404,13 +404,13 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 
 	if (!parse_options(argcp, argvp, options, sizeof(options) / sizeof(parsing_ctx))) {
 		print_usage(*argvp[0], options, sizeof(options) / sizeof(parsing_ctx));
-		cout << "Exiting" << endl;
+		std::cout << "Exiting" << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 
 	if(printhelp) {
 		print_usage(*argvp[0], options, sizeof(options) / sizeof(parsing_ctx));
-		cout << "Exiting" << endl;
+		std::cout << "Exiting" << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
 
@@ -437,7 +437,7 @@ int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_
 	}
 
 	if(*N != 2 && (*protocol) != KK) {
-		cout << "The N option can only be used in combination with the KK13 OT. Resetting to N=2" << endl;
+		std::cout << "The N option can only be used in combination with the KK13 OT. Resetting to N=2" << std::endl;
 		*N = 2;
 	}
 

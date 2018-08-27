@@ -25,9 +25,8 @@
 
 #include <limits.h>
 #include <iomanip>
+#include <iostream>
 #include <string>
-
-using namespace std;
 
 //TODO only for debugging purpose!!
 static const char* m_cConstSeed[2] = {"437398417012387813714564100", "15657566154164561"};
@@ -71,7 +70,7 @@ ot_ext_prot m_eProt;
 double rndgentime;
 
 int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_t* numots, uint32_t* bitlen,
-		uint32_t* secparam, string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
+		uint32_t* secparam, std::string* address, uint16_t* port, ot_ext_prot* protocol, snd_ot_flavor* sndflav,
 		rec_ot_flavor* rcvflav, uint32_t* nthreads, uint32_t* nbaseots, uint32_t* nchecks, uint32_t* N, bool* usemecr, uint32_t* runs);
 
 #endif //_MPC_H_

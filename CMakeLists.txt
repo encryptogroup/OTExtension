@@ -8,7 +8,7 @@ if(ENCRYPTO_utils_FOUND)
     message(STATUS "Found ENCRYPTO_utils")
 elseif(NOT ENCRYPTO_utils_FOUND AND NOT TARGET ENCRYPTO_utils::encrypto_utils)
     message("ENCRYPTO_utils was not found: add ENCRYPTO_utils subdirectory")
-    if(NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/ENCRYPTO_utils/.git")
+    if(NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/ENCRYPTO_utils/CMakeLists.txt")
         find_package(Git REQUIRED)
         message("initialize Git submodule: extern/ENCRYPTO_utils")
         execute_process(COMMAND git submodule update --init extern/ENCRYPTO_utils

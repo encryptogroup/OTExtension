@@ -26,6 +26,7 @@
 #include <limits.h>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <string>
 
 //TODO only for debugging purpose!!
@@ -36,8 +37,6 @@ const char* m_nAddr ;// = "localhost";
 
 BOOL Init(crypto* crypt);
 BOOL Cleanup();
-BOOL Connect();
-BOOL Listen();
 
 void InitOTSender(const char* address, int port, crypto* crypt);
 void InitOTReceiver(const char* address, int port, crypto* crypt);
@@ -46,7 +45,7 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndvals, snd_ot_flavor stype, rec_ot_flavor rtype, crypto* crypt);
 
 // Network Communication
-CSocket* m_vSocket;
+std::unique_ptr<CSocket> m_Socket;
 uint32_t m_nPID; // thread id
 field_type m_eFType;
 uint32_t m_nBitLength;

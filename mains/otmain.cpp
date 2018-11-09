@@ -1,12 +1,11 @@
 #include "otmain.h"
 #include <cstdlib>
+#include <ENCRYPTO_utils/connection.h>
 
 //pthread_mutex_t CLock::share_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 BOOL Init(crypto* crypt)
 {
-	m_vSocket = new CSocket();//*) malloc(sizeof(CSocket) * m_nNumOTThreads);
-
 	return TRUE;
 }
 
@@ -19,116 +18,9 @@ BOOL Cleanup()
 	delete rcvthread;
 
 	//std::cout << "Cleaning" << std::endl;
-	delete m_vSocket;
 	//std::cout << "done" << std::endl;
 	return true;
 }
-
-
-BOOL Connect()
-{
-	bool bFail = FALSE;
-	uint64_t lTO = CONNECT_TIMEO_MILISEC;
-
-#ifndef BATCH
-	std::cout << "Connecting to party "<< !m_nPID << ": " << m_nAddr << ", " << m_nPort << std::endl;
-#endif
-	for(int k = 0; k >= 0 ; k--)
-	{
-		for( int i=0; i<RETRY_CONNECT; i++ )
-		{
-			if( !m_vSocket->Socket() )
-			{	
-				printf("Socket failure: ");
-				goto connect_failure; 
-			}
-			
-			if( m_vSocket->Connect( m_nAddr, m_nPort, lTO))
-			{
-				// send pid when connected
-				m_vSocket->Send( &k, sizeof(int) );
-		#ifndef BATCH
-				std::cout << " (" << !m_nPID << ") (" << k << ") connected" << std::endl;
-		#endif
-				if(k == 0) 
-				{
-					//std::cout << "connected" << std::endl;
-					return TRUE;
-				}
-				else
-				{
-					break;
-				}
-				SleepMiliSec(10);
-				m_vSocket->Close();
-			}
-			SleepMiliSec(20);
-			if(i+1 == RETRY_CONNECT)
-				goto server_not_available;
-		}
-	}
-server_not_available:
-	printf("Server not available: ");
-connect_failure:
-	std::cout << " (" << !m_nPID << ") connection failed" << std::endl;
-	return FALSE;
-}
-
-
-
-BOOL Listen()
-{
-#ifndef BATCH
-	std::cout << "Listening: " << m_nAddr << ":" << m_nPort << ", with size: " << m_nNumOTThreads << std::endl;
-#endif
-	if( !m_vSocket->Socket() )
-	{
-		goto listen_failure;
-	}
-	if( !m_vSocket->Bind(m_nPort, m_nAddr) )
-		goto listen_failure;
-	if( !m_vSocket->Listen() )
-		goto listen_failure;
-
-	for( int i = 0; i<1; i++ ) //twice the actual number, due to double sockets for OT
-	{
-		CSocket sock;
-		//std::cout << "New round! " << std::endl;
-		if( !m_vSocket->Accept(sock) )
-		{
-			std::cerr << "Error in accept" << std::endl;
-			goto listen_failure;
-		}
-					
-		UINT threadID;
-		sock.Receive(&threadID, sizeof(int));
-
-		if( threadID >= 1)
-		{
-			sock.Close();
-			i--;
-			continue;
-		}
-
-	#ifndef BATCH
-		std::cout <<  " (" << m_nPID <<") (" << threadID << ") connection accepted" << std::endl;
-	#endif
-		// locate the socket appropriately
-		m_vSocket->AttachFrom(sock);
-		sock.Detach();
-	}
-
-#ifndef BATCH
-	std::cout << "Listening finished"  << std::endl;
-#endif
-	return TRUE;
-
-listen_failure:
-	std::cout << "Listen failed" << std::endl;
-	return FALSE;
-}
-
-
 
 
 void InitOTSender(const char* address, int port, crypto* crypt, CLock *glock)
@@ -138,15 +30,19 @@ void InitOTSender(const char* address, int port, crypto* crypt, CLock *glock)
 #endif
 	m_nPort = (USHORT) port;
 	m_nAddr = address;
-	
+
 	//Initialize values
 	Init(crypt);
-	
-	//Server listen
-	Listen();
 
-	sndthread = new SndThread(m_vSocket, glock);
-	rcvthread = new RcvThread(m_vSocket, glock);
+	//Server listen
+	m_Socket = Listen(address, port);
+	if (!m_Socket) {
+		std::cerr << "Listen failed on " << address << ":" << port << "\n";
+		std::exit(1);
+	}
+
+	sndthread = new SndThread(m_Socket.get(), glock);
+	rcvthread = new RcvThread(m_Socket.get(), glock);
 
 	rcvthread->Start();
 	sndthread->Start();
@@ -171,13 +67,17 @@ void InitOTReceiver(const char* address, int port, crypto* crypt, CLock *glock)
 
 	//Initialize values
 	Init(crypt);
-	
-	//Client connect
-	Connect();
 
-	sndthread = new SndThread(m_vSocket, glock);
-	rcvthread = new RcvThread(m_vSocket, glock);
-	
+	//Client connect
+	m_Socket = Connect(address, port);
+	if (!m_Socket) {
+		std::cerr << "Connect failed on " << address << ":" << port << "\n";
+		std::exit(1);
+	}
+
+	sndthread = new SndThread(m_Socket.get(), glock);
+	rcvthread = new RcvThread(m_Socket.get(), glock);
+
 	rcvthread->Start();
 	sndthread->Start();
 
@@ -201,8 +101,8 @@ BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndval
 {
 	bool success = FALSE;
 
-	m_vSocket->ResetSndCnt();
-	m_vSocket->ResetRcvCnt();
+	m_Socket->ResetSndCnt();
+	m_Socket->ResetRcvCnt();
 	timespec ot_begin, ot_end;
 
 	clock_gettime(CLOCK_MONOTONIC, &ot_begin);
@@ -212,10 +112,10 @@ BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndval
 
 #ifndef BATCH
 	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
-	std::cout << "Sent:\t\t" << m_vSocket->getSndCnt() << " bytes" << std::endl;
-	std::cout << "Received:\t" << m_vSocket->getRcvCnt() <<" bytes" << std::endl;
+	std::cout << "Sent:\t\t" << m_Socket->getSndCnt() << " bytes" << std::endl;
+	std::cout << "Received:\t" << m_Socket->getRcvCnt() <<" bytes" << std::endl;
 #else
-	std::cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << std::endl;
+	std::cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_Socket->getSndCnt() << "\t" << m_Socket->getRcvCnt() << std::endl;
 #endif
 
 
@@ -227,8 +127,8 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 {
 	bool success = FALSE;
 
-	m_vSocket->ResetSndCnt();
-	m_vSocket->ResetRcvCnt();
+	m_Socket->ResetSndCnt();
+	m_Socket->ResetRcvCnt();
 
 
 	timespec ot_begin, ot_end;
@@ -240,10 +140,10 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 #ifndef BATCH
 	printf("Time spent:\t%f\n", getMillies(ot_begin, ot_end) + rndgentime);
 
-	std::cout << "Sent:\t\t" << m_vSocket->getSndCnt() << " bytes" << std::endl;
-	std::cout << "Received:\t" << m_vSocket->getRcvCnt() <<" bytes" << std::endl;
+	std::cout << "Sent:\t\t" << m_Socket->getSndCnt() << " bytes" << std::endl;
+	std::cout << "Received:\t" << m_Socket->getRcvCnt() <<" bytes" << std::endl;
 #else
-	std::cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_vSocket->getSndCnt() << "\t" << m_vSocket->getRcvCnt() << std::endl;
+	std::cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_Socket->getSndCnt() << "\t" << m_Socket->getRcvCnt() << std::endl;
 #endif
 	
 

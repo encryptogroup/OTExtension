@@ -65,7 +65,7 @@ void run_test_sender(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype, r
 void run_test_receiver(uint32_t numots, uint32_t bitlength, snd_ot_flavor stype, rec_ot_flavor rtype, uint32_t numthreads, crypto* crypt, OTExtRec* receiver);
 
 // Network Communication
-CSocket* m_vSocket;
+std::unique_ptr<CSocket> m_Socket;
 
 SndThread* sndthread;
 RcvThread* rcvthread;

@@ -37,7 +37,7 @@ Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10].
 	The following options are available:
 
 	* `-DCMAKE_INSTALL_PREFIX=/path/to/installation`
-	* `-DOTEXTENSION_BUILD_EXE=On` to build executables
+	* `-DOTEXTENSION_BUILD_EXE=On` to build executables (they are written to `mains/` in the build directory)
 
 In case [ENCRYPTO_utils](https://github.com/encryptogroup/ENCRYPTO_utils)
 cannot be found on your system, it will automatically be compiled.  If it is
@@ -48,8 +48,8 @@ installed in a non-standard location, the path can be provided via
 
 
 ## USE
-To start OT extension, open two terminals on the same PC and call `ot.exe -r 0` in one terminal to start OT extension as sender and call `ot.exe -r 1` in the second terminal to start OT extension as receiver. This will invoke the passive secure IKNP 1-out-of-2 OT extension protocol for 1 million OTs on 8-bit strings. The result of the OT will be checked for correctness and the times (in ms) for the base-OTs, for the OT extensions, the number of bytes sent and the number of bytes received will be printed on the terminals.
-A list of all available options can be obtained via `ot.exe -h`.
+To start OT extension, open two terminals on the same PC and call `otmain -r 0` in one terminal to start OT extension as sender and call `otmain -r 1` in the second terminal to start OT extension as receiver. This will invoke the passive secure IKNP 1-out-of-2 OT extension protocol for 1 million OTs on 8-bit strings. The result of the OT will be checked for correctness and the times (in ms) for the base-OTs, for the OT extensions, the number of bytes sent and the number of bytes received will be printed on the terminals.
+A list of all available options can be obtained via `otmain -h`.
 
 ## NOTES
 An example implementation of OT extension can be found in `mains/otmain.cpp`.

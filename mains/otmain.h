@@ -32,7 +32,7 @@
 //TODO only for debugging purpose!!
 static const char* m_cConstSeed[2] = {"437398417012387813714564100", "15657566154164561"};
 
-USHORT		m_nPort = 7766;
+uint16_t		m_nPort = 7766;
 const char* m_nAddr ;// = "localhost";
 
 BOOL Init(crypto* crypt);

@@ -86,7 +86,7 @@ BOOL Cleanup()
 
 
 void InitSender(const char* address, int port, CLock *glock) {
-	m_nPort = (USHORT) port;
+	m_nPort = (uint16_t) port;
 	m_nAddr = address;
 	
 	//Initialize values
@@ -107,7 +107,7 @@ void InitSender(const char* address, int port, CLock *glock) {
 }
 
 void InitReceiver(const char* address, int port, CLock *glock) {
-	m_nPort = (USHORT) port;
+	m_nPort = (uint16_t) port;
 	m_nAddr = address;
 
 	//Initialize values

@@ -28,7 +28,7 @@ void InitOTSender(const char* address, int port, crypto* crypt, CLock *glock)
 #ifdef OTTiming
 	timespec np_begin, np_end;
 #endif
-	m_nPort = (USHORT) port;
+	m_nPort = (uint16_t) port;
 	m_nAddr = address;
 
 	//Initialize values
@@ -62,7 +62,7 @@ void InitOTSender(const char* address, int port, crypto* crypt, CLock *glock)
 
 void InitOTReceiver(const char* address, int port, crypto* crypt, CLock *glock)
 {
-	m_nPort = (USHORT) port;
+	m_nPort = (uint16_t) port;
 	m_nAddr = address;
 
 	//Initialize values

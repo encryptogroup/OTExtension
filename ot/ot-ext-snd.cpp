@@ -74,8 +74,6 @@ BOOL OTExtSnd::start_send(uint32_t numThreads) {
 void OTExtSnd::BuildQMatrix(CBitVector* T, uint64_t OT_ptr, uint64_t numblocks, OT_AES_KEY_CTX* seedkeyptr) {
 	BYTE* Tptr = T->GetArr();
 	uint8_t* ctr_buf = (uint8_t*) calloc (AES_BYTES, sizeof(uint8_t));
-
-	uint32_t dummy;
 	uint64_t* counter = (uint64_t*) ctr_buf;
 	uint64_t wd_size_bytes = m_nBlockSizeBytes;//pad_to_power_of_two(m_nBaseOTs/8);//1 << (ceil_log2(m_nBaseOTs) - 3);
 	uint64_t rowbytelen = wd_size_bytes * numblocks;
@@ -176,7 +174,7 @@ void OTExtSnd::GenerateSendAndXORCorRobVector(CBitVector* Q, uint64_t OT_len, ch
 
 void OTExtSnd::HashValues(CBitVector* Q, CBitVector* seedbuf, CBitVector* snd_buf, CBitVector* U,
 		uint64_t OT_ptr, uint64_t OT_len, uint64_t** mat_mul) {
-	uint64_t numhashiters = ceil_divide(m_nBitLength, m_cCrypt->get_hash_bytes());
+	// uint64_t numhashiters = ceil_divide(m_nBitLength, m_cCrypt->get_hash_bytes());
 	uint32_t rowbytelen = bits_in_bytes(m_nBaseOTs);
 	uint32_t hashinbytelen = rowbytelen + sizeof(uint64_t);
 	uint64_t wd_size_bytes = m_nBlockSizeBytes;//1 << (ceil_log2(m_nBaseOTs) - 3);
@@ -294,7 +292,6 @@ void OTExtSnd::MaskAndSend(CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len
 BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 	std::cout << "Verifying 1oo"<< m_nSndVals << " OT" << std::endl;
 	uint64_t processedOTBlocks, OTsPerIteration;
-	uint32_t bytelen = ceil_divide(m_nBitLength, 8);
 	uint64_t nSnd;
 	uint8_t* resp;
 
@@ -312,7 +309,7 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 		resp = chan->blocking_receive();
 
 		if (*resp == 0x00) {
-			std::cout << "OT verification unsuccessful" << std::endl;
+			std::cerr << "Error: OT verification unsuccessful" << std::endl;
 			free(resp);
 			chan->synchronize_end();
 			return false;
@@ -353,7 +350,7 @@ void OTExtSnd::ComputePKBaseOTs() {
 
 	//Key expansion
 	uint8_t* pBufIdx = pBuf;
-	for(int i=0; i<m_nBaseOTs; i++ )
+	for(uint32_t i=0; i<m_nBaseOTs; i++ )
 	{
 		memcpy(keyBuf + i * m_cCrypt->get_aes_key_bytes(), pBufIdx, m_cCrypt->get_aes_key_bytes());
 		pBufIdx+=m_cCrypt->get_hash_bytes();

@@ -40,7 +40,7 @@ public:
 	virtual void ComputeBaseOTs(field_type ftype) = 0;
 protected:
 	void InitSnd(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
-		Init(crypt, rcvthread, sndthread, nbaseOTs, nbaseOTs);
+		Init(crypt, rcvthread, sndthread, nbaseOTs);
 
 		m_tBaseOTChoices.resize(0);
 	}

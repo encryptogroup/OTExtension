@@ -37,9 +37,6 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		mat_chan = new channel(nchans*id+2, m_cRcvThread, m_cSndThread);
 	}
 
-	//counter variables
-	uint64_t numblocks = ceil_divide(myNumOTs, OTsPerIteration);
-
 	// A temporary part of the T matrix
 	CBitVector T(wd_size_bits * OTsPerIteration);
 
@@ -215,7 +212,6 @@ nnob_rcv_check_t NNOBOTExtRec::EnqueueSeed(uint8_t* T0, uint64_t otid, uint64_t 
 void NNOBOTExtRec::ComputeOWF(std::queue<nnob_rcv_check_t>* check_buf_q, channel* check_chan) {//linking_t* permbits, int nchecks, int otid, int processedOTs, BYTE* outhashes) {
 
 	//Obtain T0 and T1 from the SeedPointers
-	BOOL found = false;
 	uint32_t receiver_hashes = 1;
 
 	uint64_t tmpid, tmpnblocks;
@@ -232,16 +228,13 @@ void NNOBOTExtRec::ComputeOWF(std::queue<nnob_rcv_check_t>* check_buf_q, channel
 	assert(tmpnblocks == check_buf.numblocks);
 
 	//the bufsize has to be padded to a multiple of the PRF-size since we will omit boundary checks there
-	uint32_t i, k, j;
+	uint32_t i, j;
 	uint64_t bufrowbytelen = m_nBlockSizeBytes * check_buf.numblocks;//seedptr->expstrbitlen>>3;//(CEIL_DIVIDE(processedOTs, wd_size_bits) * wd_size_bits) >>3;
 	uint64_t checkbytelen = std::min(bufrowbytelen, bits_in_bytes(m_nOTs - check_buf.otid));
 	//contains the T-matrix
 	uint8_t* T0 = check_buf.T0;
 	//contains the T-matrix XOR the receive bits
 	//uint8_t* T1 = check_buf.T1;
-
-	uint8_t* T0ptr = T0;
-	//uint8_t* T1ptr = T1;
 
 	uint32_t outhashbytelen = m_nChecks * OWF_BYTES * receiver_hashes;
 	uint8_t* outhashes = (uint8_t*) malloc(outhashbytelen);
@@ -257,8 +250,6 @@ void NNOBOTExtRec::ComputeOWF(std::queue<nnob_rcv_check_t>* check_buf_q, channel
 	uint8_t **kb = (uint8_t**) malloc(2 * sizeof(uint8_t*));
 	uint8_t  *kaptr, *kbptr;
 	uint8_t* outptr = outhashes;
-	uint32_t ida, idb;
-
 
 	uint8_t* receiver_choicebits = m_vChoices->GetArr() + ceil_divide(check_buf.otid, 8);
 	CBitVector tmp;

@@ -27,7 +27,6 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t processedOTBlocks = std::min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	channel* chan = new channel(OT_BASE_CHANNEL+id, m_cRcvThread, m_cSndThread);
-	uint64_t tmpctr, tmpotlen;
 	uint64_t** rndmat;
 	uint64_t processedOTs;
 
@@ -65,8 +64,6 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	CBitVector Q(wd_size_bits * OTsPerIteration);
 
 	uint64_t otid = myStartPos1ooN;
-
-	uint8_t *rcvbuftmpptr, *rcvbufptr;
 
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalUnMaskTime=0;
@@ -178,11 +175,10 @@ void KKOTExtSnd::ComputeBaseOTs(field_type ftype) {
 
 
 void KKOTExtSnd::KKHashValues(CBitVector& Q, CBitVector* seedbuf, CBitVector* snd_buf, uint64_t OT_ptr, uint64_t OT_len, uint64_t** mat_mul) {
-	uint64_t numhashiters = ceil_divide(m_nBitLength, m_cCrypt->get_hash_bytes());
 	uint32_t rowbytelen = bits_in_bytes(m_nBaseOTs);
 	uint32_t hashinbytelen = rowbytelen + sizeof(uint64_t);
 	uint32_t hashoutbitlen = ceil_log2(m_nint_sndvals);
-	uint64_t wd_size_bytes = m_nBlockSizeBytes;//1 << (ceil_log2(m_nBaseOTs) - 3);
+	// uint64_t wd_size_bytes = m_nBlockSizeBytes;//1 << (ceil_log2(m_nBaseOTs) - 3);
 	uint32_t u;
 	uint32_t aes_key_bytes = m_cCrypt->get_aes_key_bytes();
 

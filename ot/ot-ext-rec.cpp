@@ -62,12 +62,11 @@ BOOL OTExtRec::start_receive(uint32_t numThreads) {
 		rThreads[i]->Wait();
 	}
 
-
 	m_nCounter += m_nOTs;
 
-	for (uint32_t i = 0; i < numThreads; i++)
+	for (uint32_t i = 0; i < numThreads; i++){
 		delete rThreads[i];
-
+	}
 
 	//if (m_eSndOTFlav == Snd_R_OT || m_eSndOTFlav == Snd_GC_OT) {
 	//	m_nRet.Copy(m_vTempOTMasks.GetArr(), 0, ceil_divide(m_nOTs * m_nBitLength, 8));
@@ -94,7 +93,6 @@ void OTExtRec::BuildMatrices(CBitVector* T, CBitVector* SndBuf, uint64_t OT_ptr,
 
 	uint8_t* Tptr = T->GetArr();
 	uint8_t* sndbufptr = SndBuf->GetArr();
-	uint8_t* choiceptr;
 
 	//AES_KEY_CTX* seedptr = m_vBaseOTKeys;
 	uint64_t global_OT_ptr = OT_ptr + m_nCounter;
@@ -254,7 +252,6 @@ void OTExtRec::HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbu
 				memcpy(bufptr, resbuf, aes_key_bytes);
 			}
 
-
 #ifdef DEBUG_OT_HASH_OUT
 			std::cout << "Hash-Out for i = " << global_OT_ptr << ": " << (std::hex);
 			for(uint32_t p = 0; p < aes_key_bytes; p++)
@@ -279,11 +276,11 @@ void OTExtRec::HashValues(CBitVector* T, CBitVector* seedbuf, CBitVector* maskbu
 		free(tmpbufb);
 	}
 
-
 	free(resbuf);
 	free(inbuf);
 	free(hash_buf);
 }
+
 
 void OTExtRec::SetOutput(CBitVector* maskbuf, uint64_t otid, uint64_t otlen, std::queue<mask_block*>* mask_queue,
 		channel* chan) {
@@ -309,8 +306,6 @@ void OTExtRec::SetOutput(CBitVector* maskbuf, uint64_t otid, uint64_t otlen, std
 
 
 void OTExtRec::ReceiveAndUnMask(channel* chan, std::queue<mask_block*>* mask_queue) {
-
-
 	uint64_t startotid, otlen, buflen;
 	uint8_t *tmpbuf, *buf;
 	CBitVector vRcv;
@@ -330,8 +325,9 @@ void OTExtRec::ReceiveAndUnMask(channel* chan, std::queue<mask_block*>* mask_que
 		assert(otlen == tmpblock->otlen);
 
 		buflen = ceil_divide(otlen * m_nBitLength, 8);
-		if (m_eSndOTFlav == Snd_OT)
+		if (m_eSndOTFlav == Snd_OT){
 			buflen = buflen * m_nSndVals;
+		}
 		vRcv.AttachBuf(tmpbuf, buflen);
 
 		uint32_t remots = std::min(otlen, m_nOTs - startotid);
@@ -345,6 +341,7 @@ void OTExtRec::ReceiveAndUnMask(channel* chan, std::queue<mask_block*>* mask_que
 		//		", queue_empty? "<< (uint32_t) mask_queue->empty() << std::endl;
 	}
 }
+
 
 void OTExtRec::ReceiveAndXORCorRobVector(CBitVector* T, uint64_t OT_len, channel* chan) {
 	if(m_bUseMinEntCorRob) {
@@ -362,7 +359,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	uint32_t choicecodebits = ceil_log2(m_nSndVals);
 
 	std::vector<CBitVector> vRcvX(nsndvals);
-	uint64_t processedOTBlocks, otlen, otstart;
+	uint64_t otlen, otstart;
 	uint32_t bytelen = ceil_divide(m_nBitLength, 8);
 	std::vector<uint8_t> tempXc(bytelen);
 	//uint8_t* tempXn = (uint8_t*) malloc(bytelen);
@@ -373,7 +370,6 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	uint8_t *tmpbuf;
 	BYTE resp;
 	uint64_t tmpchoice;
-	uint64_t tmpret64;
 
 	/*for(uint32_t i = 0; i < nsndvals-1; i++) {
 		tmpXn[i] = (uint8_t*) malloc(bytelen);
@@ -396,7 +392,7 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 				if (tempXc[k] != tempRet[k]) {
 					std::cout << "Error at position i = " << i << ", k = " << k << ", with X" << (std::hex) << tmpchoice <<
 							" = " << (uint32_t) tempXc[k] << " and res = " << (uint32_t) tempRet[k] << ". All values: " <<std::endl;
-					for(uint64_t k = 0, ctr=0; k < nsndvals; k++) {
+					for(uint64_t k = 0; k < nsndvals; k++) {
 						std::cout << "X" << k << ": ";
 						vRcvX[k].Print(i * m_nBitLength, (i+1) * m_nBitLength);
 					}
@@ -418,10 +414,8 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 		resp = 0x01;
 		chan->send(&resp, (uint64_t) 1);
 
-		/*for(uint64_t j = 0; j < nsndvals; j++) {
-			free(buf[j]);
-		}*/
 		for(uint64_t j = 0; j < nsndvals; j++) {
+			free(buf[j]);
 			vRcvX[j].DetachBuf();
 		}
 	}
@@ -435,7 +429,6 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 
 	return true;
 }
-
 
 
 void OTExtRec::ComputePKBaseOTs() {
@@ -475,3 +468,4 @@ void OTExtRec::ComputePKBaseOTs() {
 
 	delete(chan);
 }
+

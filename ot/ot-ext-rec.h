@@ -42,7 +42,7 @@ protected:
 	virtual BOOL receiver_routine(uint32_t threadid, uint64_t numOTs) = 0;
 
 	void InitRec(crypto* crypt, RcvThread* rcvthread, SndThread* sndthread, uint32_t nbaseOTs) {
-		Init(crypt, rcvthread, sndthread, nbaseOTs, 2*nbaseOTs);
+		Init(crypt, rcvthread, sndthread, nbaseOTs);
 	}
 	;
 

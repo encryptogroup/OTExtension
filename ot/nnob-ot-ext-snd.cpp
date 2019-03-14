@@ -238,7 +238,6 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 
 	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
 	uint8_t* tmpbuf = (uint8_t*) malloc(rowbytelen);
-	uint8_t *idaptr, *idbptr;
 	nnob_snd_check_t* check_buf = (nnob_snd_check_t*) malloc(sizeof(nnob_snd_check_t));
 	//check_buf.rcv_chk_buf = (uint8_t*) malloc(m_nChecks * OWF_BYTES);
 	check_buf->chk_buf = (uint8_t*) malloc(m_nChecks * OWF_BYTES);
@@ -276,7 +275,7 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 		} else {
 			seedptr = tocheckseed + check_buf->perm[i].ida * rowbytelen;
 			rcvptr = tocheckrcv + check_buf->perm[i].ida * rowbytelen;
-			for(int j = 0; j < rowbytelen/sizeof(uint64_t); j++) {
+			for(uint64_t j = 0; j < rowbytelen/sizeof(uint64_t); j++) {
 				((uint64_t*) idatmpbuf)[j] = ((uint64_t*) seedptr)[j] ^ ((uint64_t*) rcvptr)[j];
 			}
 		}
@@ -286,7 +285,7 @@ nnob_snd_check_t* NNOBOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* to
 		} else {
 			seedptr = tocheckseed + check_buf->perm[i].idb * rowbytelen;
 			rcvptr = tocheckrcv + check_buf->perm[i].idb * rowbytelen;
-			for(int j = 0; j < rowbytelen/sizeof(uint64_t); j++) {
+			for(uint64_t j = 0; j < rowbytelen/sizeof(uint64_t); j++) {
 				((uint64_t*) idbtmpbuf)[j] = ((uint64_t*) seedptr)[j] ^ ((uint64_t*) rcvptr)[j];
 			}
 		}

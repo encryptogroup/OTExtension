@@ -13,7 +13,8 @@ Update: Implemented 1-out-of-2 OT from the 1-out-of-N OT extension of [10].
   * [`make`](https://packages.debian.org/testing/make)
   * [`libgmp-dev`](https://packages.debian.org/testing/libgmp-dev)
   * [`libssl-dev`](https://packages.debian.org/testing/libssl-dev)
-
+  * [`libboost-all-dev`](https://packages.debian.org/testing/libboost-all-dev) (version >= 1.66)
+  
   Install these packages with your favorite package manager, e.g, `sudo apt-get install <package-name>`.
 
 

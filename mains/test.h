@@ -1,5 +1,5 @@
-#ifndef _MPC_H_
-#define _MPC_H_
+#ifndef _OTTEST_H_
+#define _OTTEST_H_
 
 #include <ENCRYPTO_utils/typedefs.h>
 #include <ENCRYPTO_utils/crypto/crypto.h>
@@ -24,11 +24,10 @@
 #include <iomanip>
 #include <string>
 
-uint16_t		m_nPort = 7894;
-const char* m_nAddr ;// = "localhost";
+uint16_t m_nPort = 7894;
+const std::string* m_nAddr;
 
 static const char* m_cConstSeed[2] = {"437398417012387813714564100", "15657566154164561"};
-
 
 struct test_options {
 	ot_ext_prot	prot;
@@ -55,8 +54,8 @@ BOOL Cleanup();
 BOOL Connect();
 BOOL Listen();
 
-void InitSender(const char* address, int port, CLock *glock);
-void InitReceiver(const char* address, int port, CLock *glock);
+void InitSender(const std::string& address, const int port, CLock *glock);
+void InitReceiver(const std::string& address, const int port, CLock *glock);
 
 OTExtSnd* InitOTExtSnd(ot_ext_prot m_eProt, uint32_t nbaseots, uint32_t nchecks, bool enablemecr, field_type ftype, crypto* crypt);
 OTExtRec* InitOTExtRec(ot_ext_prot m_eProt, uint32_t nbaseots, uint32_t nchecks, bool enablemecr, field_type ftype, crypto* crypt);
@@ -71,3 +70,4 @@ SndThread* sndthread;
 RcvThread* rcvthread;
 
 #endif
+

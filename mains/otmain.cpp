@@ -23,13 +23,13 @@ BOOL Cleanup()
 }
 
 
-void InitOTSender(const char* address, int port, crypto* crypt, CLock *glock)
+void InitOTSender(const std::string& address, const int port, crypto* crypt, CLock *glock)
 {
 #ifdef OTTiming
 	timespec np_begin, np_end;
 #endif
 	m_nPort = (uint16_t) port;
-	m_nAddr = address;
+	m_nAddr = &address;
 
 	//Initialize values
 	Init(crypt);
@@ -60,10 +60,10 @@ void InitOTSender(const char* address, int port, crypto* crypt, CLock *glock)
 	sender->ComputeBaseOTs(m_eFType);
 }
 
-void InitOTReceiver(const char* address, int port, crypto* crypt, CLock *glock)
+void InitOTReceiver(const std::string& address, const int port, crypto* crypt, CLock *glock)
 {
 	m_nPort = (uint16_t) port;
-	m_nAddr = address;
+	m_nAddr = &address;
 
 	//Initialize values
 	Init(crypt);
@@ -153,7 +153,7 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 
 int main(int argc, char** argv)
 {
-	std::string* addr = new std::string("127.0.0.1");
+	std::string addr = "127.0.0.1";
 	uint16_t port = 7766;
 
 	//Determines whether the program is executed in the sender or receiver role
@@ -187,7 +187,7 @@ int main(int argc, char** argv)
 
 	m_eProt = IKNP;
 
-	read_test_options(&argc, &argv, &m_nPID, &numOTs, &bitlength, &m_nSecParam, addr, &port, &m_eProt, &stype, &rtype,
+	read_test_options(&argc, &argv, &m_nPID, &numOTs, &bitlength, &m_nSecParam, &addr, &port, &m_eProt, &stype, &rtype,
 			&m_nNumOTThreads, &m_nBaseOTs, &m_nChecks, &nsndvals, &m_bUseMinEntCorAssumption, &runs);
 
 	/*int32_t read_test_options(int32_t* argcp, char*** argvp, uint32_t* role, uint64_t* numots, uint32_t* bitlen,
@@ -199,7 +199,7 @@ int main(int argc, char** argv)
 
 	if(m_nPID == SERVER_ID) //Play as OT sender
 	{
-		InitOTSender(addr->c_str(), port, crypt, glock);
+		InitOTSender(addr, port, crypt, glock);
 
 		CBitVector delta;
 		CBitVector** X = (CBitVector**) malloc(sizeof(CBitVector*) * nsndvals);
@@ -233,7 +233,7 @@ int main(int argc, char** argv)
 	}
 	else //Play as OT receiver
 	{
-		InitOTReceiver(addr->c_str(), port, crypt, glock);
+		InitOTReceiver(addr, port, crypt, glock);
 
 		CBitVector choices, response;
 

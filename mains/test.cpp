@@ -85,9 +85,9 @@ BOOL Cleanup()
 }
 
 
-void InitSender(const char* address, int port, CLock *glock) {
+void InitSender(const std::string& address, const int port, CLock *glock) {
 	m_nPort = (uint16_t) port;
-	m_nAddr = address;
+	m_nAddr = &address;
 	
 	//Initialize values
 	Init();
@@ -106,9 +106,9 @@ void InitSender(const char* address, int port, CLock *glock) {
 	rcvthread->Start();
 }
 
-void InitReceiver(const char* address, int port, CLock *glock) {
+void InitReceiver(const std::string& address, const int port, CLock *glock) {
 	m_nPort = (uint16_t) port;
-	m_nAddr = address;
+	m_nAddr = &address;
 
 	//Initialize values
 	Init();
@@ -163,7 +163,7 @@ OTExtRec* InitOTExtRec(ot_ext_prot m_eProt, uint32_t nbaseots, uint32_t nchecks,
 
 int main(int argc, char** argv)
 {
-	const char* addr = "127.0.0.1";
+	std::string addr = "127.0.0.1";
 	int port = 7766;
 
 	if(argc != 2)

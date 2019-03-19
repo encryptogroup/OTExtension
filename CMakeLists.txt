@@ -1,5 +1,9 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 project(OTExtension LANGUAGES CXX)
+
+if (CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
+    message(FATAL_ERROR "ENCRYPTO_utils require at least g++-8")
+endif()
 
 option(OTEXTENSION_BUILD_EXE "Build executables" OFF)
 

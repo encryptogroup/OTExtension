@@ -182,7 +182,7 @@ protected:
 	AES_KEY_CTX* m_kCRFKey;
 };
 
-static void fillRndMatrix(uint8_t* seed, uint64_t** mat, uint64_t cols, uint64_t rows, crypto* crypt) {
+inline void fillRndMatrix(uint8_t* seed, uint64_t** mat, uint64_t cols, uint64_t rows, crypto* crypt) {
 	uint32_t columnlen = ceil_divide(cols, sizeof(uint64_t) * 8);
 	prf_state_ctx tmpstate;
 	crypt->init_prf_state(&tmpstate, seed);
@@ -192,20 +192,20 @@ static void fillRndMatrix(uint8_t* seed, uint64_t** mat, uint64_t cols, uint64_t
 	crypt->free_prf_state(&tmpstate);
 }
 
-static void initRndMatrix(uint64_t*** mat, uint64_t cols, uint64_t rows) {
+inline void initRndMatrix(uint64_t*** mat, uint64_t cols, uint64_t rows) {
 	uint32_t columnlen = ceil_divide(cols, sizeof(uint64_t) * 8);
 	*mat = (uint64_t**) malloc(sizeof(uint64_t*) * rows);
 	for(uint32_t i = 0; i < rows; i++) {
 		(*mat)[i] = (uint64_t*) malloc(sizeof(uint64_t) * columnlen);
 	}}
 
-static void freeRndMatrix(uint64_t** mat, uint32_t nrows) {
+inline void freeRndMatrix(uint64_t** mat, uint32_t nrows) {
 	for(uint32_t i = 0; i < nrows; i++)
 		free(mat[i]);
 	free(mat);
 }
 
-static void BitMatrixMultiplication(uint8_t* resbuf, uint64_t resbytelen, uint8_t* invec, uint32_t inveclen,
+inline void BitMatrixMultiplication(uint8_t* resbuf, uint64_t resbytelen, uint8_t* invec, uint32_t inveclen,
 		uint64_t** matrix, uint64_t* tmpbuf) {
 	uint32_t columniters = ceil_divide(resbytelen, sizeof(uint64_t));
 	uint32_t rowbit;

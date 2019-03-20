@@ -24,9 +24,6 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t** rndmat;
 	channel* chan = new channel(OT_BASE_CHANNEL+id, m_cRcvThread, m_cSndThread);
 
-	//counter variables
-	uint64_t numblocks = ceil_divide(myNumOTs, OTsPerIteration);
-
 	// A temporary part of the T matrix
 	CBitVector T(wd_size_bits * OTsPerIteration);
 

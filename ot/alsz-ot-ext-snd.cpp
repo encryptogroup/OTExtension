@@ -272,7 +272,6 @@ alsz_snd_check_t ALSZOTExtSnd::UpdateCheckBuf(uint8_t* tocheckseed, uint8_t* toc
 	uint8_t* hash_buf = (uint8_t*) malloc(SHA512_DIGEST_LENGTH);
 	//uint8_t* tmpbuf = (uint8_t*) malloc(rowbytelen);
 	uint8_t** tmpbuf = (uint8_t**) malloc(2 * sizeof(uint8_t*));
-	uint8_t *idaptr, *idbptr;
 	alsz_snd_check_t check_buf;
 	check_buf.rcv_chk_buf = (uint8_t*) malloc(m_nChecks * OWF_BYTES);
 	check_buf.seed_chk_buf = (uint8_t*) malloc(m_nChecks * OWF_BYTES);
@@ -376,7 +375,7 @@ BOOL ALSZOTExtSnd::CheckConsistency(std::queue<alsz_snd_check_t>* check_buf_q, c
 	assert(check_buf.otid == tmpid);
 	assert(check_buf.numblocks == tmpnblocks);
 
-	uint32_t blockoffset = ceil_divide(check_buf.otid, num_ot_blocks * m_nBlockSizeBytes);
+	// uint32_t blockoffset = ceil_divide(check_buf.otid, num_ot_blocks * m_nBlockSizeBytes);
 	uint32_t offset = 0 ;//m_nBaseOTs * blockoffset;//TODO, put offset in again when 3-stop ot is implemented
 
 	rcvhashbufptr = rcvhashbuf;
@@ -427,18 +426,18 @@ BOOL ALSZOTExtSnd::CheckConsistency(std::queue<alsz_snd_check_t>* check_buf_q, c
 
 
 void ALSZOTExtSnd::genRandomPermutation(linking_t* outperm, uint32_t nids, uint32_t nperms) {
-	uint32_t rndbits = m_nSymSecParam * nperms;
-	uint64_t bitsint = (8*sizeof(uint32_t));
+	uint64_t bitsint = (8 * sizeof(uint32_t));
 	uint32_t rnditers = ceil_divide(m_cCrypt->get_seclvl().symbits, bitsint);
 	CBitVector rndstring;
 	rndstring.Create((uint64_t) rnditers * nperms, bitsint, m_cCrypt);
 
-	uint64_t tmpval = 0, tmprnd;
+	// uint64_t tmpval = 0, tmprnd;
+	// uint32_t rndctr=0;
 
-	for(uint32_t i = 0, rndctr=0, j; i < nperms; i++) {
+	for(uint32_t i = 0; i < nperms; i++) {
 		outperm[i].ida = i % nids;
 		//if(outperm[i].ida == 0) outperm[i].ida++;
-		/*for(j = 0; j < rnditers; j++, rndctr++) {
+		/*for(uint32_t j = 0; j < rnditers; j++, rndctr++) {
 			tmprnd = rndstring.Get<uint32_t>(rndctr);
 			tmpval = ((uint64_t) (tmpval << bitsint) | tmprnd);
 			tmpval = tmpval % nids;

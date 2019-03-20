@@ -26,13 +26,13 @@ find_package(Threads REQUIRED)
 add_library(otextension
     ot/alsz-ot-ext-rec.cpp
     ot/alsz-ot-ext-snd.cpp
-    ot/asharov-lindell.cpp
+#    ot/asharov-lindell.cpp
     ot/iknp-ot-ext-rec.cpp
     ot/iknp-ot-ext-snd.cpp
     ot/kk-ot-ext-rec.cpp
     ot/kk-ot-ext-snd.cpp
     ot/naor-pinkas.cpp
-    ot/naor-pinkas_noro.cpp
+#    ot/naor-pinkas_noro.cpp
     ot/nnob-ot-ext-rec.cpp
     ot/nnob-ot-ext-snd.cpp
     ot/ot-ext.cpp

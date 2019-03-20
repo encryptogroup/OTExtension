@@ -5,7 +5,7 @@
 #include <ENCRYPTO_utils/crypto/pk-crypto.h>
 #include <cstdlib>
 
-void SimpleOT::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* retbuf) {
+void SimpleOT::Receiver([[maybe_unused]] uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* retbuf) {
 
 	fe *g, **B, *A, *AB;
 	num **b, *order, *tmp;
@@ -87,7 +87,7 @@ void SimpleOT::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, c
 }
 
 
-void SimpleOT::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* retbuf) {
+void SimpleOT::Sender([[maybe_unused]] uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* retbuf) {
 	fe *g, *A, *Asqr, *B, *AB, *tmp;
 	num *a, *asqr, *order;
 

@@ -3,7 +3,7 @@
 #include <ENCRYPTO_utils/cbitvector.h>
 #include <iostream>
 
-void PVWDDH::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* retbuf) {
+void PVWDDH::Receiver([[maybe_unused]] uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, channel* chan, uint8_t* retbuf) {
 
 	fe *g[2], *h[2], *pkg, *pkh, *u, *zkcommit[2];
 	num *y, *alpha, *r[nOTs], *zkr, *zkchallenge, *zkproof;
@@ -139,7 +139,7 @@ void PVWDDH::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices, cha
 }
 
 
-void PVWDDH::Sender(uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* retbuf) {
+void PVWDDH::Sender([[maybe_unused]] uint32_t nSndVals, uint32_t nOTs, channel* chan, uint8_t* retbuf) {
 	fe *g[2], *h[2], *pkg, *pkh, *u, *v, *gs, *ht, *zkcommit[2], *gchk, *zkchk;
 	num *s, *t, *zkchallenge, *zkproof;
 

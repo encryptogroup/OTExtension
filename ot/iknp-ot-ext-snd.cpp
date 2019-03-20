@@ -17,7 +17,6 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t processedOTBlocks = std::min(num_ot_blocks, ceil_divide(myNumOTs, wd_size_bits));
 	uint64_t OTsPerIteration = processedOTBlocks * wd_size_bits;
 	channel* chan = new channel(OT_BASE_CHANNEL+id, m_cRcvThread, m_cSndThread);
-	uint64_t tmpctr, tmpotlen;
 	uint64_t** rndmat;
 
 	myNumOTs = std::min(myNumOTs + myStartPos, m_nOTs) - myStartPos;
@@ -49,8 +48,6 @@ BOOL IKNPOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	CBitVector Q(wd_size_bits * OTsPerIteration);
 
 	uint64_t otid = myStartPos;
-
-	uint8_t *rcvbuftmpptr, *rcvbufptr;
 
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalUnMaskTime=0;

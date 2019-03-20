@@ -381,7 +381,7 @@ void NNOBOTExtSnd::XORandOWF(uint8_t* idaptr, uint8_t* idbptr, uint64_t rowbytel
 }
 
 BOOL NNOBOTExtSnd::CheckConsistency(std::queue<nnob_snd_check_t*>* check_buf_q, channel* check_chan) {
-	uint8_t *rcvhashbufptr, *rcvhashbuf;
+	uint8_t *rcvhashbuf;
 	uint64_t tmpid, tmpnblocks;
 
 	uint8_t* rcvbuf = check_chan->blocking_receive_id_len(&rcvhashbuf, &tmpid, &tmpnblocks);
@@ -392,8 +392,6 @@ BOOL NNOBOTExtSnd::CheckConsistency(std::queue<nnob_snd_check_t*>* check_buf_q, 
 	//Should be fine since the blocks are handled sequentially - but recheck anyway
 	assert(check_buf->otid == tmpid);
 	assert(check_buf->numblocks == tmpnblocks);
-
-	rcvhashbufptr = rcvhashbuf;
 
 	//Very simple : just go over both arrays and check equality
 	uint64_t* rcvbufptr = (uint64_t*) rcvhashbuf;

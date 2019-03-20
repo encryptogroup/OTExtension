@@ -31,8 +31,8 @@ void NaorPinkas::Receiver(uint32_t nSndVals, uint32_t nOTs, CBitVector* choices,
 	brickexp *bg, *bc;
 	bg = m_cPKCrypto->get_brick(g);
 
-	//uint8_t* pBuf = (uint8_t*) malloc(nOTs * fe_bytes);
-	uint32_t nBufSize = nSndVals * fe_bytes;
+	// uint8_t* pBuf = (uint8_t*) malloc(nOTs * fe_bytes);
+	// uint32_t nBufSize = nSndVals * fe_bytes;
 
 
 	//calculate the generator of the group

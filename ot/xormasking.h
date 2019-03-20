@@ -30,7 +30,6 @@ public:
 	}
 
 	void Mask(uint32_t progress, uint32_t processedOTs, CBitVector** values, CBitVector* snd_buf, snd_ot_flavor protocol) {
-		uint32_t nsndvals = 2;
 
 		if (protocol == Snd_OT) {
 			snd_buf[0].XORBytes(values[0]->GetArr() + ceil_divide(progress * m_nBitLength, 8), 0, ceil_divide(processedOTs * m_nBitLength, 8));
@@ -84,7 +83,7 @@ public:
 				//output.Copy(tmpmask.GetArr() + bits_in_bytes(gprogress), bits_in_bytes(gprogress),
 				//		bits_in_bytes(offset));
 				output->Copy(tmpmask->GetArr(), bits_in_bytes(gprogress), bits_in_bytes(offset));
-				for (uint32_t u, i = progress,	l = 0; i < lim; i++, gprogress += m_nBitLength, l += m_nBitLength) {
+				for (uint32_t i = progress, l = 0; i < lim; i++, gprogress += m_nBitLength, l += m_nBitLength) {
 					if(choices->GetBitNoMask(i)) {
 						output->XORBitsPosOffset(rcv_buf->GetArr(), l, gprogress, m_nBitLength);
 					}

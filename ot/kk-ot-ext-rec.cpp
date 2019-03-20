@@ -44,9 +44,6 @@ BOOL KKOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 	uint64_t processedOTs;
 	channel* chan = new channel(OT_BASE_CHANNEL+id, m_cRcvThread, m_cSndThread);
 
-	//counter variables
-	uint64_t numblocks = ceil_divide(myNumOTs, OTsPerIteration);
-
 	// A temporary part of the T matrix
 	CBitVector T(wd_size_bits * OTsPerIteration);
 
@@ -345,7 +342,7 @@ void KKOTExtRec::KKReceiveAndUnMask(channel* chan, std::queue<mask_block*>* mask
 	uint32_t ext_choicecodebits = ceil_log2(m_nSndVals);
 	uint32_t diff_choicecodes = int_choicecodebits / ext_choicecodebits;
 
-	uint32_t tmpmask;
+	// uint32_t tmpmask;
 	uint8_t* tmpmaskbuf;
 	uint32_t startval, endval;
 	uint32_t offset = m_nint_sndvals;

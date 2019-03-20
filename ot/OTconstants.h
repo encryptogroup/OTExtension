@@ -56,7 +56,7 @@ enum rec_ot_flavor {
 };
 
 
-[[maybe_unused]] static const char* getSndFlavor(snd_ot_flavor stype) {
+inline const char* getSndFlavor(snd_ot_flavor stype) {
 	switch (stype) {
 	case Snd_OT: return "Snd_OT";
 	case Snd_C_OT: return "Snd_C_OT";
@@ -66,7 +66,7 @@ enum rec_ot_flavor {
 	}
 }
 
-[[maybe_unused]] static const char* getRecFlavor(rec_ot_flavor rtype) {
+inline const char* getRecFlavor(rec_ot_flavor rtype) {
 	switch (rtype) {
 	case Rec_OT: return "Rec_OT";
 	case Rec_R_OT: return "Rec_R_OT";
@@ -74,7 +74,7 @@ enum rec_ot_flavor {
 	}
 }
 
-[[maybe_unused]] static const char* getProt(ot_ext_prot prot) {
+inline const char* getProt(ot_ext_prot prot) {
 	switch (prot) {
 	case IKNP: return "IKNP";
 	case ALSZ: return "ALSZ";

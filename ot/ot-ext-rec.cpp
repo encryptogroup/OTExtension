@@ -390,17 +390,17 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 			m_vRet->GetBits(tempRet.data(), i * m_nBitLength, m_nBitLength);
 			for (uint64_t k = 0; k < bytelen; k++) {
 				if (tempXc[k] != tempRet[k]) {
-					std::cout << "Error at position i = " << i << ", k = " << k << ", with X" << (std::hex) << tmpchoice <<
+					std::cerr << "\033[1;31mError at position i = " << i << ", k = " << k << ", with X" << (std::hex) << tmpchoice <<
 							" = " << (uint32_t) tempXc[k] << " and res = " << (uint32_t) tempRet[k] << ". All values: " <<std::endl;
 					for(uint64_t k = 0; k < nsndvals; k++) {
-						std::cout << "X" << k << ": ";
+						std::cerr << "X" << k << ": ";
 						vRcvX[k].Print(i * m_nBitLength, (i+1) * m_nBitLength);
 					}
 
-					std::cout << (std::dec);
+					std::cerr << "\033[0m" << (std::dec);
 					
 					resp = 0x00;
-					chan->send(&resp, 1);
+					chan->send(&resp, (uint64_t) 1);
 
 					chan->synchronize_end();
 					for(uint64_t j = 0; j < nsndvals; j++) {

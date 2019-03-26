@@ -309,7 +309,7 @@ BOOL OTExtSnd::verifyOT(uint64_t NumOTs) {
 		resp = chan->blocking_receive();
 
 		if (*resp == 0x00) {
-			std::cerr << "Error: OT verification unsuccessful" << std::endl;
+			std::cerr << "\033[1;31mError: Receiver notified us of failed OT verification.\033[0m" << std::endl;
 			free(resp);
 			chan->synchronize_end();
 			return false;

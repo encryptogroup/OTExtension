@@ -203,6 +203,7 @@ int main(int argc, char** argv)
 
 			delete sender;
 		}
+		free(tests);
 	}
 	else //Play as OT receiver
 	{
@@ -221,6 +222,7 @@ int main(int argc, char** argv)
 
 			delete receiver;
 		}
+		free(tests);
 
 	}
 

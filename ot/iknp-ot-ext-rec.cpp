@@ -54,7 +54,7 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalChkTime = 0, totalMaskTime = 0;
-	timeval tempStart, tempEnd;
+	timespec tempStart, tempEnd;
 #endif
 
 	while (otid < lim) {
@@ -69,44 +69,44 @@ BOOL IKNPOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 
 #ifdef OTTiming
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		BuildMatrices(&T, &vSnd, otid, processedOTBlocks, m_tBaseOTKeys.front());
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalMtxTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		MaskBaseOTs(&T, &vSnd, otid, processedOTBlocks);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalMaskTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		T.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalTnsTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		HashValues(&T, &seedbuf, &maskbuf, otid, std::min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalHshTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		SendMasks(&vSnd, chan, otid, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalSndTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		SetOutput(&maskbuf, otid, OTsPerIteration, &mask_queue, chan);//ReceiveAndUnMask(chan);
 
 		//counter += std::min(lim - OT_ptr, OTsPerIteration);
 		otid += std::min(lim - otid, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalRcvTime += getMillies(tempStart, tempEnd);
 #endif
 

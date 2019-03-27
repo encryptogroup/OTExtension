@@ -67,7 +67,7 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalUnMaskTime=0;
-	timeval tempStart, tempEnd;
+	timespec tempStart, tempEnd;
 #endif
 
 	if(m_eSndOTFlav == Snd_GC_OT) {
@@ -90,42 +90,42 @@ BOOL KKOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 
 #ifdef OTTiming
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		ReceiveMasks(&vRcv, chan, OTsPerIteration, 0);
 
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalRcvTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		BuildQMatrix(&Q, otid, processedOTBlocks, m_tBaseOTKeys.front());
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalMtxTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		UnMaskBaseOTs(&Q, &vRcv, m_tBaseOTChoices.front(), processedOTBlocks);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalUnMaskTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		Q.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalTnsTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		KKHashValues(Q, seedbuf, vSnd, otid, processedOTs, rndmat);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalHshTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		KKMaskAndSend(vSnd, otid, processedOTs, chan);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalSndTime += getMillies(tempStart, tempEnd);
 #endif
 		otid += processedOTs;

@@ -85,7 +85,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0, totalUnMaskTime = 0,
 			totalHashCheckTime = 0, totalChkCompTime = 0;
-	timeval tempStart, tempEnd;
+	timespec tempStart, tempEnd;
 #endif
 
 	while (OT_ptr < lim) //do while there are still transfers missing
@@ -98,7 +98,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 #endif
 
 #ifdef OTTiming
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		rcvbufptr = ot_chan->blocking_receive_id_len(&rcvbuftmpptr, &tmpctr, &tmpotlen);
 		//vRcv.AttachBuf(rcvbuftmpptr, bits_in_bytes(m_nBaseOTs * OTsPerIteration));
@@ -111,42 +111,42 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 		//m_tBaseOTQ.pop();
 		//vRcv.PrintHex();
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalRcvTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		BuildQMatrix(&Q, OT_ptr, processedOTBlocks, tmp_base_keys);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalMtxTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		check_queue.push(UpdateCheckBuf(Q.GetArr(), vRcv.GetArr(), OT_ptr, processedOTBlocks, tmp_base_choices, check_chan));
 		GenerateSendAndXORCorRobVector(&Q, OTsPerIteration, mat_chan);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalChkCompTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		FillAndSendRandomMatrix(rndmat, mat_chan);
 
 		UnMaskBaseOTs(&Q, &vRcv, tmp_base_choices, processedOTBlocks);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalUnMaskTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		Q.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalTnsTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		HashValues(&Q, seedbuf, vSnd, tmp_base_choices, OT_ptr, std::min(lim - OT_ptr, OTsPerIteration), rndmat);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalHshTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 
 		//TODO: outsource into method
@@ -166,12 +166,12 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 			delete[] tmpmaskbuf.maskbuf;
 		}
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalHashCheckTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalSndTime += getMillies(tempStart, tempEnd);
 #endif
 		OT_ptr += std::min(lim - OT_ptr, OTsPerIteration);
@@ -186,7 +186,7 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 	while(!check_queue.empty()) {
 		if(check_chan->data_available()) {
 #ifdef OTTiming
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 			if(!CheckConsistency(&check_queue, check_chan)) {
 				std::cerr << "OT extension consistency check failed. Aborting program\n";
@@ -195,15 +195,15 @@ BOOL ALSZOTExtSnd::sender_routine(uint32_t id, uint64_t myNumOTs) {
 			//assert(CheckConsistency(&check_queue, check_chan));
 			//CheckConsistency(&check_queue, check_chan);
 #ifdef OTTiming
-			gettimeofday(&tempEnd, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 			totalHashCheckTime += getMillies(tempStart, tempEnd);
-			gettimeofday(&tempStart, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 			tmpmaskbuf = mask_queue.front();
 			mask_queue.pop();
 			MaskAndSend(tmpmaskbuf.maskbuf, tmpmaskbuf.otid, tmpmaskbuf.otlen, ot_chan);
 #ifdef OTTiming
-			gettimeofday(&tempEnd, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 			totalSndTime += getMillies(tempStart, tempEnd);
 #endif
 		}

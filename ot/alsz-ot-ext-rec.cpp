@@ -72,7 +72,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0,
 			totalChkTime = 0, totalMaskTime = 0, totalEnqueueTime = 0, totalOutputSetTime = 0;
-	timeval tempStart, tempEnd;
+	timespec tempStart, tempEnd;
 #endif
 
 	while (otid < lim) {
@@ -84,46 +84,47 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		//m_tBaseOTQ.pop();
 
 #ifdef OTTiming
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		BuildMatrices(&T, &vSnd, otid, processedOTBlocks, tmp_base_keys);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalMtxTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		check_buf.push(EnqueueSeed(T.GetArr(), vSnd.GetArr(), otid, processedOTBlocks));
 #ifdef OTTiming
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalEnqueueTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		MaskBaseOTs(&T, &vSnd, otid, processedOTBlocks);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalMaskTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		SendMasks(&vSnd, ot_chan, otid, OTsPerIteration);
 		//ot_chan->send_id_len(vSnd.GetArr(), nSize, otid, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalSndTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 
 		ReceiveAndFillMatrix(rndmat, mat_chan);
 		if(!m_bUseMinEntCorRob) {
 			T.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalTnsTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 			HashValues(&T, &seedbuf, &maskbuf, otid, std::min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalHshTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		}
 		if(check_chan->data_available()) {
@@ -138,9 +139,9 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 				HashValues(&Ttmp, &seedbuf, &maskbuf, check_tmp.otid, std::min(lim - check_tmp.otid, check_tmp.numblocks * wd_size_bits), rndmat);
 			}
 #ifdef OTTiming
-			gettimeofday(&tempEnd, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 			totalChkTime += getMillies(tempStart, tempEnd);
-			gettimeofday(&tempStart, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		}
 
@@ -149,7 +150,7 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		otid += std::min(lim - otid, OTsPerIteration);
 		base_ot_block_ctr++;
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalOutputSetTime += getMillies(tempStart, tempEnd);
 #endif
 
@@ -167,11 +168,11 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 				Ttmp.Copy(check_tmp.T0, 0, check_tmp.numblocks * m_nBlockSizeBytes);
 			}
 #ifdef OTTiming
-			gettimeofday(&tempStart, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 			ComputeOWF(&check_buf, check_chan);
 #ifdef OTTiming
-			gettimeofday(&tempEnd, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 			totalChkTime += getMillies(tempStart, tempEnd);
 #endif
 			if(m_bUseMinEntCorRob) {
@@ -191,11 +192,11 @@ BOOL ALSZOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		while(ot_chan->is_alive() && !(mask_queue.empty())) {
 #endif
 #ifdef OTTiming
-			gettimeofday(&tempStart, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 			ReceiveAndUnMask(ot_chan, &mask_queue);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalOutputSetTime += getMillies(tempStart, tempEnd);
 #endif
 		}
@@ -293,7 +294,7 @@ void ALSZOTExtRec::ComputeOWF(std::queue<alsz_rcv_check_t>* check_buf_q, channel
 	uint8_t* outhashes = (uint8_t*) malloc(outhashbytelen);
 
 #ifdef OTTiming_PRECISE
-	timeval tstart, tend;
+	timespec tstart, tend;
 	double total_xortime = 0, total_hashtime = 0;
 #endif
 
@@ -365,7 +366,7 @@ void ALSZOTExtRec::ComputeOWF(std::queue<alsz_rcv_check_t>* check_buf_q, channel
 
 /*		for(j = 0; j < receiver_hashes; j++, outptr+=OWF_BYTES) {
 #ifdef OTTiming_PRECISE
-			gettimeofday(&tstart, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tstart);
 #endif
 			kaptr = ka[j>>1];
 			kbptr = kb[j&0x01];
@@ -385,15 +386,15 @@ void ALSZOTExtRec::ComputeOWF(std::queue<alsz_rcv_check_t>* check_buf_q, channel
 			owf(&aesowfkey, rowbytelen, tmpbuf, outptr);
 #else
 	#ifdef OTTiming_PRECISE
-			gettimeofday(&tend, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tend);
 			total_xortime += getMillies(tstart, tend);
-			gettimeofday(&tstart, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tstart);
 	#endif
 			sha512_hash(outptr, OWF_BYTES, tmpbuf, bufrowbytelen, hash_buf);
 
 			//m_cCrypt->hash_buf(outptr, OWF_BYTES, tmpbuf, bufrowbytelen, hash_buf);
 	#ifdef OTTiming_PRECISE
-			gettimeofday(&tend, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &tend);
 			total_hashtime += getMillies(tstart, tend);
 	#endif
 #endif

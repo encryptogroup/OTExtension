@@ -62,7 +62,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 #ifdef OTTiming
 	double totalMtxTime = 0, totalTnsTime = 0, totalHshTime = 0, totalRcvTime = 0, totalSndTime = 0,
 			totalChkTime = 0, totalMaskTime = 0, totalEnqueueTime = 0;
-	timeval tempStart, tempEnd;
+	timespec tempStart, tempEnd;
 #endif
 
 	while (otid < lim) {
@@ -71,48 +71,48 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 		//nSize = bits_in_bytes(m_nBaseOTs * OTsPerIteration);
 
 #ifdef OTTiming
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		BuildMatrices(&T, &vSnd, otid, processedOTBlocks, m_tBaseOTKeys.front());
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalMtxTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		check_buf.push(EnqueueSeed(T.GetArr(), otid, processedOTBlocks));
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalEnqueueTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		MaskBaseOTs(&T, &vSnd, otid, processedOTBlocks);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalMaskTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		SendMasks(&vSnd, ot_chan, otid, OTsPerIteration);
 		//ot_chan->send_id_len(vSnd.GetArr(), nSize, otid, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalSndTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		ReceiveAndFillMatrix(rndmat, mat_chan);
 		ReceiveAndXORCorRobVector(&T, OTsPerIteration, mat_chan);
 
 		T.Transpose(wd_size_bits, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalTnsTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 
 		HashValues(&T, &seedbuf, &maskbuf, otid, std::min(lim - otid, OTsPerIteration), rndmat);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalHshTime += getMillies(tempStart, tempEnd);
-		gettimeofday(&tempStart, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempStart);
 #endif
 		if(check_chan->data_available()) {
 			ComputeOWF(&check_buf, check_chan);
@@ -124,7 +124,7 @@ BOOL NNOBOTExtRec::receiver_routine(uint32_t id, uint64_t myNumOTs) {
 
 		otid += std::min(lim - otid, OTsPerIteration);
 #ifdef OTTiming
-		gettimeofday(&tempEnd, NULL);
+		clock_gettime(CLOCK_MONOTONIC, &tempEnd);
 		totalRcvTime += getMillies(tempStart, tempEnd);
 #endif
 

@@ -430,7 +430,6 @@ BOOL OTExtRec::verifyOT(uint64_t NumOTs) {
 	return true;
 }
 
-
 void OTExtRec::ComputePKBaseOTs() {
 	channel* chan = new channel(OT_ADMIN_CHANNEL, m_cRcvThread, m_cSndThread);
 	uint32_t nsndvals = 2;
@@ -439,12 +438,15 @@ void OTExtRec::ComputePKBaseOTs() {
 
 	OT_AES_KEY_CTX* tmpkeybuf = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs * nsndvals);
 
-	timeval np_begin, np_end;
-	gettimeofday(&np_begin, NULL);
+#ifdef OTTiming
+	timespec np_begin, np_end;
+	clock_gettime(CLOCK_MONOTONIC, &np_begin);
+#endif
+
 	m_cBaseOT->Sender(nsndvals, m_nBaseOTs, chan, pBuf);
-	gettimeofday(&np_end, NULL);
 
 #ifdef OTTiming
+	clock_gettime(CLOCK_MONOTONIC, &np_end);
 	printf("Time for performing the base-OTs: %f seconds\n", getMillies(np_begin, np_end));
 #endif
 

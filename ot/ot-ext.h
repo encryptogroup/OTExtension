@@ -36,6 +36,11 @@
 #include "OTconstants.h"
 #include <cstring>
 
+#ifdef OTTiming
+#include <iostream>
+#include <ENCRYPTO_utils/timer.h>
+#endif
+
 class BaseOT;
 class CBitVector;
 

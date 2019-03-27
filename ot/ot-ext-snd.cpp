@@ -14,6 +14,9 @@
 #include "baseOT.h"
 #include <ENCRYPTO_utils/channel.h>
 #include <ENCRYPTO_utils/cbitvector.h>
+#ifdef OTTiming
+#include <ENCRYPTO_utils/timer.h>
+#endif
 
 BOOL OTExtSnd::send(uint64_t numOTs, uint64_t bitlength, uint64_t nsndvals, CBitVector** X, snd_ot_flavor stype,
 		rec_ot_flavor rtype, uint32_t numThreads, MaskingFunction* maskfct) {
@@ -329,7 +332,6 @@ void OTExtSnd::ComputePKBaseOTs() {
 	uint8_t* pBuf = (uint8_t*) malloc(m_cCrypt->get_hash_bytes() * m_nBaseOTs);
 	uint8_t* keyBuf = (uint8_t*) malloc(m_cCrypt->get_aes_key_bytes() * m_nBaseOTs);
 
-	timeval np_begin, np_end;
 	uint32_t nsndvals = 2;
 
 	CBitVector* U = new CBitVector();
@@ -340,11 +342,16 @@ void OTExtSnd::ComputePKBaseOTs() {
 		U->SetBit(i, 0);
 	OT_AES_KEY_CTX* tmpkeybuf = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs);
 
-	gettimeofday(&np_begin, NULL);
+#ifdef OTTiming
+	timespec np_begin, np_end;
+	clock_gettime(CLOCK_MONOTONIC, &np_begin);
+#endif	
+
 	m_cBaseOT->Receiver(nsndvals, m_nBaseOTs, U, chan, pBuf);
-	gettimeofday(&np_end, NULL);
+	
 
 #ifdef OTTiming
+	clock_gettime(CLOCK_MONOTONIC, &np_end);
 	printf("Time for performing the base-OTs: %f seconds\n", getMillies(np_begin, np_end));
 #endif
 

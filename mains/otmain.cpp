@@ -106,7 +106,7 @@ BOOL ObliviouslySend(CBitVector** X, int numOTs, int bitlength, uint32_t nsndval
 	timespec ot_begin, ot_end;
 
 	clock_gettime(CLOCK_MONOTONIC, &ot_begin);
-	// Execute OT sender routine 	
+	// Execute OT sender routine
 	success = sender->send(numOTs, bitlength, nsndvals, X, stype, rtype, m_nNumOTThreads, m_fMaskFct);
 	clock_gettime(CLOCK_MONOTONIC, &ot_end);
 
@@ -133,7 +133,7 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 
 	timespec ot_begin, ot_end;
 	clock_gettime(CLOCK_MONOTONIC, &ot_begin);
-	// Execute OT receiver routine 	
+	// Execute OT receiver routine
 	success = receiver->receive(numOTs, bitlength, nsndvals, choices, ret, stype, rtype, m_nNumOTThreads, m_fMaskFct);
 	clock_gettime(CLOCK_MONOTONIC, &ot_end);
 
@@ -145,7 +145,7 @@ BOOL ObliviouslyReceive(CBitVector* choices, CBitVector* ret, int numOTs, int bi
 #else
 	std::cout << getMillies(ot_begin, ot_end) + rndgentime << "\t" << m_Socket->getSndCnt() << "\t" << m_Socket->getRcvCnt() << std::endl;
 #endif
-	
+
 
 	return success;
 }
@@ -158,8 +158,8 @@ int main(int argc, char** argv)
 
 	//Determines whether the program is executed in the sender or receiver role
 	m_nPID = atoi(argv[1]);
-	//the number of OTs that are performed. Has to be initialized to a certain minimum size due to
-	uint64_t numOTs = 1000000;
+	//the number of OTs that are performed.
+	uint64_t numOTs = 100000;
 	//bitlength of the values that are transferred - NOTE that when bitlength is not 1 or a multiple of 8, the endianness has to be observed
 	uint32_t bitlength = 8;
 
@@ -247,9 +247,9 @@ int main(int argc, char** argv)
 		response.Create(numOTs, bitlength);
 		response.Reset();
 
-		/* 
+		/*
 		 * The inputs of the receiver in G_OT, C_OT and R_OT are the same. The only difference is the version
-		 * variable that has to match the version of the sender. 
+		 * variable that has to match the version of the sender.
 		*/
 #ifndef BATCH
 		std::cout << getProt(m_eProt) << " Receiver performing " << numOTs << " " << getSndFlavor(stype) << " / " <<

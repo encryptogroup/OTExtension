@@ -507,7 +507,7 @@ void ALSZOTExtSnd::ComputeBaseOTs(field_type ftype) {
 			//tmp->choices->SetBits(U.GetArr(), (uint64_t) i * m_nBaseOTs, (uint64_t) m_nBaseOTs);
 			tmp_keys = (OT_AES_KEY_CTX*) malloc(sizeof(OT_AES_KEY_CTX) * m_nBaseOTs);
 
-			InitAESKey(tmp_keys, resp.GetArr()+i*m_nBaseOTs*secparambytes, m_nBaseOTs, m_cCrypt);
+			InitPRFKeys(tmp_keys, resp.GetArr() + i * m_nBaseOTs * secparambytes, m_nBaseOTs);
 			m_tBaseOTKeys.push_back(tmp_keys);
 
 		}

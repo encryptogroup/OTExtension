@@ -487,7 +487,7 @@ void ALSZOTExtRec::ComputeBaseOTs(field_type ftype) {
 			}*/
 			memcpy(buf, X[0]->GetArr() + secparambytes * m_nBaseOTs * i, secparambytes * m_nBaseOTs);
 			memcpy(buf + secparambytes * m_nBaseOTs, X[1]->GetArr() + secparambytes * m_nBaseOTs * i, secparambytes * m_nBaseOTs);
-			InitAESKey(tmp_keys, buf, nsndvals * m_nBaseOTs, m_cCrypt);
+			InitPRFKeys(tmp_keys, buf, nsndvals * m_nBaseOTs);
 			m_tBaseOTKeys.push_back(tmp_keys);
 		}
 

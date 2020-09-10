@@ -10,6 +10,8 @@
 
 # build directory
 build*/
+# extern directory
+extern/*
 
 # CMake
 CMakeCache.txt

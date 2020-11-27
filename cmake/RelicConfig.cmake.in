@@ -1,0 +1,34 @@
+set(Relic_NAME @Relic_LIB_NAME@)
+if(NOT "${Relic_LIBRARY_TYPE}" STREQUAL "STATIC" AND NOT "${Relic_LIBRARY_TYPE}" STREQUAL "SHARED")
+    set(Relic_LIBRARY_TYPE "@Relic_LIBRARY_TYPE@")
+endif()
+set(LIB_PREFIX "${CMAKE_${Relic_LIBRARY_TYPE}_LIBRARY_PREFIX}")
+set(LIB_SUFFIX "${CMAKE_${Relic_LIBRARY_TYPE}_LIBRARY_SUFFIX}")
+
+set(Relic_INCLUDE_PATHS "@INSTALL_CONFIG_INCLUDE_PATHS@")
+set(Relic_LIB_PATHS "@INSTALL_CONFIG_LIB_PATHS@")
+
+unset(Relic_INCLUDE_DIR CACHE)
+unset(Relic_LIBRARY CACHE)
+
+find_path(Relic_INCLUDE_DIR relic.h PATHS ${Relic_INCLUDE_PATHS})
+find_library(Relic_LIBRARY NAMES ${LIB_PREFIX}${Relic_NAME}${LIB_SUFFIX} PATHS ${Relic_LIB_PATHS})
+
+if(EXISTS "${Relic_INCLUDE_DIR}" AND EXISTS "${Relic_LIBRARY}")
+    set(Relic_FOUND TRUE)
+else()
+    set(Relic_LIBRARY )
+    set(Relic_FOUND FALSE)
+endif()
+
+if(Relic_FOUND AND NOT TARGET Relic::relic)
+    add_library(Relic::relic "${Relic_LIBRARY_TYPE}" IMPORTED)
+    set_target_properties(Relic::relic PROPERTIES
+                                       IMPORTED_LOCATION "${Relic_LIBRARY}"
+                                       INTERFACE_INCLUDE_DIRECTORIES "${Relic_INCLUDE_DIR}")
+endif()
+
+mark_as_advanced(
+    Relic_INCLUDE_DIR
+    Relic_LIBRARY
+)
